@@ -1,0 +1,44 @@
+use std::fs::File;
+use std::path::{Path};
+use std::io::{self, BufRead};
+
+
+#[derive(Debug)]
+pub struct Segment
+{
+    pub caption: String,
+    pub lines: Vec<String>,
+}
+
+pub fn load<P>(file_path: &P, is_separator: fn(&str) -> Option<&str>) -> io::Result<Vec<Segment>>
+where P: AsRef<Path>
+{
+    let file = File::open(file_path)?;
+    let lines = io::BufReader::new(file).lines();
+    let mut segments = Vec::new();
+    let mut current_segment = Segment{caption: String::from(""), lines: Vec::new()};
+
+    for line in lines {
+        match line {
+            Ok(line) => {
+                match is_separator(line.as_str()) {
+                    Some(caption) => {
+                        segments.push(current_segment);
+                        current_segment = Segment{
+                            caption: String::from(caption),
+                            lines: Vec::new(),
+                        };
+                    },
+                    None => {
+                        current_segment.lines.push(line);
+                    }
+                }
+            },
+            Err(err) => return Err(err),
+        }
+    }
+
+    segments.push(current_segment);
+
+    Ok(segments)
+}
