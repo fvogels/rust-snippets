@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use std::mem;
+use std::{mem, usize};
 
 
 type NodeId = usize;
@@ -105,8 +105,11 @@ impl<T> Builder<T> where T: Debug {
         for b in keyword.bytes() {
             let ord = b as usize;
             while self.nodes[current].children.len() <= ord {
-                let node_id = self.create_node(depth);
-                self.nodes[current].children.push(node_id)
+                self.nodes[current].children.push(usize::MAX)
+            }
+
+            if self.nodes[current].children[ord] == usize::MAX {
+                self.nodes[current].children[ord] = self.create_node(depth)
             }
 
             current = self.nodes[current].children[ord];
@@ -139,8 +142,10 @@ impl<T> Builder<T> where T: Debug {
                 Some(next) => {
                     result.push(next);
 
-                    for j in self.nodes[next].children.iter().rev() {
-                        queue.push(*j)
+                    for j in self.nodes[next].children.iter().copied().rev() {
+                        if j != usize::MAX {
+                            queue.push(j)
+                        }
                     }
                 },
                 None => {
@@ -162,7 +167,7 @@ impl<T> Builder<T> where T: Debug {
             if j < order.len() {
                 while i < j {
                     // println!("{} -> {}", i, j);
-                    self.nodes[order[i]].next_terminal = Some(j);
+                    self.nodes[order[i]].next_terminal = Some(order[j]);
                     i += 1
                 }
             }
@@ -317,6 +322,9 @@ mod test {
         let size = pairs.len();
 
         for permutation in pairs.into_iter().permutations(size) {
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
+            println!("Permutation {}", test_description);
+
             let mut builder = Builder::new();
 
             for (keyword, terminal) in permutation.into_iter() {
@@ -473,29 +481,29 @@ mod test {
         }
     }
 
-    // #[test]
-    // fn iterating_4() {
-    //     let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3), ("bb", 4)];
-    //     let size = pairs.len();
+    #[test]
+    fn iterating_4() {
+        let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3), ("bb", 4)];
+        let size = pairs.len();
 
-    //     for permutation in pairs.into_iter().permutations(size) {
-    //         let mut builder = Builder::new();
-    //         let test_description = permutation.iter().map(|(x, _)| x).join("/");
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
 
-    //         for (keyword, terminal) in permutation.into_iter() {
-    //             builder.add(keyword, terminal)
-    //         }
-    //         let trie = builder.finalize();
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
 
-    //         let mut iter = trie.iter("a");
+            let mut iter = trie.iter("a");
 
-    //         assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
-    //         assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
-    //         assert_eq!(iter.next(), Some(&vec![3]), "failed on permutation {}", test_description);
-    //         assert_eq!(iter.next(), Some(&vec![4]), "failed on permutation {}", test_description);
-    //         assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
-    //     }
-    // }
+            assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![3]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![4]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+        }
+    }
 
     #[test]
     fn iterating_with_cutoff() -> Result<()> {
