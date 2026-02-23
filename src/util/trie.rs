@@ -223,7 +223,7 @@ mod test {
     // use super::*;
 
     #[test]
-    fn test_single_terminal() -> Result<()> {
+    fn cursor_single_terminal() -> Result<()> {
         let mut builder = Builder::new();
         builder.add("a", 1);
         let trie = builder.finalize();
@@ -237,7 +237,7 @@ mod test {
     }
 
     #[test]
-    fn test_double_terminal() -> Result<()> {
+    fn cursor_double_terminal() -> Result<()> {
         let mut builder = Builder::new();
         builder.add("a", 1);
         builder.add("a", 2);
@@ -253,7 +253,7 @@ mod test {
     }
 
     #[test]
-    fn test_descend_to_nonterminal() -> Result<()> {
+    fn cursor_descend_to_nonterminal() -> Result<()> {
         let mut builder = Builder::new();
         builder.add("aa", 1);
         let trie = builder.finalize();
@@ -268,7 +268,7 @@ mod test {
     }
 
     #[test]
-    fn test_next() -> Result<()> {
+    fn cursor_next() -> Result<()> {
         let mut builder = Builder::new();
         builder.add("aa", 1);
         builder.add("aab", 2);
@@ -290,7 +290,7 @@ mod test {
     }
 
     #[test]
-    fn test_next2() -> Result<()> {
+    fn cursor_next2() -> Result<()> {
         let mut builder = Builder::new();
         builder.add("aa", 1);
         builder.add("aab", 2);
