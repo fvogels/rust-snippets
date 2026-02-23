@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use std::fmt::Debug;
+use std::mem;
 
 
 type NodeId = usize;
@@ -19,7 +20,7 @@ struct Node<T> {
     depth: usize,
 }
 
-pub struct Cursor<'a, T> {
+struct Cursor<'a, T> {
     parent: &'a Trie<T>,
     node_id: NodeId,
     depth_cutoff: usize,
@@ -48,6 +49,44 @@ impl<'a, T> Cursor<'a, T> {
 
     pub fn terminals(&self) -> &'a Vec<T> {
         &self.parent.nodes[self.node_id].terminals
+    }
+}
+
+pub struct TrieIterator<'a, T> {
+    data: Option<(&'a Vec<T>, Cursor<'a, T>)>,
+}
+
+impl<'a, T> TrieIterator<'a, T> {
+    fn new(cursor: Option<Cursor<'a, T>>) -> TrieIterator<'a, T> {
+        match cursor {
+            Some(c) => {
+                let next = c.terminals();
+
+                TrieIterator{
+                    data: Some((next, c)),
+                }
+            },
+            None => {
+                TrieIterator{
+                    data: None,
+                }
+            }
+        }
+    }
+}
+
+impl<'a, T> Iterator for TrieIterator<'a, T> {
+    type Item = &'a Vec<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let data = mem::replace(&mut self.data, None);
+        let (current, mut cursor) = data?;
+
+        if cursor.next() {
+            self.data = Some((cursor.terminals(), cursor))
+        }
+
+        Some(current)
     }
 }
 
@@ -100,7 +139,7 @@ impl<T> Builder<T> where T: Debug {
             match queue.pop() {
                 Some(next) => {
                     result.push(next);
-                    
+
                     for j in self.nodes[next].children.iter().rev() {
                         queue.push(*j)
                     }
@@ -144,7 +183,7 @@ impl<T> Builder<T> where T: Debug {
 }
 
 impl<T> Trie<T> {
-    pub fn descend<'a>(&'a self, s: &str) -> Option<Cursor<'a, T>> {
+    fn descend<'a>(&'a self, s: &str) -> Option<Cursor<'a, T>> {
         let mut current = 0;
 
         for b in s.as_bytes() {
@@ -167,6 +206,10 @@ impl<T> Trie<T> {
             node_id: current,
             depth_cutoff: s.len(),
         })
+    }
+
+    pub fn iter<'a>(&'a self, s: &str) -> TrieIterator<'a, T> {
+        TrieIterator::new(self.descend(s))
     }
 }
 
@@ -269,7 +312,7 @@ mod test {
     }
 
     #[test]
-    fn test_depth_cutoff() -> Result<()> {
+    fn iterating() -> Result<()> {
         let mut builder = Builder::new();
         builder.add("aa", 1);
         builder.add("aab", 2);
@@ -277,17 +320,31 @@ mod test {
         builder.add("bb", 4);
         let trie = builder.finalize();
 
-        let mut cursor = trie.descend("aa").unwrap();
+        let mut iter = trie.iter("a");
 
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 1);
-        assert!(cursor.next());
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 2);
-        assert!(cursor.next());
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 3);
-        assert!(!cursor.next());
+        assert_eq!(iter.next(), Some(&vec![1]));
+        assert_eq!(iter.next(), Some(&vec![2]));
+        assert_eq!(iter.next(), Some(&vec![3]));
+        assert_eq!(iter.next(), Some(&vec![4]));
+        assert_eq!(iter.next(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn iterating_with_cutoff() -> Result<()> {
+        let mut builder = Builder::new();
+        builder.add("aa", 1);
+        builder.add("aab", 2);
+        builder.add("aac", 3);
+        builder.add("bb", 4);
+        let trie = builder.finalize();
+
+        let mut iter = trie.iter("aa");
+
+        assert_eq!(iter.next(), Some(&vec![1]));
+        assert_eq!(iter.next(), Some(&vec![2]));
+        assert_eq!(iter.next(), Some(&vec![3]));
+        assert_eq!(iter.next(), None);
         Ok(())
     }
 }
