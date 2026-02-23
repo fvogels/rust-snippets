@@ -10,3 +10,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9.34"
 thiserror = "2.0.18"
 walkdir = "2.5.0"
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+rstest = "0.26.1"
