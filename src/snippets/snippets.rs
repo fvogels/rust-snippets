@@ -34,6 +34,32 @@ struct Metadata
     tags: Vec<String>,
 }
 
+#[derive(Debug)]
+pub struct Snippet
+{
+    pub description: String,
+    pub language: String,
+    pub parts: Vec<Part>,
+}
+
+#[derive(Debug)]
+pub struct Part
+{
+    pub caption: String,
+    pub lines: Vec<String>,
+}
+
+impl Snippet {
+    pub fn keywords(&self) -> Vec<String> {
+        let mut keywords = Vec::new();
+
+        keywords.push(self.language.to_lowercase());
+        // TODO remove accents, better splitting
+        self.description.split(" ").for_each(|s| keywords.push(s.to_lowercase()));
+
+        keywords
+    }
+}
 
 pub fn discover_files<P>(root: &P) -> Result<Vec<PathBuf>, SnippetError>
 where P: AsRef<Path>
@@ -48,22 +74,6 @@ where P: AsRef<Path>
             }).collect::<Result<Vec<PathBuf>, SnippetError>>()?;
 
     Ok(result)
-}
-
-#[derive(Debug)]
-pub struct Snippet
-{
-    pub description: String,
-    pub language: String,
-    pub parts: Vec<Part>,
-}
-
-
-#[derive(Debug)]
-pub struct Part
-{
-    pub caption: String,
-    pub lines: Vec<String>,
 }
 
 pub fn load_snippet_file<P>(file_path: &P) -> Result<Snippet, SnippetError>
