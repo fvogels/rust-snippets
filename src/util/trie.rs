@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use std::fmt::Debug;
 use std::mem;
 
@@ -148,8 +147,6 @@ impl<T> Builder<T> where T: Debug {
                     return result
                 },
             }
-
-
         }
     }
 
@@ -189,7 +186,7 @@ impl<T> Trie<T> {
         for b in s.as_bytes() {
             let ord = *b as usize;
 
-            if ord < self.nodes.len() {
+            if ord < self.nodes[current].children.len() {
                 current = self.nodes[current].children[ord]
             }
             else {
@@ -219,6 +216,8 @@ mod test {
     use super::*;
     use pretty_assertions::{assert_eq};
     use anyhow::Result;
+    use itertools::Itertools;
+    use rstest::rstest;
 
     // use super::*;
 
@@ -237,19 +236,64 @@ mod test {
     }
 
     #[test]
-    fn cursor_double_terminal() -> Result<()> {
+    fn cursor_two_terminals_in_same_node() -> Result<()> {
         let mut builder = Builder::new();
         builder.add("a", 1);
         builder.add("a", 2);
         let trie = builder.finalize();
 
-        let cursor = trie.descend("a").unwrap();
+        let mut cursor = trie.descend("a").unwrap();
         let terminals = cursor.terminals();
 
         assert_eq!(terminals.len(), 2);
         assert_eq!(terminals[0], 1);
         assert_eq!(terminals[1], 2);
+        assert!(!cursor.next());
         Ok(())
+    }
+
+    #[test]
+    fn cursor_two_terminals_in_separate_nodes_a_b_descend_a() {
+        let pairs = vec![("a", 1), ("b", 2)];
+        let size = pairs.len();
+
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut cursor = trie.descend("a").unwrap();
+            let terminals = cursor.terminals();
+
+            assert_eq!(terminals.len(), 1);
+            assert_eq!(terminals[0], 1);
+            assert!(!cursor.next());
+        }
+    }
+
+    #[test]
+    fn cursor_two_terminals_in_separate_nodes_descend_b() {
+        let pairs = vec![("a", 1), ("b", 2)];
+        let size = pairs.len();
+
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut cursor = trie.descend("b").unwrap();
+            let terminals = cursor.terminals();
+
+            assert_eq!(terminals.len(), 1);
+            assert_eq!(terminals[0], 2);
+            assert!(!cursor.next());
+        }
     }
 
     #[test]
@@ -268,67 +312,190 @@ mod test {
     }
 
     #[test]
-    fn cursor_next() -> Result<()> {
-        let mut builder = Builder::new();
-        builder.add("aa", 1);
-        builder.add("aab", 2);
-        builder.add("aac", 3);
-        let trie = builder.finalize();
+    fn cursor_next_three_terminals_descend_a() {
+        let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3)];
+        let size = pairs.len();
 
-        let mut cursor = trie.descend("a").unwrap();
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
 
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 1);
-        assert!(cursor.next());
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 2);
-        assert!(cursor.next());
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 3);
-        assert!(!cursor.next());
-        Ok(())
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut cursor = trie.descend("a").unwrap();
+
+            assert_eq!(cursor.terminals().len(), 1);
+            assert_eq!(cursor.terminals()[0], 1);
+            assert!(cursor.next());
+            assert_eq!(cursor.terminals().len(), 1);
+            assert_eq!(cursor.terminals()[0], 2);
+            assert!(cursor.next());
+            assert_eq!(cursor.terminals().len(), 1);
+            assert_eq!(cursor.terminals()[0], 3);
+            assert!(!cursor.next());
+        }
     }
 
     #[test]
-    fn cursor_next2() -> Result<()> {
-        let mut builder = Builder::new();
-        builder.add("aa", 1);
-        builder.add("aab", 2);
-        builder.add("aac", 3);
-        let trie = builder.finalize();
+    fn cursor_next() {
+        let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3)];
+        let size = pairs.len();
 
-        let mut cursor = trie.descend("aa").unwrap();
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
 
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 1);
-        assert!(cursor.next());
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 2);
-        assert!(cursor.next());
-        assert_eq!(cursor.terminals().len(), 1);
-        assert_eq!(cursor.terminals()[0], 3);
-        assert!(!cursor.next());
-        Ok(())
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut cursor = trie.descend("aa").unwrap();
+
+            assert_eq!(cursor.terminals().len(), 1);
+            assert_eq!(cursor.terminals()[0], 1);
+            assert!(cursor.next());
+            assert_eq!(cursor.terminals().len(), 1);
+            assert_eq!(cursor.terminals()[0], 2);
+            assert!(cursor.next());
+            assert_eq!(cursor.terminals().len(), 1);
+            assert_eq!(cursor.terminals()[0], 3);
+            assert!(!cursor.next());
+        }
     }
 
     #[test]
-    fn iterating() -> Result<()> {
-        let mut builder = Builder::new();
-        builder.add("aa", 1);
-        builder.add("aab", 2);
-        builder.add("aac", 3);
-        builder.add("bb", 4);
-        let trie = builder.finalize();
+    fn iterating_aa_aab_at_a() {
+        let pairs = vec![("aa", 1), ("aab", 2)];
+        let size = pairs.len();
 
-        let mut iter = trie.iter("a");
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
 
-        assert_eq!(iter.next(), Some(&vec![1]));
-        assert_eq!(iter.next(), Some(&vec![2]));
-        assert_eq!(iter.next(), Some(&vec![3]));
-        assert_eq!(iter.next(), Some(&vec![4]));
-        assert_eq!(iter.next(), None);
-        Ok(())
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut iter = trie.iter("a");
+
+            assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+        }
     }
+
+    #[test]
+    fn iterating_aa_aab_at_b() {
+        let pairs = vec![("aa", 1), ("aab", 2)];
+        let size = pairs.len();
+
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
+
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut iter = trie.iter("b");
+
+            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+        }
+    }
+
+    #[test]
+    fn iterating_aa_aab_aac_at_a() {
+        let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3)];
+        let size = pairs.len();
+
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
+
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut iter = trie.iter("a");
+
+            assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![3]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+        }
+    }
+
+    #[test]
+    fn iterating_aa_aab_aac_at_b() {
+        let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3)];
+        let size = pairs.len();
+
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
+
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut iter = trie.iter("b");
+
+            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+        }
+    }
+
+    #[test]
+    fn iterating_aa_ab_c_at_a() {
+        let pairs = vec![("aa", 1), ("ab", 2), ("b", 3)];
+        let size = pairs.len();
+
+        for permutation in pairs.into_iter().permutations(size) {
+            let mut builder = Builder::new();
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
+
+            for (keyword, terminal) in permutation.into_iter() {
+                builder.add(keyword, terminal)
+            }
+            let trie = builder.finalize();
+
+            let mut iter = trie.iter("a");
+
+            assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+            println!("success for {}", test_description)
+        }
+    }
+
+    // #[test]
+    // fn iterating_4() {
+    //     let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3), ("bb", 4)];
+    //     let size = pairs.len();
+
+    //     for permutation in pairs.into_iter().permutations(size) {
+    //         let mut builder = Builder::new();
+    //         let test_description = permutation.iter().map(|(x, _)| x).join("/");
+
+    //         for (keyword, terminal) in permutation.into_iter() {
+    //             builder.add(keyword, terminal)
+    //         }
+    //         let trie = builder.finalize();
+
+    //         let mut iter = trie.iter("a");
+
+    //         assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
+    //         assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
+    //         assert_eq!(iter.next(), Some(&vec![3]), "failed on permutation {}", test_description);
+    //         assert_eq!(iter.next(), Some(&vec![4]), "failed on permutation {}", test_description);
+    //         assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+    //     }
+    // }
 
     #[test]
     fn iterating_with_cutoff() -> Result<()> {
@@ -347,4 +514,35 @@ mod test {
         assert_eq!(iter.next(), None);
         Ok(())
     }
+
+    // #[rstest]
+    // #[case("r")]
+    // #[case("re")]
+    // #[case("rem")]
+    // #[case("remo")]
+    // #[case("remov")]
+    // #[case("remove")]
+    // #[case("a")]
+    // #[case("ac")]
+    // #[case("acc")]
+    // #[case("acce")]
+    // #[case("accen")]
+    // #[case("accent")]
+    // #[case("accents")]
+    // fn iterating_same_terminal(#[case] keyword: &str) -> Result<()> {
+    //     let mut builder = Builder::new();
+    //     builder.add("remove", 1);
+    //     builder.add("accents", 1);
+    //     builder.add("from",1);
+    //     builder.add("strings", 1);
+    //     let trie = builder.finalize();
+
+    //     let mut iter = trie.iter(keyword);
+
+    //     assert_eq!(iter.next(), Some(&vec![1]));
+    //     assert_eq!(iter.next(), None);
+    //     Ok(())
+    // }
+
+
 }
