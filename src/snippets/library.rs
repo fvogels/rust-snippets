@@ -16,7 +16,6 @@ impl Library {
         for snippet_index in 0..snippets.len() {
             let snippet = &snippets[snippet_index];
             for keyword in snippet.keywords() {
-                println!("{} -> {}", keyword, snippet.description);
                 trie_builder.add(&keyword, snippet_index);
             }
         }
