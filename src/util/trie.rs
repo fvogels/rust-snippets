@@ -715,40 +715,40 @@ mod test {
         assert_eq!(iter.next(), None)
     }
 
-    // #[test]
-    // fn iterating_same_terminal_3() -> Result<()> {
-    //     let mut builder = Builder::new();
-    //     builder.add("a", 1);
-    //     builder.add("f", 1);
-    //     builder.add("re", 1);
-    //     let trie = builder.finalize();
+    #[test]
+    fn iterating_same_terminal_3() -> Result<()> {
+        let mut builder = Builder::new();
+        builder.add("a", 1);
+        builder.add("f", 1);
+        builder.add("re", 1);
+        let trie = builder.finalize();
 
-    //     let mut iter = trie.iter("r");
+        let mut iter = trie.iter("r");
 
-    //     assert_eq!(iter.next(), Some(&vec![1]));
-    //     assert_eq!(iter.next(), None);
-    //     Ok(())
-    // }
+        assert_eq!(iter.next(), Some(&vec![1]));
+        assert_eq!(iter.next(), None);
+        Ok(())
+    }
 
-    // #[rstest]
-    // #[case("r")]
-    // #[case("re")]
-    // #[case("rem")]
-    // #[case("remo")]
-    // #[case("remov")]
-    // #[case("remove")]
-    // fn iterating_same_terminal_4(#[case] keyword: &str) -> Result<()> {
-    //     let mut builder = Builder::new();
-    //     builder.add("remove", 1);
-    //     builder.add("accents", 1);
-    //     builder.add("from", 1);
-    //     builder.add("strings", 1);
-    //     let trie = builder.finalize();
+    #[rstest]
+    #[case("r")]
+    #[case("re")]
+    #[case("rem")]
+    #[case("remo")]
+    #[case("remov")]
+    #[case("remove")]
+    fn iterating_same_terminal_4(#[case] keyword: &str) -> Result<()> {
+        let mut builder = Builder::new();
+        builder.add("remove", 1);
+        builder.add("accents", 1);
+        builder.add("from", 1);
+        builder.add("strings", 1);
+        let trie = builder.finalize();
 
-    //     let mut iter = trie.iter(keyword);
+        let mut iter = trie.iter(keyword);
 
-    //     assert_eq!(iter.next(), Some(&vec![1]));
-    //     assert_eq!(iter.next(), None);
-    //     Ok(())
-    // }
+        assert_eq!(iter.next(), Some(&vec![1]));
+        assert_eq!(iter.next(), None);
+        Ok(())
+    }
 }
