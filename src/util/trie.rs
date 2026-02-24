@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 use std::{mem, usize};
 
+use crate::util::tree_traversal;
+
 
 type NodeId = usize;
 
@@ -167,41 +169,50 @@ impl<T> Builder<T> where T: Debug {
         }
     }
 
+    fn euler_node_traversal(&self) -> Vec<NodeId> {
+        let mut result = Vec::new();
+
+        tree_traversal::euler_traversal(self,  &mut |n| result.push(*n));
+
+        result
+    }
+
     fn link_nodes(&mut self) {
-        let order = self.preorder_depth_first_order_node_traversal();
-        let mut i = 0;
-        let mut j = 0;
+        let link_order: Vec<NodeId> = self.preorder_depth_first_order_node_traversal();
+        let euler: Vec<NodeId> = self.euler_node_traversal();
+        debug_assert!(!link_order.is_empty());
 
-        loop {
-            let mut min_upwards_depth: usize = usize::MAX;
-            let mut max_downwards_depth: usize = self.nodes[order[j]].depth;
+        let mut link_order_index = link_order.len() - 1;
+        debug_assert!(self.nodes[link_order_index].is_terminal());
 
-            while i == j || !self.nodes[order[j]].is_terminal() {
-                let previous_node = &self.nodes[order[j]];
+        let mut euler_index = euler.len() - 1;
+        while euler[euler_index] != link_order[link_order_index] {
+            debug_assert!(euler_index > 0);
+            euler_index -= 1
+        }
 
-                j += 1;
+        let mut terminal_id = link_order[link_order_index];
+        let mut depth = self.nodes[terminal_id].depth;
+        while link_order_index > 0 {
+            let target = link_order[link_order_index-1];
 
-                if j == order.len() {
-                    return
+            while euler[euler_index] != target {
+                let from_node = euler[euler_index];
+                euler_index -= 1;
+                let to_node = euler[euler_index];
+
+                if self.nodes[from_node].depth < self.nodes[to_node].depth {
+                    depth = std::cmp::min(depth, self.nodes[from_node].depth)
                 }
 
-                let current_node = &self.nodes[order[j]];
-
-                if previous_node.depth < current_node.depth {
-                    // Going downwards
-                    max_downwards_depth = std::cmp::max(max_downwards_depth, current_node.depth)
-                }
-                else {
-                    // Going upwards
-                    min_upwards_depth = std::cmp::min(min_upwards_depth, current_node.depth - 1)
-                }
+                self.nodes[to_node].next_terminal = Some((depth, terminal_id));
             }
 
-            let link_depth = std::cmp::min(min_upwards_depth, max_downwards_depth);
-
-            while i < j {
-                self.nodes[order[i]].next_terminal = Some((link_depth, order[j]));
-                i += 1
+            link_order_index -= 1;
+            let node = &self.nodes[link_order[link_order_index]];
+            if node.is_terminal() {
+                terminal_id = link_order[link_order_index];
+                depth = node.depth;
             }
         }
     }
@@ -212,6 +223,18 @@ impl<T> Builder<T> where T: Debug {
         return Trie{
             nodes: self.nodes,
         }
+    }
+}
+
+impl<T> tree_traversal::Tree for Builder<T> {
+    type Node = NodeId;
+
+    fn root(&self) -> Option<&Self::Node> {
+        Some(&0)
+    }
+
+    fn children<'a>(&'a self, node: &NodeId) -> impl Iterator<Item=&'a Self::Node> {
+        self.nodes[*node].children.iter().filter(|x| **x != usize::MAX)
     }
 }
 
@@ -375,7 +398,7 @@ mod test {
 
         assert_eq!(root.next_terminal, Some((1, node_id_a)));
         assert_eq!(node_a.next_terminal, Some((0, node_id_bb)));
-        assert_eq!(node_b.next_terminal, Some((1, node_id_bb)));
+        assert_eq!(node_b.next_terminal, Some((2, node_id_bb)));
         assert_eq!(node_bb.next_terminal, None);
     }
 
