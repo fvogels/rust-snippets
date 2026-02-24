@@ -641,8 +641,10 @@ mod test {
         let size = pairs.len();
 
         for permutation in pairs.into_iter().permutations(size) {
-            let mut builder = Builder::new();
             let test_description = permutation.iter().map(|(x, _)| x).join("/");
+            println!("{}", test_description);
+
+            let mut builder = Builder::new();
 
             for (keyword, terminal) in permutation.into_iter() {
                 builder.add(keyword, terminal)
@@ -654,7 +656,6 @@ mod test {
             assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
             assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
             assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
-            println!("success for {}", test_description)
         }
     }
 
