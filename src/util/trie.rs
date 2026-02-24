@@ -15,8 +15,14 @@ pub struct Builder<T>{
 struct Node<T> {
     children: Vec<NodeId>,
     terminals: Vec<T>,
-    next_terminal: Option<NodeId>,
+    next_terminal: Option<(usize, NodeId)>,
     depth: usize,
+}
+
+impl<T> Node<T> {
+    fn is_terminal(&self) -> bool {
+        !self.terminals.is_empty()
+    }
 }
 
 struct Cursor<'a, T> {
@@ -33,12 +39,12 @@ impl<'a, T> Cursor<'a, T> {
             None => {
                 false
             },
-            Some(id) => {
-                if self.parent.nodes[id].depth <= self.depth_cutoff {
+            Some((depth, next)) => {
+                if depth < self.depth_cutoff {
                     false
                 }
                 else {
-                    self.node_id = id;
+                    self.node_id = next;
                     // println!("moved to {}", id);
                     true
                 }
@@ -133,7 +139,7 @@ impl<T> Builder<T> where T: Debug {
         node_id
     }
 
-    fn depth_first_order_node_traversal(&self) -> Vec<NodeId> {
+    fn preorder_depth_first_order_node_traversal(&self) -> Vec<NodeId> {
         let mut queue = vec![0];
         let mut result = Vec::new();
 
@@ -144,7 +150,7 @@ impl<T> Builder<T> where T: Debug {
 
                     for j in self.nodes[next].children.iter().copied().rev() {
                         if j != usize::MAX {
-                            queue.push(j)
+                            queue.push(( j))
                         }
                     }
                 },
@@ -156,22 +162,41 @@ impl<T> Builder<T> where T: Debug {
     }
 
     fn link_nodes(&mut self) {
-        let order = self.depth_first_order_node_traversal();
+        let order = self.preorder_depth_first_order_node_traversal();
         let mut i = 0;
-        let mut j = 1;
+        let mut j = 0;
 
-        while j < order.len() {
-            while j < order.len() && self.nodes[order[j]].terminals.is_empty() {
-                j += 1
-            }
-            if j < order.len() {
-                while i < j {
-                    // println!("{} -> {}", i, j);
-                    self.nodes[order[i]].next_terminal = Some(order[j]);
-                    i += 1
+        loop {
+            let mut min_upwards_depth: usize = usize::MAX;
+            let mut max_downwards_depth: usize = self.nodes[order[j]].depth;
+
+            while i == j || !self.nodes[order[j]].is_terminal() {
+                let previous_node = &self.nodes[order[j]];
+
+                j += 1;
+
+                if j == order.len() {
+                    return
+                }
+
+                let current_node = &self.nodes[order[j]];
+
+                if previous_node.depth < current_node.depth {
+                    // Going downwards
+                    max_downwards_depth = std::cmp::max(max_downwards_depth, current_node.depth)
+                }
+                else {
+                    // Going upwards
+                    min_upwards_depth = std::cmp::min(min_upwards_depth, current_node.depth - 1)
                 }
             }
-            j += 1;
+
+            let link_depth = std::cmp::min(min_upwards_depth, max_downwards_depth);
+
+            while i < j {
+                self.nodes[order[i]].next_terminal = Some((link_depth, order[j]));
+                i += 1
+            }
         }
     }
 
@@ -199,8 +224,14 @@ impl<T> Trie<T> {
             }
         }
 
-        if self.nodes[current].terminals.is_empty() {
-            current = self.nodes[current].next_terminal?;
+        if !self.nodes[current].is_terminal() {
+            let (depth, next) = self.nodes[current].next_terminal?;
+
+            if depth < s.len() {
+                return None
+            }
+
+            current = next
         }
 
         Some(Cursor {
@@ -352,8 +383,10 @@ mod test {
         let size = pairs.len();
 
         for permutation in pairs.into_iter().permutations(size) {
-            let mut builder = Builder::new();
+            let test_description = permutation.iter().map(|(x, _)| x).join("/");
+            println!("{}", test_description);
 
+            let mut builder = Builder::new();
             for (keyword, terminal) in permutation.into_iter() {
                 builder.add(keyword, terminal)
             }
@@ -379,9 +412,10 @@ mod test {
         let size = pairs.len();
 
         for permutation in pairs.into_iter().permutations(size) {
-            let mut builder = Builder::new();
             let test_description = permutation.iter().map(|(x, _)| x).join("/");
+            println!("{}", test_description);
 
+            let mut builder = Builder::new();
             for (keyword, terminal) in permutation.into_iter() {
                 builder.add(keyword, terminal)
             }
@@ -389,9 +423,9 @@ mod test {
 
             let mut iter = trie.iter("a");
 
-            assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
-            assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
-            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![1]));
+            assert_eq!(iter.next(), Some(&vec![2]));
+            assert_eq!(iter.next(), None);
         }
     }
 
@@ -483,12 +517,14 @@ mod test {
 
     #[test]
     fn iterating_4() {
-        let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3), ("bb", 4)];
+        let pairs = vec![("aa", 1), ("aab", 2), ("aac", 3), ("ab", 4)];
         let size = pairs.len();
 
         for permutation in pairs.into_iter().permutations(size) {
-            let mut builder = Builder::new();
             let test_description = permutation.iter().map(|(x, _)| x).join("/");
+            println!("{}", test_description);
+
+            let mut builder = Builder::new();
 
             for (keyword, terminal) in permutation.into_iter() {
                 builder.add(keyword, terminal)
@@ -497,11 +533,11 @@ mod test {
 
             let mut iter = trie.iter("a");
 
-            assert_eq!(iter.next(), Some(&vec![1]), "failed on permutation {}", test_description);
-            assert_eq!(iter.next(), Some(&vec![2]), "failed on permutation {}", test_description);
-            assert_eq!(iter.next(), Some(&vec![3]), "failed on permutation {}", test_description);
-            assert_eq!(iter.next(), Some(&vec![4]), "failed on permutation {}", test_description);
-            assert_eq!(iter.next(), None, "failed on permutation {}", test_description);
+            assert_eq!(iter.next(), Some(&vec![1]));
+            assert_eq!(iter.next(), Some(&vec![2]));
+            assert_eq!(iter.next(), Some(&vec![3]));
+            assert_eq!(iter.next(), Some(&vec![4]));
+            assert_eq!(iter.next(), None);
         }
     }
 
@@ -523,34 +559,53 @@ mod test {
         Ok(())
     }
 
-    // #[rstest]
-    // #[case("r")]
-    // #[case("re")]
-    // #[case("rem")]
-    // #[case("remo")]
-    // #[case("remov")]
-    // #[case("remove")]
-    // #[case("a")]
-    // #[case("ac")]
-    // #[case("acc")]
-    // #[case("acce")]
-    // #[case("accen")]
-    // #[case("accent")]
-    // #[case("accents")]
-    // fn iterating_same_terminal(#[case] keyword: &str) -> Result<()> {
-    //     let mut builder = Builder::new();
-    //     builder.add("remove", 1);
-    //     builder.add("accents", 1);
-    //     builder.add("from",1);
-    //     builder.add("strings", 1);
-    //     let trie = builder.finalize();
+    #[test]
+    fn iterating_same_terminal_2() {
+        let mut builder = Builder::new();
+        builder.add("ab", 1);
+        builder.add("xy", 1);
+        let trie = builder.finalize();
 
-    //     let mut iter = trie.iter(keyword);
+        let mut iter = trie.iter("a");
 
-    //     assert_eq!(iter.next(), Some(&vec![1]));
-    //     assert_eq!(iter.next(), None);
-    //     Ok(())
-    // }
+        assert_eq!(iter.next(), Some(&vec![1]));
+        assert_eq!(iter.next(), None)
+    }
 
+    #[test]
+    fn iterating_same_terminal_3() -> Result<()> {
+        let mut builder = Builder::new();
+        builder.add("a", 1);
+        builder.add("f", 1);
+        builder.add("re", 1);
+        let trie = builder.finalize();
 
+        let mut iter = trie.iter("r");
+
+        assert_eq!(iter.next(), Some(&vec![1]));
+        assert_eq!(iter.next(), None);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case("r")]
+    #[case("re")]
+    #[case("rem")]
+    #[case("remo")]
+    #[case("remov")]
+    #[case("remove")]
+    fn iterating_same_terminal_4(#[case] keyword: &str) -> Result<()> {
+        let mut builder = Builder::new();
+        builder.add("remove", 1);
+        builder.add("accents", 1);
+        builder.add("from", 1);
+        builder.add("strings", 1);
+        let trie = builder.finalize();
+
+        let mut iter = trie.iter(keyword);
+
+        assert_eq!(iter.next(), Some(&vec![1]));
+        assert_eq!(iter.next(), None);
+        Ok(())
+    }
 }
