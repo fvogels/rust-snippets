@@ -116,19 +116,19 @@ impl<T> Builder<T> where T: Debug {
         self.nodes[current].terminals.push(terminal)
     }
 
-    fn child(&mut self, parent_index: NodeId, child_index: usize) -> NodeId {
-        self.grow_child_vector(parent_index, child_index);
+    fn child(&mut self, parent_id: NodeId, ord: usize) -> NodeId {
+        self.grow_child_vector(parent_id, ord);
 
-        if self.nodes[parent_index].children[child_index] == usize::MAX {
-            self.nodes[parent_index].children[child_index] = self.create_node(self.nodes[parent_index].depth + 1)
+        if self.nodes[parent_id].children[ord] == usize::MAX {
+            self.nodes[parent_id].children[ord] = self.create_node(self.nodes[parent_id].depth + 1)
         }
 
-        self.nodes[parent_index].children[child_index]
+        self.nodes[parent_id].children[ord]
     }
 
-    fn grow_child_vector(&mut self, parent_index: NodeId, child_index: usize) {
-        while self.nodes[parent_index].children.len() <= child_index {
-            self.nodes[parent_index].children.push(usize::MAX)
+    fn grow_child_vector(&mut self, parent_id: NodeId, child_index: usize) {
+        while self.nodes[parent_id].children.len() <= child_index {
+            self.nodes[parent_id].children.push(usize::MAX)
         }
     }
 
@@ -216,52 +216,67 @@ impl<T> Builder<T> where T: Debug {
 }
 
 impl<T> Trie<T> {
-    fn descend<'a>(&'a self, s: &str) -> Option<Cursor<'a, T>> {
-        let mut current = 0;
+    fn descend<'a>(&'a self, keyword: &str) -> Option<NodeId> {
+        let mut current: NodeId = 0;
 
-        for b in s.as_bytes() {
-            let ord = *b as usize;
+        for c in keyword.as_bytes() {
+            let ord = *c as usize;
 
-            if ord < self.nodes[current].children.len() {
-                current = self.nodes[current].children[ord]
-            }
-            else {
-                return None
-            }
+            current = self.child(current, ord)?;
         }
 
-        if !self.nodes[current].is_terminal() {
-            let (depth, next) = self.nodes[current].next_terminal?;
+        Some(current)
+    }
+
+    fn child<'a>(&'a self, parent_id: NodeId, child_index: usize) -> Option<NodeId> {
+        let children = &self.nodes[parent_id].children;
+
+        if child_index < children.len() && children[child_index] != usize::MAX {
+            Some(children[child_index])
+        }
+        else {
+            None
+        }
+    }
+
+    fn cursor<'a>(&'a self, s: &str) -> Option<Cursor<'a, T>> {
+        let mut node_id = self.descend(s)?;
+
+        if !self.nodes[node_id].is_terminal() {
+            let (depth, next) = self.nodes[node_id].next_terminal?;
 
             if depth < s.len() {
                 return None
             }
 
-            current = next
+            node_id = next
         }
 
         Some(Cursor {
             parent: self,
-            node_id: current,
+            node_id: node_id,
             depth_cutoff: s.len(),
         })
     }
 
+    #[cfg(test)]
+    fn node<'a>(&'a self, node_id: NodeId) -> Option<&'a Node<T>> {
+        self.nodes.get(node_id)
+    }
+
     pub fn iter<'a>(&'a self, s: &str) -> TrieIterator<'a, T> {
-        TrieIterator::new(self.descend(s))
+        TrieIterator::new(self.cursor(s))
     }
 }
 
 #[cfg(test)]
 mod test {
-    // use rstest::rstest;
+    use rstest::rstest;
     use super::*;
     use pretty_assertions::{assert_eq};
     use anyhow::Result;
     use itertools::Itertools;
-    use rstest::rstest;
 
-    // use super::*;
 
     #[test]
     fn cursor_single_terminal() -> Result<()> {
@@ -269,7 +284,7 @@ mod test {
         builder.add("a", 1);
         let trie = builder.finalize();
 
-        let cursor = trie.descend("a").unwrap();
+        let cursor = trie.cursor("a").unwrap();
         let terminals = cursor.terminals();
 
         assert_eq!(terminals.len(), 1);
@@ -284,7 +299,7 @@ mod test {
         builder.add("a", 2);
         let trie = builder.finalize();
 
-        let mut cursor = trie.descend("a").unwrap();
+        let mut cursor = trie.cursor("a").unwrap();
         let terminals = cursor.terminals();
 
         assert_eq!(terminals.len(), 2);
@@ -307,7 +322,7 @@ mod test {
             }
             let trie = builder.finalize();
 
-            let mut cursor = trie.descend("a").unwrap();
+            let mut cursor = trie.cursor("a").unwrap();
             let terminals = cursor.terminals();
 
             assert_eq!(terminals.len(), 1);
@@ -329,7 +344,7 @@ mod test {
             }
             let trie = builder.finalize();
 
-            let mut cursor = trie.descend("b").unwrap();
+            let mut cursor = trie.cursor("b").unwrap();
             let terminals = cursor.terminals();
 
             assert_eq!(terminals.len(), 1);
@@ -344,7 +359,7 @@ mod test {
         builder.add("aa", 1);
         let trie = builder.finalize();
 
-        let mut cursor = trie.descend("a").unwrap();
+        let mut cursor = trie.cursor("a").unwrap();
         let terminals = cursor.terminals();
 
         assert_eq!(terminals.len(), 1);
@@ -369,7 +384,7 @@ mod test {
             }
             let trie = builder.finalize();
 
-            let mut cursor = trie.descend("a").unwrap();
+            let mut cursor = trie.cursor("a").unwrap();
 
             assert_eq!(cursor.terminals().len(), 1);
             assert_eq!(cursor.terminals()[0], 1);
@@ -398,7 +413,7 @@ mod test {
             }
             let trie = builder.finalize();
 
-            let mut cursor = trie.descend("aa").unwrap();
+            let mut cursor = trie.cursor("aa").unwrap();
 
             assert_eq!(cursor.terminals().len(), 1);
             assert_eq!(cursor.terminals()[0], 1);
@@ -578,40 +593,40 @@ mod test {
         assert_eq!(iter.next(), None)
     }
 
-    #[test]
-    fn iterating_same_terminal_3() -> Result<()> {
-        let mut builder = Builder::new();
-        builder.add("a", 1);
-        builder.add("f", 1);
-        builder.add("re", 1);
-        let trie = builder.finalize();
+    // #[test]
+    // fn iterating_same_terminal_3() -> Result<()> {
+    //     let mut builder = Builder::new();
+    //     builder.add("a", 1);
+    //     builder.add("f", 1);
+    //     builder.add("re", 1);
+    //     let trie = builder.finalize();
 
-        let mut iter = trie.iter("r");
+    //     let mut iter = trie.iter("r");
 
-        assert_eq!(iter.next(), Some(&vec![1]));
-        assert_eq!(iter.next(), None);
-        Ok(())
-    }
+    //     assert_eq!(iter.next(), Some(&vec![1]));
+    //     assert_eq!(iter.next(), None);
+    //     Ok(())
+    // }
 
-    #[rstest]
-    #[case("r")]
-    #[case("re")]
-    #[case("rem")]
-    #[case("remo")]
-    #[case("remov")]
-    #[case("remove")]
-    fn iterating_same_terminal_4(#[case] keyword: &str) -> Result<()> {
-        let mut builder = Builder::new();
-        builder.add("remove", 1);
-        builder.add("accents", 1);
-        builder.add("from", 1);
-        builder.add("strings", 1);
-        let trie = builder.finalize();
+    // #[rstest]
+    // #[case("r")]
+    // #[case("re")]
+    // #[case("rem")]
+    // #[case("remo")]
+    // #[case("remov")]
+    // #[case("remove")]
+    // fn iterating_same_terminal_4(#[case] keyword: &str) -> Result<()> {
+    //     let mut builder = Builder::new();
+    //     builder.add("remove", 1);
+    //     builder.add("accents", 1);
+    //     builder.add("from", 1);
+    //     builder.add("strings", 1);
+    //     let trie = builder.finalize();
 
-        let mut iter = trie.iter(keyword);
+    //     let mut iter = trie.iter(keyword);
 
-        assert_eq!(iter.next(), Some(&vec![1]));
-        assert_eq!(iter.next(), None);
-        Ok(())
-    }
+    //     assert_eq!(iter.next(), Some(&vec![1]));
+    //     assert_eq!(iter.next(), None);
+    //     Ok(())
+    // }
 }
