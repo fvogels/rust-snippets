@@ -313,6 +313,73 @@ mod test {
     }
 
     #[test]
+    fn linking_a() {
+        let mut builder = Builder::new();
+        builder.add("a", 1);
+        let tree = builder.finalize();
+
+        let root = tree.descend_to_node("").unwrap();
+        let node_id_a = tree.descend("a").unwrap();
+        let node_a = tree.node(node_id_a).unwrap();
+
+        assert_eq!(root.next_terminal, Some((1, node_id_a)));
+        assert_eq!(node_a.next_terminal, None)
+    }
+
+    #[test]
+    fn linking_aa() {
+        let mut builder = Builder::new();
+        builder.add("aa", 1);
+        let tree = builder.finalize();
+
+        let root = tree.descend_to_node("").unwrap();
+        let node_id_aa = tree.descend("aa").unwrap();
+        let node_aa = tree.node(node_id_aa).unwrap();
+
+        assert_eq!(root.next_terminal, Some((2, node_id_aa)));
+        assert_eq!(node_aa.next_terminal, None)
+    }
+
+    #[test]
+    fn linking_a_b() {
+        let mut builder = Builder::new();
+        builder.add("a", 1);
+        builder.add("b", 2);
+        let tree = builder.finalize();
+
+        let root = tree.descend_to_node("").unwrap();
+        let node_id_a = tree.descend("a").unwrap();
+        let node_id_b = tree.descend("b").unwrap();
+        let node_a = tree.node(node_id_a).unwrap();
+        let node_b = tree.node(node_id_b).unwrap();
+
+        assert_eq!(root.next_terminal, Some((1, node_id_a)));
+        assert_eq!(node_a.next_terminal, Some((0, node_id_b)));
+        assert_eq!(node_b.next_terminal, None);
+    }
+
+    #[test]
+    fn linking_a_bb() {
+        let mut builder = Builder::new();
+        builder.add("a", 1);
+        builder.add("bb", 2);
+        let tree = builder.finalize();
+
+        let root = tree.descend_to_node("").unwrap();
+        let node_id_a = tree.descend("a").unwrap();
+        let node_id_b = tree.descend("b").unwrap();
+        let node_id_bb = tree.descend("bb").unwrap();
+        let node_a = tree.node(node_id_a).unwrap();
+        let node_b = tree.node(node_id_b).unwrap();
+        let node_bb = tree.node(node_id_bb).unwrap();
+
+        assert_eq!(root.next_terminal, Some((1, node_id_a)));
+        assert_eq!(node_a.next_terminal, Some((0, node_id_bb)));
+        assert_eq!(node_b.next_terminal, Some((1, node_id_bb)));
+        assert_eq!(node_bb.next_terminal, None);
+    }
+
+    #[test]
     fn cursor_single_terminal() {
         let mut builder = Builder::new();
         builder.add("a", 1);
