@@ -15,7 +15,8 @@ pub fn euler_traversal<'a, T, F>(tree: &'a T, callback: &mut F) where T: Tree, F
 fn euler_traversal_helper<'a, T, F>(tree: &'a T, current: &'a T::Node, callback: &mut F) where T: Tree, F: FnMut(&'a T::Node) {
     callback(current);
 
-    for child in tree.children(current) {
+    let children = tree.children(current);
+    for child in children {
         euler_traversal_helper(tree,child, callback);
         callback(current)
     }
@@ -55,7 +56,7 @@ mod test {
     }
 
     #[test]
-    fn only_root() {
+    fn euler_only_root() {
         let tree = TestTree::new();
 
         let mut nodes = Vec::new();
@@ -65,7 +66,7 @@ mod test {
     }
 
     #[test]
-    fn tree_a() {
+    fn euler_a() {
         let mut tree = TestTree::new();
         tree.link(0, vec![1]);
 
@@ -76,7 +77,7 @@ mod test {
     }
 
     #[test]
-    fn tree_aa() {
+    fn euler_aa() {
         let mut tree = TestTree::new();
         tree.link(0, vec![1]);
         tree.link(1, vec![2]);
@@ -88,7 +89,7 @@ mod test {
     }
 
     #[test]
-    fn tree_a_b() {
+    fn euler_a_b() {
         let mut tree = TestTree::new();
         tree.link(0, vec![1, 2]);
 
@@ -99,7 +100,7 @@ mod test {
     }
 
     #[test]
-    fn tree_aa_ab_ba_bb() {
+    fn euler_aa_ab_ba_bb() {
         let mut tree = TestTree::new();
         tree.link(0, vec![1, 2]);
         tree.link(1, vec![3, 4]);
