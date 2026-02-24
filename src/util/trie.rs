@@ -216,10 +216,10 @@ impl<T> Builder<T> where T: Debug {
 }
 
 impl<T> Trie<T> {
-    fn descend<'a>(&'a self, keyword: &str) -> Option<NodeId> {
+    fn descend<'a>(&'a self, key: &str) -> Option<NodeId> {
         let mut current: NodeId = 0;
 
-        for c in keyword.as_bytes() {
+        for c in key.as_bytes() {
             let ord = *c as usize;
 
             current = self.child(current, ord)?;
@@ -264,6 +264,12 @@ impl<T> Trie<T> {
         self.nodes.get(node_id)
     }
 
+    #[cfg(test)]
+    fn descend_to_node<'a>(&'a self, key: &str) -> Option<&'a Node<T>> {
+        let node_id = self.descend(key)?;
+        self.node(node_id)
+    }
+
     pub fn iter<'a>(&'a self, s: &str) -> TrieIterator<'a, T> {
         TrieIterator::new(self.cursor(s))
     }
@@ -279,7 +285,35 @@ mod test {
 
 
     #[test]
-    fn cursor_single_terminal() -> Result<()> {
+    fn is_terminal_a() {
+        let mut builder = Builder::new();
+        builder.add("a", 1);
+        let tree = builder.finalize();
+
+        let root = tree.descend_to_node("").unwrap();
+        let child_a = tree.descend_to_node("a").unwrap();
+
+        assert!(!root.is_terminal());
+        assert!(child_a.is_terminal());
+    }
+
+    #[test]
+    fn is_terminal_aa() {
+        let mut builder = Builder::new();
+        builder.add("aa", 1);
+        let tree = builder.finalize();
+
+        let root = tree.descend_to_node("").unwrap();
+        let child_a = tree.descend_to_node("a").unwrap();
+        let child_aa = tree.descend_to_node("aa").unwrap();
+
+        assert!(!root.is_terminal());
+        assert!(!child_a.is_terminal());
+        assert!(child_aa.is_terminal());
+    }
+
+    #[test]
+    fn cursor_single_terminal() {
         let mut builder = Builder::new();
         builder.add("a", 1);
         let trie = builder.finalize();
@@ -288,12 +322,11 @@ mod test {
         let terminals = cursor.terminals();
 
         assert_eq!(terminals.len(), 1);
-        assert_eq!(terminals[0], 1);
-        Ok(())
+        assert_eq!(terminals[0], 1)
     }
 
     #[test]
-    fn cursor_two_terminals_in_same_node() -> Result<()> {
+    fn cursor_two_terminals_in_same_node(){
         let mut builder = Builder::new();
         builder.add("a", 1);
         builder.add("a", 2);
@@ -305,8 +338,7 @@ mod test {
         assert_eq!(terminals.len(), 2);
         assert_eq!(terminals[0], 1);
         assert_eq!(terminals[1], 2);
-        assert!(!cursor.next());
-        Ok(())
+        assert!(!cursor.next())
     }
 
     #[test]
