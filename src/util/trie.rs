@@ -106,24 +106,30 @@ impl<T> Builder<T> where T: Debug {
 
     pub fn add(&mut self, keyword: &str, terminal: T) {
         let mut current: NodeId = 0;
-        let mut depth = 1;
 
         for b in keyword.bytes() {
             let ord = b as usize;
-            while self.nodes[current].children.len() <= ord {
-                self.nodes[current].children.push(usize::MAX)
-            }
 
-            if self.nodes[current].children[ord] == usize::MAX {
-                self.nodes[current].children[ord] = self.create_node(depth)
-            }
-
-            current = self.nodes[current].children[ord];
-            depth += 1
+            current = self.child(current, ord);
         }
 
-        // println!("Node {} gets terminal {:?}", current, terminal);
         self.nodes[current].terminals.push(terminal)
+    }
+
+    fn child(&mut self, parent_index: NodeId, child_index: usize) -> NodeId {
+        self.grow_child_vector(parent_index, child_index);
+
+        if self.nodes[parent_index].children[child_index] == usize::MAX {
+            self.nodes[parent_index].children[child_index] = self.create_node(self.nodes[parent_index].depth + 1)
+        }
+
+        self.nodes[parent_index].children[child_index]
+    }
+
+    fn grow_child_vector(&mut self, parent_index: NodeId, child_index: usize) {
+        while self.nodes[parent_index].children.len() <= child_index {
+            self.nodes[parent_index].children.push(usize::MAX)
+        }
     }
 
     fn create_node(&mut self, depth: usize) -> NodeId {
@@ -150,7 +156,7 @@ impl<T> Builder<T> where T: Debug {
 
                     for j in self.nodes[next].children.iter().copied().rev() {
                         if j != usize::MAX {
-                            queue.push(( j))
+                            queue.push(j)
                         }
                     }
                 },
