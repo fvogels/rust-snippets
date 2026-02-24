@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::snippets::Library;
+use crate::{snippets::Library, ui::start_ui};
 
 
 #[derive(Parser, Debug)]
@@ -15,12 +15,14 @@ enum Commands {
     Search {
         keywords: Vec<String>,
     },
+    UI,
 }
 
 impl Commands {
     fn handle(&self) {
         match self {
-            Self::Search { keywords } => search(keywords)
+            Self::Search { keywords } => search(keywords),
+            Self::UI => start_ui(),
         }
     }
 }
