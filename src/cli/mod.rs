@@ -32,7 +32,7 @@ pub fn start() {
 }
 
 fn search<'a>(keywords: &Vec<String>) {
-    let library = Library::load(&"../data").unwrap();
+    let library = Library::load(&"../data/snippets").unwrap();
     let snippets = library.search(keywords.iter().map(std::ops::Deref::deref));
 
     snippets.iter().copied().for_each(|snippet|
