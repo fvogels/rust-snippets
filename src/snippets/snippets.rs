@@ -95,7 +95,7 @@ where P: AsRef<Path>
         parts: segment_iterator.map(|segment| {
             Part{
                 caption: segment.caption,
-                lines: segment.lines,
+                lines: segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect(),
             }
         }).collect(),
     };
@@ -116,4 +116,8 @@ pub fn load_snippets<P>(root: &P) -> Result<Vec<Snippet>, SnippetError>
 where P: AsRef<Path>
 {
     discover_files(root)?.into_iter().map(|path| load_snippet_file(&path)).collect()
+}
+
+fn convert_tabs_to_spaces(s: &str) -> String {
+    s.replace("\t", "    ")
 }
