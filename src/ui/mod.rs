@@ -2,9 +2,11 @@ mod state;
 
 use state::State;
 
-use std::io;
+use std::{io, path::PathBuf};
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event};
+
+use crate::snippets::Library;
 
 pub fn start_ui() {
     match ratatui::run(|terminal| Application::new().run(terminal)) {
@@ -23,8 +25,11 @@ struct Application {
 
 impl Application {
     fn new() -> Self {
+        let path = PathBuf::from("../data/snippets");
+        let library = Library::load(&path).unwrap();
+
         Application{
-            state: State::new(),
+            state: State::new(library),
         }
     }
 

@@ -1,14 +1,18 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::Rect, widgets::{List, ListItem, ListState, StatefulWidget, Widget}};
 
+use crate::snippets::Library;
+
 
 pub struct State {
     mode: Box<dyn Mode>,
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(library: Library) -> Self {
+        let boxed_library = Box::new(library);
+
         State{
-            mode: Box::new(ViewMode::new()),
+            mode: Box::new(ViewMode::new(boxed_library)),
         }
     }
 
@@ -33,16 +37,16 @@ trait Mode {
 
 struct ViewMode {
     exit: bool,
-    description_list: Vec<String>,
+    library: Box<Library>,
     description_list_state: ListState,
 }
 
 impl ViewMode {
-    fn new() -> Self {
+    fn new(library: Box<Library>) -> Self {
         ViewMode {
             exit: false,
-            description_list: vec!["a", "b", "c", "d"].into_iter().map(|x| x.to_owned()).collect(),
-            description_list_state: ListState::default().with_selected(Some(0))
+            description_list_state: ListState::default().with_selected(Some(0)),
+            library: library,
         }
     }
 
@@ -81,8 +85,8 @@ impl Mode for ViewMode {
 
 impl Widget for &mut ViewMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let items = self.description_list.iter().map(|item| ListItem::from(item.as_str())).collect::<Vec<_>>();
-        let list = List::new(items).highlight_spacing(ratatui::widgets::HighlightSpacing::Always).highlight_symbol(">");
+        let descriptions = self.library.snippets().iter().map(|item| ListItem::new(item.description.as_str()) );
+        let list = List::new(descriptions).highlight_spacing(ratatui::widgets::HighlightSpacing::Always).highlight_symbol(">");
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
