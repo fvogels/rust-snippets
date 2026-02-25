@@ -1,4 +1,4 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Modifier, Style, palette::tailwind::SLATE}, widgets::{List, ListItem, ListState, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Modifier, Style, palette::tailwind::SLATE}, text::Line, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
 
 use crate::{snippets::Library, ui::state::Mode};
 
@@ -56,7 +56,8 @@ impl Widget for &mut ViewMode {
 
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen).add_modifier(Modifier::BOLD);
         let descriptions = self.library.snippets().iter().map(|item| ListItem::new(item.description.as_str()) );
-        let list = List::new(descriptions).highlight_style(highlight_style);
+        let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
+        let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
         StatefulWidget::render(list, snippet_list_area, buffer, &mut self.description_list_state);
     }
