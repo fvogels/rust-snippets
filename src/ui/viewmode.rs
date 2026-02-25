@@ -1,5 +1,4 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Modifier, Style, palette::tailwind::SLATE}, text::Line, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-
 use crate::{snippets::Library, ui::state::Mode};
 
 pub(super) struct ViewMode {
@@ -43,7 +42,7 @@ impl ViewMode {
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
 
-    fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
+    fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         match self.description_list_state.selected() {
             None => {},
             Some(selected_snippet_index) => {
@@ -78,6 +77,6 @@ impl Widget for &mut ViewMode {
         let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(area);
 
         self.render_snippet_list(snippet_list_area, buffer);
-        self.render_snippet(snippet_area, buffer);
+        self.render_selected_snippet(snippet_area, buffer);
     }
 }
