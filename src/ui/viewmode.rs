@@ -31,6 +31,15 @@ impl ViewMode {
             _ => { }
         }
     }
+
+    fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen).add_modifier(Modifier::BOLD);
+        let descriptions = self.library.snippets().iter().map(|item| ListItem::new(item.description.as_str()) );
+        let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
+        let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
+
+        StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
+    }
 }
 
 impl Mode for ViewMode {
@@ -54,11 +63,6 @@ impl Widget for &mut ViewMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         let [snippet_list_area, selected_snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(area);
 
-        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen).add_modifier(Modifier::BOLD);
-        let descriptions = self.library.snippets().iter().map(|item| ListItem::new(item.description.as_str()) );
-        let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
-        let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
-
-        StatefulWidget::render(list, snippet_list_area, buffer, &mut self.description_list_state);
+        self.render_snippet_list(snippet_list_area, buffer);
     }
 }
