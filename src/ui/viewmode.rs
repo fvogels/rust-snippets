@@ -53,7 +53,6 @@ impl Mode for ViewMode {
 impl Widget for &mut ViewMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen).add_modifier(Modifier::BOLD);
-
         let descriptions = self.library.snippets().iter().map(|item| ListItem::new(item.description.as_str()) );
         let list = List::new(descriptions).highlight_style(highlight_style);
 
