@@ -10,7 +10,9 @@ pub struct Library {
 impl Library {
     pub fn load<P>(root: &P) -> Result<Library, SnippetError>
     where P: AsRef<Path> {
-        let snippets = load_snippets(root)?;
+        let mut snippets = load_snippets(root)?;
+        snippets.sort_by(|x, y| x.description.cmp(&y.description));
+
         let mut trie_builder = trie::Builder::new();
 
         for snippet_index in 0..snippets.len() {
@@ -53,5 +55,9 @@ impl Library {
         });
 
         result
+    }
+
+    pub fn snippets<'a>(&'a self) -> &'a Vec<Snippet> {
+        &self.snippets
     }
 }
