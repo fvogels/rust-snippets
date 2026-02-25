@@ -1,4 +1,4 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::Rect, widgets::{List, ListItem, ListState, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::Rect, style::{Modifier, Style, palette::tailwind::SLATE}, widgets::{List, ListItem, ListState, StatefulWidget, Widget}};
 
 use crate::{snippets::Library, ui::state::Mode};
 
@@ -52,8 +52,10 @@ impl Mode for ViewMode {
 
 impl Widget for &mut ViewMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen).add_modifier(Modifier::BOLD);
+
         let descriptions = self.library.snippets().iter().map(|item| ListItem::new(item.description.as_str()) );
-        let list = List::new(descriptions).highlight_spacing(ratatui::widgets::HighlightSpacing::Always).highlight_symbol(">");
+        let list = List::new(descriptions).highlight_style(highlight_style);
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
