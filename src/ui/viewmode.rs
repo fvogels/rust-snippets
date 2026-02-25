@@ -1,10 +1,11 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Modifier, Style, palette::tailwind::SLATE}, text::Line, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Modifier, Style, palette::tailwind::SLATE}, text::Line, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
 
 use crate::{snippets::Library, ui::state::Mode};
 
 pub(super) struct ViewMode {
     exit: bool,
     library: Box<Library>,
+    snippet_list: Vec<usize>,
     description_list_state: ListState,
 }
 
@@ -12,8 +13,9 @@ impl ViewMode {
     pub(super) fn new(library: Box<Library>) -> Self {
         ViewMode {
             exit: false,
-            description_list_state: ListState::default().with_selected(Some(0)),
+            snippet_list: library.snippet_indices().collect(),
             library: library,
+            description_list_state: ListState::default().with_selected(Some(0)),
         }
     }
 
@@ -34,11 +36,23 @@ impl ViewMode {
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen).add_modifier(Modifier::BOLD);
-        let descriptions = self.library.snippets().iter().map(|item| ListItem::new(item.description.as_str()) );
+        let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
         let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
+    }
+
+    fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
+        match self.description_list_state.selected() {
+            None => {},
+            Some(selected_snippet_index) => {
+                let snippet = self.library.snippet(selected_snippet_index);
+                let lines: Vec<_> = snippet.parts[0].lines.iter().map(|line| Line::raw(line)).collect();
+
+                Paragraph::new(lines).render(area, buffer)
+            }
+        }
     }
 }
 
@@ -61,8 +75,9 @@ impl Mode for ViewMode {
 
 impl Widget for &mut ViewMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let [snippet_list_area, selected_snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(area);
+        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(area);
 
         self.render_snippet_list(snippet_list_area, buffer);
+        self.render_snippet(snippet_area, buffer);
     }
 }

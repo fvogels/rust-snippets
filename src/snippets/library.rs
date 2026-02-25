@@ -57,7 +57,11 @@ impl Library {
         result
     }
 
-    pub fn snippets<'a>(&'a self) -> &'a Vec<Snippet> {
-        &self.snippets
+    pub fn snippet_indices(&self) -> impl Iterator<Item=usize> {
+        0..self.snippets.len()
+    }
+
+    pub fn snippet<'a>(&'a self, index: usize) -> &'a Snippet {
+        &self.snippets[index]
     }
 }
