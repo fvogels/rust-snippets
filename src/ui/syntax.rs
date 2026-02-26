@@ -29,9 +29,8 @@ impl SyntaxHighlighter {
             highlighter.highlight_line(line, &self.syntax_set)
                        .unwrap()
                        .into_iter()
-                       .map(|segment: (syntect::highlighting::Style, &str)| {
-                            convert_to_span(segment.0, segment.1)
-                        }).collect::<Vec<_>>();
+                       .map(|segment| convert_to_span(segment.0, segment.1))
+                       .collect::<Vec<_>>();
 
         Line::from(spans)
     }
