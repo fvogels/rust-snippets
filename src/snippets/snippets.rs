@@ -8,8 +8,7 @@ use serde::{Deserialize};
 
 
 #[derive(Debug, Error)]
-pub enum SnippetError
-{
+pub enum SnippetError {
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
 
@@ -24,24 +23,21 @@ pub enum SnippetError
 }
 
 #[derive(Debug, Deserialize)]
-struct Metadata
-{
+struct Metadata {
     description: String,
     language: String,
     tags: Vec<String>,
 }
 
 #[derive(Debug)]
-pub struct Snippet
-{
+pub struct Snippet {
     pub description: String,
     pub language: String,
     pub parts: Vec<Part>,
 }
 
 #[derive(Debug)]
-pub struct Part
-{
+pub struct Part {
     pub caption: Option<String>,
     pub lines: Vec<String>,
 }
@@ -59,8 +55,7 @@ impl Snippet {
 }
 
 pub fn discover_files<P>(root: &P) -> Result<Vec<PathBuf>, SnippetError>
-where P: AsRef<Path>
-{
+where P: AsRef<Path> {
     let result = WalkDir::new(root)
             .into_iter()
             .filter_map(|e| e.ok())
@@ -74,8 +69,7 @@ where P: AsRef<Path>
 }
 
 pub fn load_snippet_file<P>(file_path: &P) -> Result<Snippet, SnippetError>
-where P: AsRef<Path>
-{
+where P: AsRef<Path> {
     let segments = segment_file::load(file_path, |line| {
         line.strip_prefix("===").map(|x| x.trim())
     })?;
@@ -104,14 +98,11 @@ where P: AsRef<Path>
     Ok(snippet)
 }
 
-fn parse_metadata(source: &str) -> Result<Metadata, SnippetError>
-{
+fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
     serde_yaml::from_str(source).map_err(|e| SnippetError::MalformedMetadata(e))
 }
 
-pub fn load_snippets<P>(root: &P) -> Result<Vec<Snippet>, SnippetError>
-where P: AsRef<Path>
-{
+pub fn load_snippets<P>(root: &P) -> Result<Vec<Snippet>, SnippetError> where P: AsRef<Path> {
     discover_files(root)?.into_iter().map(|path| load_snippet_file(&path)).collect()
 }
 
