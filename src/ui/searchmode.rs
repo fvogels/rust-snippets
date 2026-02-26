@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::{Line, Text}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter}};
+use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter, viewmode::ViewMode}};
 
 
 pub(super) struct SearchMode {
@@ -8,14 +8,12 @@ pub(super) struct SearchMode {
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
     pub(super) selected_snippet_part: usize,
+    pub(super) input: String,
 }
 
 impl SearchMode {
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
-            KeyCode::Char('q') => {
-                Mode::Terminated
-            },
             KeyCode::Up => {
                 self.description_list_state.select_previous();
                 Mode::Search(self)
@@ -26,6 +24,19 @@ impl SearchMode {
             },
             KeyCode::Tab => {
                 self.selected_snippet_part += 1;
+                Mode::Search(self)
+            },
+            KeyCode::Esc => {
+                Mode::View(ViewMode{
+                    library: self.library,
+                    syntax_highlighter: self.syntax_highlighter,
+                    snippet_list: self.snippet_list,
+                    description_list_state: self.description_list_state,
+                    selected_snippet_part: self.selected_snippet_part,
+                })
+            },
+            KeyCode::Char(char) if char.is_ascii_alphabetic() => {
+                self.input.push(char);
                 Mode::Search(self)
             },
             _ => Mode::Search(self)
@@ -67,9 +78,11 @@ impl SearchMode {
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
-        // let line =  Line::raw("> ");
+        let mut contents = String::from("> ");
+        contents.push_str(&self.input);
+        // let line =  Line::raw;
         // let text = Text::from(line);
-        Paragraph::new("> ").render(area, buffer);
+        Paragraph::new(contents).render(area, buffer);
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
