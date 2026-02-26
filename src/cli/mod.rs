@@ -16,6 +16,7 @@ enum Commands {
         keywords: Vec<String>,
     },
     UI,
+    Languages,
 }
 
 impl Commands {
@@ -23,6 +24,7 @@ impl Commands {
         match self {
             Self::Search { keywords } => search(keywords),
             Self::UI => start_ui(),
+            Self::Languages => list_syntax_highlighting_languages(),
         }
     }
 }
@@ -40,4 +42,9 @@ fn search<'a>(keywords: &Vec<String>) {
     );
 
     println!("{} snippets found", snippets.len())
+}
+
+fn list_syntax_highlighting_languages() {
+    let syntax_set = syntect::parsing::SyntaxSet::load_defaults_newlines();
+    syntax_set.syntaxes().iter().for_each(|s| println!("{}", s.name));
 }
