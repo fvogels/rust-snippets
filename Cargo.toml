@@ -10,6 +10,7 @@ itertools = "0.14.0"
 ratatui = "0.30.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9.34"
+syntect = "5.3.0"
 thiserror = "2.0.18"
 walkdir = "2.5.0"
 
