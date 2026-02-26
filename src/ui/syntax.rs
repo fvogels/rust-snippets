@@ -1,5 +1,5 @@
 use ratatui::{text::{Line, Span}, widgets::Paragraph};
-use syntect::{easy::HighlightLines, highlighting::{Theme, ThemeSet}, parsing::SyntaxSet};
+use syntect::{easy::HighlightLines, highlighting::{FontStyle, Theme, ThemeSet}, parsing::SyntaxSet};
 
 
 pub struct SyntaxHighlighter {
@@ -10,7 +10,7 @@ pub struct SyntaxHighlighter {
 impl SyntaxHighlighter {
     pub fn new() -> Self {
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let theme = ThemeSet::load_defaults().themes["base16-ocean.dark"].clone();
+        let theme = ThemeSet::load_defaults().themes["base16-eighties.dark"].clone();
 
         SyntaxHighlighter { syntax_set, theme }
     }
@@ -48,7 +48,23 @@ fn translate_syntect_style(syntect_style: syntect::highlighting::Style) -> ratat
     let foreground = translate_syntect_color(syntect_style.foreground);
     let background = translate_syntect_color(syntect_style.background);
 
-    ratatui::style::Style::default().fg(foreground).bg(background)
+    let syntect_font_style = syntect_style.font_style;
+    let is_bold = !syntect_font_style.intersection(FontStyle::BOLD).is_empty();
+    let is_italic = !syntect_font_style.intersection(FontStyle::ITALIC).is_empty();
+    let is_underlined = !syntect_font_style.intersection(FontStyle::UNDERLINE).is_empty();
+
+    let mut result = ratatui::style::Style::default().fg(foreground).bg(background);
+    if is_bold {
+        result = result.bold()
+    }
+    if is_italic {
+        result = result.italic()
+    }
+    if is_underlined {
+        result = result.underlined()
+    }
+
+    result
 }
 
 fn translate_syntect_color(syntect_color: syntect::highlighting::Color) -> ratatui::style::Color {
