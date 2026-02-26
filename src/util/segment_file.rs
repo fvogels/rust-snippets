@@ -6,7 +6,7 @@ use std::io::{self, BufRead};
 #[derive(Debug)]
 pub struct Segment
 {
-    pub caption: String,
+    pub caption: Option<String>,
     pub lines: Vec<String>,
 }
 
@@ -16,7 +16,7 @@ where P: AsRef<Path>
     let file = File::open(file_path)?;
     let lines = io::BufReader::new(file).lines();
     let mut segments = Vec::new();
-    let mut current_segment = Segment{caption: String::from(""), lines: Vec::new()};
+    let mut current_segment = Segment{caption: None, lines: Vec::new()};
 
     for line in lines {
         match line {
@@ -25,7 +25,7 @@ where P: AsRef<Path>
                     Some(caption) => {
                         segments.push(current_segment);
                         current_segment = Segment{
-                            caption: String::from(caption),
+                            caption: if caption.len() > 0 { Some(String::from(caption)) } else { None },
                             lines: Vec::new(),
                         };
                     },

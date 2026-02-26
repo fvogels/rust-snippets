@@ -59,9 +59,15 @@ impl ViewMode {
                     self.selected_snippet_part = 0;
                 }
 
+                let snippet_part = &snippet.parts[self.selected_snippet_part];
+
+                let snippet_caption = match &snippet_part.caption {
+                    Some(caption) => format!(" {}/{} {} ", self.selected_snippet_part + 1, snippet.parts.len(), caption),
+                    None => format!(" {}/{} ", self.selected_snippet_part + 1, snippet.parts.len()),
+                };
+
                 let lines: Vec<&str> = snippet.parts[self.selected_snippet_part].lines.iter().map(|line| line.as_str()).collect();
-                let snippet_caption = Line::raw(format!(" {}/{} {} ", self.selected_snippet_part + 1, snippet.parts.len(), snippet.parts[self.selected_snippet_part].caption));
-                let snippet_caption_block = Block::new().title_bottom(snippet_caption).borders(Borders::ALL);
+                let snippet_caption_block = Block::new().title_bottom(Line::raw(snippet_caption)).borders(Borders::ALL);
                 let paragraph = self.syntax_highlighter.highlight_lines("Go", lines.into_iter()).unwrap().block(snippet_caption_block);
                 paragraph.render(area, buffer)
             }

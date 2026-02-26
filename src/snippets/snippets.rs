@@ -45,7 +45,7 @@ pub struct Snippet
 #[derive(Debug)]
 pub struct Part
 {
-    pub caption: String,
+    pub caption: Option<String>,
     pub lines: Vec<String>,
 }
 
