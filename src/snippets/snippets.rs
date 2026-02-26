@@ -37,6 +37,7 @@ pub struct Snippet {
     pub description: String,
     pub language: String,
     pub parts: Vec<Part>,
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -50,8 +51,8 @@ impl Snippet {
         let mut keywords = Vec::new();
 
         keywords.push(self.language.to_lowercase());
-        // TODO remove accents, better splitting
         self.description.split(" ").for_each(|s| keywords.push(s.to_lowercase()));
+        self.tags.iter().for_each(|tag| keywords.push(tag.to_lowercase()));
 
         keywords
     }
@@ -103,6 +104,7 @@ where P: AsRef<Path> {
         description: metadata.description,
         language: metadata.language,
         parts: parts?,
+        tags: metadata.tags,
     };
 
     if snippet.parts.len() == 0 {
