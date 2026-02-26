@@ -42,7 +42,7 @@ fn search<'a>(keywords: &Vec<String>) {
     let snippets = library.search(keywords.iter().map(std::ops::Deref::deref));
 
     snippets.iter().copied().for_each(|snippet|
-        println!("{}", snippet.description)
+        println!("{}", library.snippet(snippet).description)
     );
 
     println!("{} snippets found", snippets.len())

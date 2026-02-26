@@ -30,7 +30,7 @@ impl Library {
         Ok(library)
     }
 
-    pub fn search<'a, 'b>(&'a self, keywords: impl Iterator<Item=&'b str>) -> Vec<&'a Snippet> {
+    pub fn search<'a, 'b>(&'a self, keywords: impl Iterator<Item=&'b str>) -> Vec<usize> {
         let mut intersection = HashSet::new();
 
         for index in 0..self.snippets.len() {
@@ -42,8 +42,8 @@ impl Library {
             intersection.retain(|i| set.contains(i));
         }
 
-        let result: Vec<&'a Snippet> = intersection.iter().copied().map(|i| &self.snippets[i]).collect();
-        // TODO sort result
+        let mut result: Vec<usize> = intersection.iter().copied().collect();
+        result.sort();
         result
     }
 

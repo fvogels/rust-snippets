@@ -35,12 +35,20 @@ impl SearchMode {
                     selected_snippet_part: self.selected_snippet_part,
                 })
             },
-            KeyCode::Char(char) if char.is_ascii_alphabetic() => {
+            KeyCode::Char(char) if char.is_ascii_alphabetic() || char == ' ' => {
                 self.input.push(char);
+                self.filter_snippets();
                 Mode::Search(self)
             },
             _ => Mode::Search(self)
         }
+    }
+
+    fn filter_snippets(&mut self) {
+        let keywords = self.input.split(' ');
+        let filtered_snippets = self.library.search(keywords);
+
+        self.snippet_list = filtered_snippets;
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
