@@ -3,11 +3,11 @@ use crate::{snippets::Library, ui::{searchmode::SearchMode, state::Mode, syntax:
 
 
 pub(super) struct ViewMode {
-    library: Box<Library>,
-    syntax_highlighter: Box<SyntaxHighlighter>,
-    snippet_list: Vec<usize>,
-    description_list_state: ListState,
-    selected_snippet_part: usize,
+    pub(super) library: Box<Library>,
+    pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
+    pub(super) snippet_list: Vec<usize>,
+    pub(super) description_list_state: ListState,
+    pub(super) selected_snippet_part: usize,
 }
 
 impl ViewMode {
