@@ -35,6 +35,13 @@ impl SearchMode {
                     selected_snippet_part: self.selected_snippet_part,
                 })
             },
+            KeyCode::Backspace => {
+                if self.input.len() > 0 {
+                    self.input.truncate(self.input.len() - 1);
+                    self.filter_snippets();
+                }
+                Mode::Search(self)
+            },
             KeyCode::Char(char) if char.is_ascii_alphabetic() || char == ' ' => {
                 self.input.push(char);
                 self.filter_snippets();
