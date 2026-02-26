@@ -1,5 +1,4 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Modifier, Style, palette::tailwind::SLATE}, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use syntect::{easy::HighlightLines, highlighting::ThemeSet, parsing::SyntaxSet, util::LinesWithEndings};
 use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter}};
 
 pub(super) struct ViewMode {
@@ -37,7 +36,7 @@ impl ViewMode {
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen).add_modifier(Modifier::BOLD);
+        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
         let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
         let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
