@@ -27,6 +27,18 @@ impl SearchMode {
                 Mode::Search(self)
             },
             KeyCode::Esc => {
+                let selected_nodes = self.library.snippet_indices().collect();
+                self.description_list_state.select_first();
+
+                Mode::View(ViewMode{
+                    library: self.library,
+                    syntax_highlighter: self.syntax_highlighter,
+                    snippet_list: selected_nodes,
+                    description_list_state: self.description_list_state,
+                    selected_snippet_part: self.selected_snippet_part,
+                })
+            },
+            KeyCode::Enter => {
                 Mode::View(ViewMode{
                     library: self.library,
                     syntax_highlighter: self.syntax_highlighter,
@@ -43,7 +55,7 @@ impl SearchMode {
                 }
                 Mode::Search(self)
             },
-            KeyCode::Char(char) if char.is_ascii_alphabetic() || char == ' ' => {
+            KeyCode::Char(char) if valid_filter_character(char) => {
                 self.filter.push(char.to_ascii_lowercase());
                 self.filter_snippets();
                 self.ensure_snippet_selection();
@@ -131,4 +143,8 @@ impl Widget for &mut SearchMode {
         self.render_selected_snippet(snippet_area, buffer);
         self.render_input_field(input_area, buffer);
     }
+}
+
+fn valid_filter_character(c: char) -> bool {
+    c.is_ascii_graphic() || c == ' '
 }
