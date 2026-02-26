@@ -33,7 +33,7 @@ impl ViewMode {
                     snippet_list: self.snippet_list,
                     description_list_state: self.description_list_state,
                     selected_snippet_part: self.selected_snippet_part,
-                    input: String::new(),
+                    filter: String::new(),
                 })
             },
             KeyCode::Up => {

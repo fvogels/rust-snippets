@@ -8,7 +8,7 @@ pub(super) struct SearchMode {
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
     pub(super) selected_snippet_part: usize,
-    pub(super) input: String,
+    pub(super) filter: String,
 }
 
 impl SearchMode {
@@ -36,14 +36,14 @@ impl SearchMode {
                 })
             },
             KeyCode::Backspace => {
-                if self.input.len() > 0 {
-                    self.input.truncate(self.input.len() - 1);
+                if self.filter.len() > 0 {
+                    self.filter.truncate(self.filter.len() - 1);
                     self.filter_snippets();
                 }
                 Mode::Search(self)
             },
             KeyCode::Char(char) if char.is_ascii_alphabetic() || char == ' ' => {
-                self.input.push(char);
+                self.filter.push(char);
                 self.filter_snippets();
                 Mode::Search(self)
             },
@@ -52,7 +52,7 @@ impl SearchMode {
     }
 
     fn filter_snippets(&mut self) {
-        let keywords = self.input.split(' ');
+        let keywords = self.filter.split(' ');
         let filtered_snippets = self.library.search(keywords);
 
         self.snippet_list = filtered_snippets;
@@ -94,7 +94,7 @@ impl SearchMode {
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
         let mut contents = String::from("> ");
-        contents.push_str(&self.input);
+        contents.push_str(&self.filter);
         // let line =  Line::raw;
         // let text = Text::from(line);
         Paragraph::new(contents).render(area, buffer);
