@@ -2,7 +2,7 @@ use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, Ke
 use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter}};
 
 
-pub(super) struct ViewMode {
+pub(super) struct SearchMode {
     library: Box<Library>,
     syntax_highlighter: Box<SyntaxHighlighter>,
     snippet_list: Vec<usize>,
@@ -10,9 +10,9 @@ pub(super) struct ViewMode {
     selected_snippet_part: usize,
 }
 
-impl ViewMode {
+impl SearchMode {
     pub(super) fn new(library: Box<Library>, syntax_highlighter: Box<SyntaxHighlighter>) -> Self {
-        ViewMode {
+        SearchMode {
             snippet_list: library.snippet_indices().collect(),
             library: library,
             syntax_highlighter: syntax_highlighter,
@@ -28,17 +28,17 @@ impl ViewMode {
             },
             KeyCode::Up => {
                 self.description_list_state.select_previous();
-                Mode::View(self)
+                Mode::Search(self)
             },
             KeyCode::Down => {
                 self.description_list_state.select_next();
-                Mode::View(self)
+                Mode::Search(self)
             },
             KeyCode::Tab => {
                 self.selected_snippet_part += 1;
-                Mode::View(self)
+                Mode::Search(self)
             },
-            _ => Mode::View(self)
+            _ => Mode::Search(self)
         }
     }
 
@@ -82,15 +82,13 @@ impl ViewMode {
 
     pub fn handle_event(self, event: Event) -> Mode {
         match event {
-            Event::Key(key_event) if key_event.is_press() => {
-                self.handle_key_event(key_event)
-            },
-            _ => Mode::View(self),
+            Event::Key(key_event) if key_event.is_press() => self.handle_key_event(key_event),
+            _ => Mode::Search(self),
         }
     }
 }
 
-impl Widget for &mut ViewMode {
+impl Widget for &mut SearchMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(area);
 

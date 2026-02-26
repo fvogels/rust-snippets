@@ -1,5 +1,6 @@
 mod state;
 mod viewmode;
+mod searchmode;
 mod syntax;
 
 use state::State;
