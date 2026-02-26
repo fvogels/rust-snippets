@@ -61,7 +61,7 @@ impl ViewMode {
 
                 let snippet_part = &snippet.parts[self.selected_snippet_part];
 
-                let snippet_caption = match &snippet_part.caption {
+                let snippet_caption = match &snippet_part.attributes.get("caption") {
                     Some(caption) => format!(" {}/{} {} ", self.selected_snippet_part + 1, snippet.parts.len(), caption),
                     None => format!(" {}/{} ", self.selected_snippet_part + 1, snippet.parts.len()),
                 };

@@ -1,7 +1,7 @@
-use std::{path::{Path, PathBuf}};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use walkdir::WalkDir;
-use crate::util::segment_file;
+use crate::util::{attstring, segment_file};
 use thiserror::Error;
 use std::io;
 use serde::{Deserialize};
@@ -20,6 +20,9 @@ pub enum SnippetError {
 
     #[error("YAML error: {0}")]
     MalformedMetadata(#[from] serde_yaml::Error),
+
+    #[error("Attribute error: {0}")]
+    AttributeError(#[from] attstring::Error),
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,7 +41,7 @@ pub struct Snippet {
 
 #[derive(Debug)]
 pub struct Part {
-    pub caption: Option<String>,
+    pub attributes: HashMap<String, String>,
     pub lines: Vec<String>,
 }
 
@@ -80,15 +83,26 @@ where P: AsRef<Path> {
     let metadata_string = metadata_segment.lines.join("\n");
     let metadata = parse_metadata(&metadata_string)?;
 
+    let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
+            let attributes = match segment.caption {
+                Some(caption) => {
+                    attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError)
+                },
+                None => {
+                    Ok(HashMap::new())
+                }
+            }?;
+
+            let lines = segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect();
+            let part = Part{ attributes, lines };
+
+            Ok(part)
+        }).collect();
+
     let snippet = Snippet{
         description: metadata.description,
         language: metadata.language,
-        parts: segment_iterator.map(|segment| {
-            Part{
-                caption: segment.caption,
-                lines: segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect(),
-            }
-        }).collect(),
+        parts: parts?,
     };
 
     if snippet.parts.len() == 0 {

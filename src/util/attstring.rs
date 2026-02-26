@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem};
+use std::{collections::HashMap, fmt, mem};
 
 
 pub fn parse(s: &str) -> Result<HashMap<String, String>, Error> {
@@ -82,13 +82,26 @@ pub fn parse(s: &str) -> Result<HashMap<String, String>, Error> {
     Ok(result)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     UnexpectedEndOfString,
     InvalidKeyChar,
     InvalidValueChar,
     MissingValue,
 }
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::UnexpectedEndOfString => write!(f, "unexpected end of string"),
+            Error::InvalidKeyChar => write!(f, "invalid key character"),
+            Error::InvalidValueChar => write!(f, "invalid value character"),
+            Error::MissingValue => write!(f, "missing value"),
+        }
+    }
+}
+
+impl std::error::Error for Error { }
 
 enum State {
     Idle,
