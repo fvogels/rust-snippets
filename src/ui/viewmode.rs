@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter}};
+use crate::{snippets::Library, ui::{searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter}};
 
 
 pub(super) struct ViewMode {
@@ -25,6 +25,15 @@ impl ViewMode {
         match key_event.code {
             KeyCode::Char('q') => {
                 Mode::Terminated
+            },
+            KeyCode::Char('/') => {
+                Mode::Search(SearchMode{
+                    library: self.library,
+                    syntax_highlighter: self.syntax_highlighter,
+                    snippet_list: self.snippet_list,
+                    description_list_state: self.description_list_state,
+                    selected_snippet_part: self.selected_snippet_part,
+                })
             },
             KeyCode::Up => {
                 self.description_list_state.select_previous();

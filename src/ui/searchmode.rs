@@ -1,13 +1,13 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::{Line, Text}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
 use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter}};
 
 
 pub(super) struct SearchMode {
-    library: Box<Library>,
-    syntax_highlighter: Box<SyntaxHighlighter>,
-    snippet_list: Vec<usize>,
-    description_list_state: ListState,
-    selected_snippet_part: usize,
+    pub(super) library: Box<Library>,
+    pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
+    pub(super) snippet_list: Vec<usize>,
+    pub(super) description_list_state: ListState,
+    pub(super) selected_snippet_part: usize,
 }
 
 impl SearchMode {
@@ -76,6 +76,12 @@ impl SearchMode {
         }
     }
 
+    fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
+        // let line =  Line::raw("> ");
+        // let text = Text::from(line);
+        Paragraph::new("> ").render(area, buffer);
+    }
+
     pub fn draw(&mut self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
     }
@@ -90,9 +96,10 @@ impl SearchMode {
 
 impl Widget for &mut SearchMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(area);
+        let [snippet_list_area, snippet_area, input_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
 
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_selected_snippet(snippet_area, buffer);
+        self.render_input_field(input_area, buffer);
     }
 }
