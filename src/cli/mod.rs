@@ -16,6 +16,7 @@ enum Commands {
         keywords: Vec<String>,
     },
     UI,
+    #[command(about, long_about = Some("Supported languages for syntax highlighting"))]
     Languages,
 }
 
