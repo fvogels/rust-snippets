@@ -21,9 +21,6 @@ pub enum SnippetError
 
     #[error("YAML error: {0}")]
     MalformedMetadata(#[from] serde_yaml::Error),
-
-    #[error("Badly structured metadata in {0}: {1}")]
-    BadlyStructuredMetadata(PathBuf, String),
 }
 
 #[derive(Debug, Deserialize)]
