@@ -67,8 +67,6 @@ impl ViewMode {
             }
         }
     }
-
-
 }
 
 impl Mode for ViewMode {
