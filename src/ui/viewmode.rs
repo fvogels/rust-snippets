@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter}};
+use crate::{snippets::{Library, snippets::Snippet}, ui::{state::Mode, syntax::SyntaxHighlighter}};
 
 pub(super) struct ViewMode {
     exit: bool,
@@ -7,6 +7,7 @@ pub(super) struct ViewMode {
     syntax_highlighter: Box<SyntaxHighlighter>,
     snippet_list: Vec<usize>,
     description_list_state: ListState,
+    selected_snippet_part: usize,
 }
 
 impl ViewMode {
@@ -17,6 +18,7 @@ impl ViewMode {
             library: library,
             syntax_highlighter: syntax_highlighter,
             description_list_state: ListState::default().with_selected(Some(0)),
+            selected_snippet_part: 0,
         }
     }
 
@@ -30,6 +32,9 @@ impl ViewMode {
             },
             KeyCode::Down => {
                 self.description_list_state.select_next();
+            },
+            KeyCode::Tab => {
+                self.selected_snippet_part += 1;
             },
             _ => { }
         }
@@ -49,8 +54,15 @@ impl ViewMode {
             None => {},
             Some(selected_snippet_index) => {
                 let snippet = self.library.snippet(selected_snippet_index);
-                let lines: Vec<&str> = snippet.parts[0].lines.iter().map(|line| line.as_str()).collect(); //.iter().map(|line| Line::raw(line)).collect();
-                let paragraph = self.syntax_highlighter.highlight_lines("Go", lines.into_iter()).unwrap();
+
+                if self.selected_snippet_part >= snippet.parts.len() {
+                    self.selected_snippet_part = 0;
+                }
+
+                let lines: Vec<&str> = snippet.parts[self.selected_snippet_part].lines.iter().map(|line| line.as_str()).collect();
+                let snippet_caption = Line::raw(format!(" {}/{} {} ", self.selected_snippet_part + 1, snippet.parts.len(), snippet.parts[self.selected_snippet_part].caption));
+                let snippet_caption_block = Block::new().title_bottom(snippet_caption).borders(Borders::ALL);
+                let paragraph = self.syntax_highlighter.highlight_lines("Go", lines.into_iter()).unwrap().block(snippet_caption_block);
                 paragraph.render(area, buffer)
             }
         }
