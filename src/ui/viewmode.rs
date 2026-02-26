@@ -53,12 +53,6 @@ impl ViewMode {
                 let lines: Vec<&str> = snippet.parts[0].lines.iter().map(|line| line.as_str()).collect(); //.iter().map(|line| Line::raw(line)).collect();
                 let paragraph = self.syntax_highlighter.highlight_lines("Go", lines.into_iter()).unwrap();
                 paragraph.render(area, buffer)
-
-                // let snippet = self.library.snippet(selected_snippet_index);
-                // let lines: Vec<_> = snippet.parts[0].lines.iter().map(|line| Line::raw(line)).collect::<Vec<_>>();
-                // let block = Block::new().borders(Borders::ALL);
-                // let paragraph = Paragraph::new(lines).block(block);
-                // paragraph.render(area, buffer)
             }
         }
     }
