@@ -50,9 +50,3 @@ impl State {
         }
     }
 }
-
-// pub(super) trait Mode {
-//     fn draw(&mut self, frame: &mut Frame);
-//     fn handle_event(self, event: Event) -> Self;
-//     fn exit(&self) -> bool;
-// }
