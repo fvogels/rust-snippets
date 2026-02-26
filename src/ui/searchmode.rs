@@ -39,12 +39,14 @@ impl SearchMode {
                 if self.filter.len() > 0 {
                     self.filter.truncate(self.filter.len() - 1);
                     self.filter_snippets();
+                    self.ensure_snippet_selection();
                 }
                 Mode::Search(self)
             },
             KeyCode::Char(char) if char.is_ascii_alphabetic() || char == ' ' => {
-                self.filter.push(char);
+                self.filter.push(char.to_ascii_lowercase());
                 self.filter_snippets();
+                self.ensure_snippet_selection();
                 Mode::Search(self)
             },
             _ => Mode::Search(self)
@@ -56,6 +58,15 @@ impl SearchMode {
         let filtered_snippets = self.library.search(keywords);
 
         self.snippet_list = filtered_snippets;
+    }
+
+    fn ensure_snippet_selection(&mut self) {
+        if !self.snippet_list.is_empty() {
+            match self.description_list_state.selected() {
+                Some(_) => {}
+                None => self.description_list_state.select_first(),
+            }
+        }
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
