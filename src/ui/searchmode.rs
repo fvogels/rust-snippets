@@ -11,16 +11,6 @@ pub(super) struct SearchMode {
 }
 
 impl SearchMode {
-    pub(super) fn new(library: Box<Library>, syntax_highlighter: Box<SyntaxHighlighter>) -> Self {
-        SearchMode {
-            snippet_list: library.snippet_indices().collect(),
-            library: library,
-            syntax_highlighter: syntax_highlighter,
-            description_list_state: ListState::default().with_selected(Some(0)),
-            selected_snippet_part: 0,
-        }
-    }
-
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
             KeyCode::Char('q') => {
