@@ -118,8 +118,6 @@ impl SearchMode {
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
         let mut contents = String::from("> ");
         contents.push_str(&self.filter);
-        // let line =  Line::raw;
-        // let text = Text::from(line);
         Paragraph::new(contents).render(area, buffer);
     }
 
