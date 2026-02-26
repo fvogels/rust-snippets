@@ -18,6 +18,8 @@ enum Commands {
     UI,
     #[command(about, long_about = Some("Supported languages for syntax highlighting"))]
     Languages,
+    #[command(about, long_about = Some("Supported themes for syntax highlighting"))]
+    Themes,
 }
 
 impl Commands {
@@ -26,6 +28,7 @@ impl Commands {
             Self::Search { keywords } => search(keywords),
             Self::UI => start_ui(),
             Self::Languages => list_syntax_highlighting_languages(),
+            Self::Themes => list_syntax_highlighting_themes(),
         }
     }
 }
@@ -48,4 +51,10 @@ fn search<'a>(keywords: &Vec<String>) {
 fn list_syntax_highlighting_languages() {
     let syntax_set = syntect::parsing::SyntaxSet::load_defaults_newlines();
     syntax_set.syntaxes().iter().for_each(|s| println!("{}", s.name));
+}
+
+fn list_syntax_highlighting_themes() {
+    syntect::highlighting::ThemeSet::load_defaults().themes.into_keys().for_each(|theme| {
+        println!("{}", theme);
+    });
 }
