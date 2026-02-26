@@ -1,6 +1,6 @@
 use ratatui::{Frame, crossterm::event::{Event}};
 
-use crate::{snippets::Library, ui::viewmode::ViewMode};
+use crate::{snippets::Library, ui::{syntax::SyntaxHighlighter, viewmode::ViewMode}};
 
 
 pub struct State {
@@ -10,9 +10,10 @@ pub struct State {
 impl State {
     pub fn new(library: Library) -> Self {
         let boxed_library = Box::new(library);
+        let boxed_highlighter = Box::new(SyntaxHighlighter::new());
 
         State{
-            mode: Box::new(ViewMode::new(boxed_library)),
+            mode: Box::new(ViewMode::new(boxed_library, boxed_highlighter)),
         }
     }
 

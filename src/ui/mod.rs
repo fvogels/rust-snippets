@@ -1,5 +1,6 @@
 mod state;
 mod viewmode;
+mod syntax;
 
 use state::State;
 
