@@ -48,6 +48,10 @@ impl ViewMode {
                 self.selected_snippet_part += 1;
                 Mode::View(self)
             },
+            KeyCode::Esc => {
+                self.snippet_list = self.library.snippet_indices().collect();
+                Mode::View(self)
+            },
             _ => Mode::View(self)
         }
     }
