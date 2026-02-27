@@ -1,5 +1,5 @@
 use ratatui::{text::{Line, Span}, widgets::Paragraph};
-use syntect::{easy::HighlightLines, highlighting::{Color, FontStyle, Theme, ThemeSet}, parsing::SyntaxSet};
+use syntect::{easy::HighlightLines, highlighting::{FontStyle, Theme, ThemeSet}, parsing::SyntaxSet};
 
 
 pub struct SyntaxHighlighter {

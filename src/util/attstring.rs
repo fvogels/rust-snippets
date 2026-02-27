@@ -68,7 +68,7 @@ pub fn parse(s: &str) -> Result<HashMap<String, String>, Error> {
 
     match current_state {
         State::Idle => { },
-        State::ReadingKey(key) => {
+        State::ReadingKey(_) => {
             return Err(Error::MissingValue)
         },
         State::ReadingValue(key, value) => {
