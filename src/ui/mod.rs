@@ -3,6 +3,7 @@ mod viewmode;
 mod searchmode;
 mod syntax;
 mod widgets;
+mod tree_adapter;
 
 use state::State;
 

@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter, viewmode::ViewMode, widgets::snippet_view::{SnippetView, SnippetViewState}}};
+use crate::{snippets::Library, ui::{state::Mode, syntax::SyntaxHighlighter, viewmode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
 
 
 pub(super) struct SearchMode {
@@ -8,6 +8,7 @@ pub(super) struct SearchMode {
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
+    pub(super) hierarchy_view_state: TreeViewState,
     pub(super) filter: String,
 }
 
@@ -31,7 +32,7 @@ impl SearchMode {
                 Mode::Search(self)
             },
             KeyCode::Esc => {
-                let selected_nodes = self.library.snippet_indices().collect();
+                let selected_nodes = self.library.snippets().collect();
                 self.description_list_state.select_first();
 
                 Mode::View(ViewMode{
@@ -40,6 +41,7 @@ impl SearchMode {
                     snippet_list: selected_nodes,
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
+                    hierarchy_view_state: self.hierarchy_view_state,
                 })
             },
             KeyCode::Enter => {
@@ -49,6 +51,7 @@ impl SearchMode {
                     snippet_list: self.snippet_list,
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
+                    hierarchy_view_state: self.hierarchy_view_state,
                 })
             },
             KeyCode::Backspace => {

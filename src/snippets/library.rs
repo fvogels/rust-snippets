@@ -1,10 +1,13 @@
 use std::{collections::HashSet, path::Path};
 
-use crate::{snippets::snippets::{Snippet, SnippetError, load_snippets}, util::trie};
+use itertools::enumerate;
+
+use crate::{snippets::{hierarchy::Hierarchy, snippets::{Snippet, SnippetError, load_snippets}}, util::trie};
 
 pub struct Library {
     snippets: Vec<Snippet>,
     trie: trie::Trie<usize>,
+    hierarchy: Hierarchy,
 }
 
 impl Library {
@@ -23,6 +26,7 @@ impl Library {
         }
 
         let library = Library{
+            hierarchy: build_hierarchy(snippets.iter()),
             snippets: snippets,
             trie: trie_builder.finalize(),
         };
@@ -64,4 +68,18 @@ impl Library {
     pub fn snippet<'a>(&'a self, index: usize) -> &'a Snippet {
         &self.snippets[index]
     }
+
+    pub fn hierarchy<'a>(&'a self) -> &'a Hierarchy {
+        &self.hierarchy
+    }
+}
+
+fn build_hierarchy<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Hierarchy {
+    let mut hierarchy = Hierarchy::new();
+
+    for (index, snippet) in enumerate(snippets) {
+        hierarchy.add_snippet(index, snippet.path.iter().map(|s| s.as_str()))
+    }
+
+    hierarchy
 }

@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter, widgets::snippet_view::{SnippetView, SnippetViewState}}};
+use crate::{snippets::Library, ui::{searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::{TreeView, TreeViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -8,16 +8,18 @@ pub(super) struct ViewMode {
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
+    pub(super) hierarchy_view_state: TreeViewState,
 }
 
 impl ViewMode {
     pub(super) fn new(library: Box<Library>, syntax_highlighter: Box<SyntaxHighlighter>) -> Self {
         ViewMode {
-            snippet_list: library.snippet_indices().collect(),
+            snippet_list: library.snippets().collect(),
             library: library,
             syntax_highlighter: syntax_highlighter,
             description_list_state: ListState::default().with_selected(Some(0)),
             snippet_view_state: SnippetViewState::new(),
+            hierarchy_view_state: TreeViewState::new(),
         }
     }
 
@@ -33,6 +35,7 @@ impl ViewMode {
                     snippet_list: self.snippet_list,
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
+                    hierarchy_view_state: self.hierarchy_view_state,
                     filter: String::new(),
                 })
             },
@@ -53,7 +56,7 @@ impl ViewMode {
                 Mode::View(self)
             },
             KeyCode::Esc => {
-                self.snippet_list = self.library.snippet_indices().collect();
+                self.snippet_list = self.library.snippets().collect();
                 Mode::View(self)
             },
             _ => Mode::View(self)
@@ -80,6 +83,12 @@ impl ViewMode {
         }
     }
 
+    fn render_hierarchy(&mut self, area: Rect, buffer: &mut Buffer) {
+        let tree = TreeAdapter::new(self.library.hierarchy());
+        let tree_view = TreeView::new(&tree);
+        tree_view.render(area, buffer, &mut self.hierarchy_view_state);
+    }
+
     pub fn draw(&mut self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
     }
@@ -96,8 +105,10 @@ impl ViewMode {
 
 impl Widget for &mut ViewMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(area);
+        let [hierarchy_area, right_area] = Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(area);
+        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
 
+        self.render_hierarchy(hierarchy_area, buffer);
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_selected_snippet(snippet_area, buffer);
     }
