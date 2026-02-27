@@ -12,6 +12,7 @@ struct CommandLineInterface {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    List,
     Search {
         keywords: Vec<String>,
     },
@@ -25,6 +26,7 @@ enum Commands {
 impl Commands {
     fn handle(&self) {
         match self {
+            Self::List => list_snippets(),
             Self::Search { keywords } => search(keywords),
             Self::UI => start_ui(),
             Self::Languages => list_syntax_highlighting_languages(),
@@ -57,4 +59,16 @@ fn list_syntax_highlighting_themes() {
     syntect::highlighting::ThemeSet::load_defaults().themes.into_keys().for_each(|theme| {
         println!("{}", theme);
     });
+}
+
+fn list_snippets() {
+    let library = Library::load(&"../data/snippets").unwrap();
+    let snippet_ids = library.snippets();
+
+    for snippet_id in snippet_ids {
+        let snippet = library.snippet(snippet_id);
+        let path = snippet.path.join("/");
+
+        println!("Description: {}\nPath: {}\n", snippet.description, path)
+    }
 }
