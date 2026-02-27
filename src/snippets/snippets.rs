@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref, path::{Path, PathBuf}};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use walkdir::WalkDir;
 use crate::util::{attstring, segment_file};
