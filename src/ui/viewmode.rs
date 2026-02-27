@@ -48,6 +48,10 @@ impl ViewMode {
                 self.snippet_view_state.select_next();
                 Mode::View(self)
             },
+            KeyCode::BackTab => {
+                self.snippet_view_state.select_previous();
+                Mode::View(self)
+            },
             KeyCode::Esc => {
                 self.snippet_list = self.library.snippet_indices().collect();
                 Mode::View(self)
