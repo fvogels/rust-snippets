@@ -28,7 +28,7 @@ impl SearchMode {
             },
             KeyCode::BackTab => {
                 self.snippet_view_state.select_previous();
-                Mode::View(self)
+                Mode::Search(self)
             },
             KeyCode::Esc => {
                 let selected_nodes = self.library.snippet_indices().collect();
