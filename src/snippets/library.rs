@@ -57,7 +57,7 @@ impl Library {
         result
     }
 
-    pub fn snippet_indices(&self) -> impl Iterator<Item=usize> {
+    pub fn snippets(&self) -> impl Iterator<Item=usize> {
         0..self.snippets.len()
     }
 

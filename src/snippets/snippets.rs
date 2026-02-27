@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::{Path, PathBuf}};
+use std::{collections::HashMap, ops::Deref, path::{Path, PathBuf}};
 
 use walkdir::WalkDir;
 use crate::util::{attstring, segment_file};
@@ -17,6 +17,9 @@ pub enum SnippetError {
 
     #[error("Missing snippet segments in {0}")]
     MissingSnippetSegments(PathBuf),
+
+    #[error("Path error")]
+    PathError,
 
     #[error("YAML error: {0}")]
     MalformedMetadata(#[from] serde_yaml::Error),
@@ -38,6 +41,7 @@ pub struct Snippet {
     pub language: String,
     pub parts: Vec<Part>,
     pub tags: Vec<String>,
+    pub path: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -72,8 +76,8 @@ where P: AsRef<Path> {
     Ok(result)
 }
 
-pub fn load_snippet_file<P>(file_path: &P) -> Result<Snippet, SnippetError>
-where P: AsRef<Path> {
+pub fn load_snippet_file<P, Q>(root_path: &P, file_path: &Q) -> Result<Snippet, SnippetError>
+where P: AsRef<Path>, Q: AsRef<Path> {
     let segments = segment_file::load(file_path, |line| {
         line.strip_prefix("===").map(|x| x.trim())
     })?;
@@ -105,6 +109,7 @@ where P: AsRef<Path> {
         language: metadata.language,
         parts: parts?,
         tags: metadata.tags,
+        path: derive_path(root_path, file_path)?,
     };
 
     if snippet.parts.len() == 0 {
@@ -114,12 +119,30 @@ where P: AsRef<Path> {
     Ok(snippet)
 }
 
+fn derive_path<P, Q>(root: &P, file: &Q) -> Result<Vec<String>, SnippetError> where P: AsRef<Path>, Q: AsRef<Path> {
+    debug_assert!(root.as_ref().is_absolute(), "{} must be absolute", root.as_ref().as_os_str().display());
+    debug_assert!(file.as_ref().is_absolute(), "{} must be absolute", file.as_ref().as_os_str().display());
+
+    let parent_path = file.as_ref().parent().ok_or(SnippetError::PathError)?;
+
+    let path =
+        parent_path.strip_prefix(root)
+                   .map_err(|_| SnippetError::PathError)?
+                   .components()
+                   .map(|component| component.as_os_str().to_str().unwrap().to_owned())
+                   .collect::<Vec<String>>();
+
+    Ok(path)
+}
+
 fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
     serde_yaml::from_str(source).map_err(|e| SnippetError::MalformedMetadata(e))
 }
 
 pub fn load_snippets<P>(root: &P) -> Result<Vec<Snippet>, SnippetError> where P: AsRef<Path> {
-    discover_files(root)?.into_iter().map(|path| load_snippet_file(&path)).collect()
+    let absolute_root = root.as_ref().canonicalize().map_err(|_| SnippetError::PathError)?;
+
+    discover_files(root)?.into_iter().map(|path| load_snippet_file(&absolute_root, &path)).collect()
 }
 
 fn convert_tabs_to_spaces(s: &str) -> String {
