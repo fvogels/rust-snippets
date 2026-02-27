@@ -18,11 +18,11 @@ impl SnippetViewState {
         }
     }
 
-    pub fn next(&mut self) {
+    pub fn select_next(&mut self) {
         self.selected_part += 1
     }
 
-    pub fn previous(&mut self) {
+    pub fn select_previous(&mut self) {
         if self.selected_part >= 1 {
             self.selected_part -= 1
         }

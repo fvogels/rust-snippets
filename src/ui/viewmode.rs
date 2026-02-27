@@ -45,7 +45,7 @@ impl ViewMode {
                 Mode::View(self)
             },
             KeyCode::Tab => {
-                self.snippet_view_state.next();
+                self.snippet_view_state.select_next();
                 Mode::View(self)
             },
             KeyCode::Esc => {

@@ -23,7 +23,7 @@ impl SearchMode {
                 Mode::Search(self)
             },
             KeyCode::Tab => {
-                self.snippet_view_state.next();
+                self.snippet_view_state.select_next();
                 Mode::Search(self)
             },
             KeyCode::Esc => {
