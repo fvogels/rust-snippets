@@ -8,7 +8,6 @@ pub(super) struct SearchMode {
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
-    pub(super) hierarchy_view_state: TreeViewState,
     pub(super) filter: String,
 }
 
@@ -41,7 +40,6 @@ impl SearchMode {
                     snippet_list: selected_nodes,
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
-                    hierarchy_view_state: self.hierarchy_view_state,
                 })
             },
             KeyCode::Enter => {
@@ -51,7 +49,6 @@ impl SearchMode {
                     snippet_list: self.snippet_list,
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
-                    hierarchy_view_state: self.hierarchy_view_state,
                 })
             },
             KeyCode::Backspace => {

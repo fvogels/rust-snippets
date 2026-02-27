@@ -8,6 +8,7 @@ pub struct Library {
     snippets: Vec<Snippet>,
     trie: trie::Trie<usize>,
     hierarchy: Hierarchy,
+    tags: Vec<String>,
 }
 
 impl Library {
@@ -27,6 +28,7 @@ impl Library {
 
         let library = Library{
             hierarchy: build_hierarchy(snippets.iter()),
+            tags: collect_tags(snippets.iter()),
             snippets: snippets,
             trie: trie_builder.finalize(),
         };
@@ -72,6 +74,10 @@ impl Library {
     pub fn hierarchy<'a>(&'a self) -> &'a Hierarchy {
         &self.hierarchy
     }
+
+    pub fn tags<'a>(&'a self) -> &'a Vec<String> {
+        &self.tags
+    }
 }
 
 fn build_hierarchy<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Hierarchy {
@@ -82,4 +88,19 @@ fn build_hierarchy<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Hierarchy {
     }
 
     hierarchy
+}
+
+fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<String> {
+    let mut tag_set = HashSet::new();
+
+    for snippet in snippets {
+        for tag in snippet.tags.iter() {
+            tag_set.insert(tag.clone());
+        }
+    }
+
+    let mut tags = tag_set.into_iter().collect::<Vec<_>>();
+    tags.sort();
+
+    tags
 }

@@ -8,7 +8,6 @@ pub(super) struct ViewMode {
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
-    pub(super) hierarchy_view_state: TreeViewState,
 }
 
 impl ViewMode {
@@ -19,7 +18,6 @@ impl ViewMode {
             syntax_highlighter: syntax_highlighter,
             description_list_state: ListState::default().with_selected(Some(0)),
             snippet_view_state: SnippetViewState::new(),
-            hierarchy_view_state: TreeViewState::new(),
         }
     }
 
@@ -35,7 +33,6 @@ impl ViewMode {
                     snippet_list: self.snippet_list,
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
-                    hierarchy_view_state: self.hierarchy_view_state,
                     filter: String::new(),
                 })
             },
@@ -83,10 +80,13 @@ impl ViewMode {
         }
     }
 
-    fn render_hierarchy(&mut self, area: Rect, buffer: &mut Buffer) {
-        let tree = TreeAdapter::new(self.library.hierarchy());
-        let tree_view = TreeView::new(&tree);
-        tree_view.render(area, buffer, &mut self.hierarchy_view_state);
+    fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        let tags = self.library.tags();
+        let list_items = tags.iter().map(|tag| ListItem::new(tag.as_str()));
+        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL);
+        let tag_list = List::new(list_items).block(block);
+
+        Widget::render(tag_list, area, buffer)
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
@@ -108,7 +108,7 @@ impl Widget for &mut ViewMode {
         let [hierarchy_area, right_area] = Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(area);
         let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
 
-        self.render_hierarchy(hierarchy_area, buffer);
+        self.render_tag_list(hierarchy_area, buffer);
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_selected_snippet(snippet_area, buffer);
     }
