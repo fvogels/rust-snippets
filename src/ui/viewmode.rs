@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter}};
+use crate::{snippets::Library, ui::{searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter, widgets::snippet_view::{SnippetView, SnippetViewState}}};
 
 
 pub(super) struct ViewMode {
@@ -7,7 +7,7 @@ pub(super) struct ViewMode {
     pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
-    pub(super) selected_snippet_part: usize,
+    pub(super) snippet_view_state: SnippetViewState,
 }
 
 impl ViewMode {
@@ -17,7 +17,7 @@ impl ViewMode {
             library: library,
             syntax_highlighter: syntax_highlighter,
             description_list_state: ListState::default().with_selected(Some(0)),
-            selected_snippet_part: 0,
+            snippet_view_state: SnippetViewState::new(),
         }
     }
 
@@ -32,7 +32,7 @@ impl ViewMode {
                     syntax_highlighter: self.syntax_highlighter,
                     snippet_list: self.snippet_list,
                     description_list_state: self.description_list_state,
-                    selected_snippet_part: self.selected_snippet_part,
+                    snippet_view_state: self.snippet_view_state,
                     filter: String::new(),
                 })
             },
@@ -45,7 +45,7 @@ impl ViewMode {
                 Mode::View(self)
             },
             KeyCode::Tab => {
-                self.selected_snippet_part += 1;
+                self.snippet_view_state.next();
                 Mode::View(self)
             },
             KeyCode::Esc => {
@@ -70,22 +70,8 @@ impl ViewMode {
             None => {},
             Some(selected_snippet_index) => {
                 let snippet = self.library.snippet(selected_snippet_index);
-
-                if self.selected_snippet_part >= snippet.parts.len() {
-                    self.selected_snippet_part = 0;
-                }
-
-                let snippet_part = &snippet.parts[self.selected_snippet_part];
-
-                let snippet_caption = match snippet_part.attributes.get("caption") {
-                    Some(caption) => format!(" {}/{} {} ", self.selected_snippet_part + 1, snippet.parts.len(), caption),
-                    None => format!(" {}/{} ", self.selected_snippet_part + 1, snippet.parts.len()),
-                };
-
-                let lines: Vec<&str> = snippet.parts[self.selected_snippet_part].lines.iter().map(|line| line.as_str()).collect();
-                let snippet_caption_block = Block::new().title_bottom(Line::raw(snippet_caption)).borders(Borders::ALL);
-                let paragraph = self.syntax_highlighter.highlight_lines("Go", lines.into_iter()).unwrap().block(snippet_caption_block);
-                paragraph.render(area, buffer)
+                let snippet_view = SnippetView::new(snippet, &self.syntax_highlighter);
+                snippet_view.render(area, buffer, &mut self.snippet_view_state);
             }
         }
     }

@@ -2,6 +2,7 @@ mod state;
 mod viewmode;
 mod searchmode;
 mod syntax;
+mod widgets;
 
 use state::State;
 
