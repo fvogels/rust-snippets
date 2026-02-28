@@ -1,5 +1,7 @@
+use std::borrow::Borrow;
+
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, state::Mode, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
+use crate::{snippets::Library, ui::{SearchParameters, state::Mode, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}, tree_view::TreeViewState}}};
 
 
 pub(super) struct TagSearchMode {
@@ -10,17 +12,18 @@ pub(super) struct TagSearchMode {
     pub(super) snippet_view_state: SnippetViewState,
     pub(super) search_parameters: SearchParameters,
     pub(super) tag_input: String,
+    pub(super) tags_view_state: TagsViewState,
 }
 
 impl TagSearchMode {
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
             KeyCode::Up => {
-                self.description_list_state.select_previous();
+                self.tags_view_state.select_previous();
                 Mode::TagSearch(self)
             },
             KeyCode::Down => {
-                self.description_list_state.select_next();
+                self.tags_view_state.select_next();
                 Mode::TagSearch(self)
             },
             KeyCode::Tab => {
@@ -109,12 +112,15 @@ impl TagSearchMode {
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let tags = self.library.tags().iter().filter(|tag| tag.starts_with(self.tag_input.as_str()));
-        let list_items = tags.map(|tag| ListItem::new(tag.as_str()));
-        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL).border_type(BorderType::Double);
-        let tag_list = List::new(list_items).block(block);
+        let selected_tags = &self.search_parameters.tags;
+        let available_tags = self.library.tags();
 
-        Widget::render(tag_list, area, buffer)
+        let tag_view = TagsView::new(selected_tags.iter().map(Borrow::borrow), available_tags.iter().map(Borrow::borrow));
+        let block = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
+
+        let block_inner_area = block.inner(area);
+        block.render(area, buffer);
+        tag_view.render(block_inner_area, buffer, &mut self.tags_view_state);
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
