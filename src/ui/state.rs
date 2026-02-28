@@ -2,7 +2,7 @@ use std::mem;
 
 use ratatui::{Frame, crossterm::event::{Event}};
 
-use crate::{snippets::Library, ui::{searchmode::SearchMode, syntax::SyntaxHighlighter, tagsearchmode::TagSearchMode, viewmode::ViewMode}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
 
 
 pub struct State {

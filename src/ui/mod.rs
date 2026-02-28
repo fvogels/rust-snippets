@@ -1,7 +1,7 @@
 mod state;
-mod viewmode;
-mod searchmode;
-mod tagsearchmode;
+mod view_mode;
+mod search_mode;
+mod tag_search_mode;
 mod syntax;
 mod widgets;
 mod tree_adapter;

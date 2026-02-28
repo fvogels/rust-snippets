@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter, tagsearchmode::TagSearchMode, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::{TreeView, TreeViewState}}}};
+use crate::{snippets::Library, ui::{SearchParameters, search_mode::SearchMode, state::Mode, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::{TreeView, TreeViewState}}}};
 
 
 pub(super) struct ViewMode {
