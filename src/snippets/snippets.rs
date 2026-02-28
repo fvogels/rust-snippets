@@ -104,11 +104,17 @@ where P: AsRef<Path>, Q: AsRef<Path> {
             Ok(part)
         }).collect();
 
+    let snippet_path = derive_path(root_path, file_path)?;
+    let mut tags = metadata.tags;
+    for path_component in snippet_path.iter() {
+        tags.push(path_component.clone());
+    }
+
     let snippet = Snippet{
         description: metadata.description,
         language: metadata.language,
         parts: parts?,
-        tags: metadata.tags,
+        tags: tags,
         path: derive_path(root_path, file_path)?,
     };
 
