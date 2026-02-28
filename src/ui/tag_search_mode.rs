@@ -9,7 +9,7 @@ pub(super) struct TagSearchMode {
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
     pub(super) search_parameters: SearchParameters,
-    pub(super) filter: String,
+    pub(super) tag_input: String,
 }
 
 impl TagSearchMode {
@@ -55,15 +55,15 @@ impl TagSearchMode {
                 })
             },
             KeyCode::Backspace => {
-                if self.filter.len() > 0 {
-                    self.filter.truncate(self.filter.len() - 1);
+                if self.tag_input.len() > 0 {
+                    self.tag_input.truncate(self.tag_input.len() - 1);
                     self.filter_snippets();
                     self.ensure_snippet_selection();
                 }
                 Mode::TagSearch(self)
             },
             KeyCode::Char(char) if valid_filter_character(char) => {
-                self.filter.push(char.to_ascii_lowercase());
+                self.tag_input.push(char.to_ascii_lowercase());
                 self.filter_snippets();
                 self.ensure_snippet_selection();
                 Mode::TagSearch(self)
@@ -73,7 +73,7 @@ impl TagSearchMode {
     }
 
     fn filter_snippets(&mut self) {
-        let keywords = self.filter.split(' ');
+        let keywords = self.tag_input.split(' ');
         let filtered_snippets = self.library.search(keywords, self.search_parameters.tags.iter().map(|s| s.as_str()));
 
         self.snippet_list = filtered_snippets;
@@ -119,7 +119,7 @@ impl TagSearchMode {
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
         let mut contents = String::from("> ");
-        contents.push_str(&self.filter);
+        contents.push_str(&self.tag_input);
         Paragraph::new(contents).render(area, buffer);
     }
 

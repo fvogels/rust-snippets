@@ -46,7 +46,7 @@ impl ViewMode {
                     snippet_list: self.snippet_list,
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
-                    filter: String::new(),
+                    tag_input: String::new(),
                     search_parameters: self.search_parameters,
                 })
             },
