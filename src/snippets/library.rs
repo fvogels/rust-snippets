@@ -36,8 +36,8 @@ impl Library {
         Ok(library)
     }
 
-    pub fn search<'a, 'b>(&'a self, keywords: impl Iterator<Item=&'b str>) -> Vec<usize> {
-        let mut intersection = HashSet::new();
+    pub fn search<'a, 'b, 'c>(&'a self, keywords: impl Iterator<Item=&'b str>, tags: impl Iterator<Item=&'c str>) -> Vec<usize> {
+        let mut intersection = self.collect_snippets_with_tags(tags);
 
         for index in 0..self.snippets.len() {
             intersection.insert(index);
@@ -51,6 +51,12 @@ impl Library {
         let mut result: Vec<usize> = intersection.iter().copied().collect();
         result.sort();
         result
+    }
+
+    fn collect_snippets_with_tags<'a>(&self, tags: impl Iterator<Item=&'a str>) -> HashSet<usize> {
+        let tag_list = tags.collect::<Vec<_>>();
+
+        (0..self.snippets.len()).filter(|id| self.snippet(*id).has_tags(tag_list.iter().copied())).collect()
     }
 
     fn search_single(&self, keyword: &str) -> HashSet<usize> {

@@ -2,7 +2,7 @@ use std::mem;
 
 use ratatui::{Frame, crossterm::event::{Event}};
 
-use crate::{snippets::Library, ui::{searchmode::SearchMode, syntax::SyntaxHighlighter, viewmode::ViewMode}};
+use crate::{snippets::Library, ui::{searchmode::SearchMode, syntax::SyntaxHighlighter, tagsearchmode::TagSearchMode, viewmode::ViewMode}};
 
 
 pub struct State {
@@ -12,6 +12,7 @@ pub struct State {
 pub(super) enum Mode {
     View(ViewMode),
     Search(SearchMode),
+    TagSearch(TagSearchMode),
     Terminated,
 }
 
@@ -37,6 +38,7 @@ impl State {
             Mode::Terminated => panic!("should never occur"),
             Mode::View(view_mode) => view_mode.draw(frame),
             Mode::Search(search_mode) => search_mode.draw(frame),
+            Mode::TagSearch(tag_search_mode) => tag_search_mode.draw(frame),
         }
     }
 
@@ -47,6 +49,7 @@ impl State {
             Mode::Terminated => panic!("should never occur"),
             Mode::View(view_mode) => view_mode.handle_event(event),
             Mode::Search(search_mode) => search_mode.handle_event(event),
+            Mode::TagSearch(tag_search_mode) => tag_search_mode.handle_event(event),
         }
     }
 }

@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::{TreeView, TreeViewState}}}};
+use crate::{snippets::Library, ui::{SearchParameters, searchmode::SearchMode, state::Mode, syntax::SyntaxHighlighter, tagsearchmode::TagSearchMode, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::{TreeView, TreeViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -8,6 +8,7 @@ pub(super) struct ViewMode {
     pub(super) snippet_list: Vec<usize>,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
+    pub(super) search_parameters: SearchParameters,
 }
 
 impl ViewMode {
@@ -18,6 +19,7 @@ impl ViewMode {
             syntax_highlighter: syntax_highlighter,
             description_list_state: ListState::default().with_selected(Some(0)),
             snippet_view_state: SnippetViewState::new(),
+            search_parameters: SearchParameters::new(),
         }
     }
 
@@ -34,6 +36,18 @@ impl ViewMode {
                     description_list_state: self.description_list_state,
                     snippet_view_state: self.snippet_view_state,
                     filter: String::new(),
+                    search_parameters: self.search_parameters,
+                })
+            },
+            KeyCode::Char('#') => {
+                Mode::TagSearch(TagSearchMode{
+                    library: self.library,
+                    syntax_highlighter: self.syntax_highlighter,
+                    snippet_list: self.snippet_list,
+                    description_list_state: self.description_list_state,
+                    snippet_view_state: self.snippet_view_state,
+                    filter: String::new(),
+                    search_parameters: self.search_parameters,
                 })
             },
             KeyCode::Up => {

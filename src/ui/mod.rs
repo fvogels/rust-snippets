@@ -1,9 +1,13 @@
 mod state;
 mod viewmode;
 mod searchmode;
+mod tagsearchmode;
 mod syntax;
 mod widgets;
 mod tree_adapter;
+mod search_parameters;
+
+pub use search_parameters::SearchParameters;
 
 use state::State;
 

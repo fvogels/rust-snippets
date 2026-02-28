@@ -2,7 +2,7 @@ use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent
 use crate::{snippets::Library, ui::{SearchParameters, state::Mode, syntax::SyntaxHighlighter, viewmode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
 
 
-pub(super) struct SearchMode {
+pub(super) struct TagSearchMode {
     pub(super) library: Box<Library>,
     pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
     pub(super) snippet_list: Vec<usize>,
@@ -12,24 +12,24 @@ pub(super) struct SearchMode {
     pub(super) filter: String,
 }
 
-impl SearchMode {
+impl TagSearchMode {
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
             KeyCode::Up => {
                 self.description_list_state.select_previous();
-                Mode::Search(self)
+                Mode::TagSearch(self)
             },
             KeyCode::Down => {
                 self.description_list_state.select_next();
-                Mode::Search(self)
+                Mode::TagSearch(self)
             },
             KeyCode::Tab => {
                 self.snippet_view_state.select_next();
-                Mode::Search(self)
+                Mode::TagSearch(self)
             },
             KeyCode::BackTab => {
                 self.snippet_view_state.select_previous();
-                Mode::Search(self)
+                Mode::TagSearch(self)
             },
             KeyCode::Esc => {
                 let selected_nodes = self.library.snippets().collect();
@@ -60,15 +60,15 @@ impl SearchMode {
                     self.filter_snippets();
                     self.ensure_snippet_selection();
                 }
-                Mode::Search(self)
+                Mode::TagSearch(self)
             },
             KeyCode::Char(char) if valid_filter_character(char) => {
                 self.filter.push(char.to_ascii_lowercase());
                 self.filter_snippets();
                 self.ensure_snippet_selection();
-                Mode::Search(self)
+                Mode::TagSearch(self)
             },
-            _ => Mode::Search(self)
+            _ => Mode::TagSearch(self)
         }
     }
 
@@ -108,6 +108,15 @@ impl SearchMode {
         }
     }
 
+    fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        let tags = self.library.tags();
+        let list_items = tags.iter().map(|tag| ListItem::new(tag.as_str()));
+        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL);
+        let tag_list = List::new(list_items).block(block);
+
+        Widget::render(tag_list, area, buffer)
+    }
+
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
         let mut contents = String::from("> ");
         contents.push_str(&self.filter);
@@ -121,18 +130,21 @@ impl SearchMode {
     pub fn handle_event(self, event: Event) -> Mode {
         match event {
             Event::Key(key_event) if key_event.is_press() => self.handle_key_event(key_event),
-            _ => Mode::Search(self),
+            _ => Mode::TagSearch(self),
         }
     }
 }
 
-impl Widget for &mut SearchMode {
+impl Widget for &mut TagSearchMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let [snippet_list_area, snippet_area, input_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+        let [upper_area, input_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+        let [tag_list_area, right_area] = Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(upper_area);
+        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
 
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_selected_snippet(snippet_area, buffer);
         self.render_input_field(input_area, buffer);
+        self.render_tag_list(tag_list_area, buffer);
     }
 }
 

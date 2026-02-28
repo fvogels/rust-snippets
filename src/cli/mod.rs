@@ -41,7 +41,8 @@ pub fn start() {
 
 fn search<'a>(keywords: &Vec<String>) {
     let library = Library::load(&"../data/snippets").unwrap();
-    let snippets = library.search(keywords.iter().map(std::ops::Deref::deref));
+    let tags: Vec<&str> = Vec::new();
+    let snippets = library.search(keywords.iter().map(std::ops::Deref::deref), tags.into_iter());
 
     snippets.iter().copied().for_each(|snippet|
         println!("{}", library.snippet(snippet).description)

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::{Path, PathBuf}};
+use std::{collections::{HashMap, HashSet}, path::{Path, PathBuf}};
 
 use walkdir::WalkDir;
 use crate::util::{attstring, segment_file};
@@ -40,7 +40,7 @@ pub struct Snippet {
     pub description: String,
     pub language: String,
     pub parts: Vec<Part>,
-    pub tags: Vec<String>,
+    pub tags: HashSet<String>,
     pub path: Vec<String>,
 }
 
@@ -59,6 +59,10 @@ impl Snippet {
         self.tags.iter().for_each(|tag| keywords.push(tag.to_lowercase()));
 
         keywords
+    }
+
+    pub fn has_tags<'a>(&self, tags: impl Iterator<Item=&'a str>) -> bool {
+        tags.into_iter().all(|tag| self.tags.contains(tag))
     }
 }
 
@@ -105,9 +109,9 @@ where P: AsRef<Path>, Q: AsRef<Path> {
         }).collect();
 
     let snippet_path = derive_path(root_path, file_path)?;
-    let mut tags = metadata.tags;
+    let mut tags = metadata.tags.into_iter().collect::<HashSet<_>>();
     for path_component in snippet_path.iter() {
-        tags.push(path_component.clone());
+        tags.insert(path_component.clone());
     }
 
     let snippet = Snippet{
