@@ -1,4 +1,4 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
 use crate::{snippets::Library, ui::{SearchParameters, state::Mode, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
 
 
@@ -109,9 +109,9 @@ impl TagSearchMode {
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let tags = self.library.tags();
-        let list_items = tags.iter().map(|tag| ListItem::new(tag.as_str()));
-        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL);
+        let tags = self.library.tags().iter().filter(|tag| tag.starts_with(self.tag_input.as_str()));
+        let list_items = tags.map(|tag| ListItem::new(tag.as_str()));
+        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL).border_type(BorderType::Double);
         let tag_list = List::new(list_items).block(block);
 
         Widget::render(tag_list, area, buffer)
