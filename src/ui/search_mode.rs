@@ -1,15 +1,16 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, state::Mode, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
+use crate::{snippets::Library, ui::{SearchParameters, state::{Mode, State}, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
 
 
 pub(super) struct SearchMode {
-    pub(super) library: Box<Library>,
-    pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
-    pub(super) snippet_list: Vec<usize>,
+    pub state: State,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
-    pub(super) search_parameters: SearchParameters,
-    pub(super) filter: String,
+    // pub(super) library: Box<Library>,
+    // pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
+    // pub(super) snippet_list: Vec<usize>,
+    // pub(super) search_parameters: SearchParameters,
+    // pub(super) filter: String,
 }
 
 impl SearchMode {
@@ -32,77 +33,110 @@ impl SearchMode {
                 Mode::Search(self)
             },
             KeyCode::Esc => {
-                let selected_nodes = self.library.snippets().collect();
-                self.description_list_state.select_first();
+                self.state.clear_keywords();
+                self.state.refresh();
+                self.description_list_state.select(Some(0));
+                Mode::View(ViewMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
 
-                Mode::View(ViewMode{
-                    library: self.library,
-                    syntax_highlighter: self.syntax_highlighter,
-                    snippet_list: selected_nodes,
-                    description_list_state: self.description_list_state,
-                    snippet_view_state: self.snippet_view_state,
-                    search_parameters: self.search_parameters,
-                })
+                // Mode::View(ViewMode{
+                //     library: self.library,
+                //     syntax_highlighter: self.syntax_highlighter,
+                //     snippet_list: selected_nodes,
+                //     description_list_state: self.description_list_state,
+                //     snippet_view_state: self.snippet_view_state,
+                //     search_parameters: self.search_parameters,
+                // })
             },
             KeyCode::Enter => {
-                Mode::View(ViewMode{
-                    library: self.library,
-                    syntax_highlighter: self.syntax_highlighter,
-                    snippet_list: self.snippet_list,
-                    description_list_state: self.description_list_state,
-                    snippet_view_state: self.snippet_view_state,
-                    search_parameters: self.search_parameters,
-                })
+                Mode::View(ViewMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
+
+                // Mode::View(ViewMode{
+                //     library: self.library,
+                //     syntax_highlighter: self.syntax_highlighter,
+                //     snippet_list: self.snippet_list,
+                //     description_list_state: self.description_list_state,
+                //     snippet_view_state: self.snippet_view_state,
+                //     search_parameters: self.search_parameters,
+                // })
             },
-            KeyCode::Backspace => {
-                if self.filter.len() > 0 {
-                    self.filter.truncate(self.filter.len() - 1);
-                    self.filter_snippets();
-                    self.ensure_snippet_selection();
+            // KeyCode::Backspace => {
+            //     if self.filter.len() > 0 {
+            //         self.filter.truncate(self.filter.len() - 1);
+            //         self.filter_snippets();
+            //         self.ensure_snippet_selection();
+            //     }
+            //     Mode::Search(self)
+            // },
+            KeyCode::Char(' ') => {
+                match self.state.keywords.last() {
+                    None => {
+                        // No keywords entered, nothing needs to be done
+                    },
+                    Some(keyword) => {
+                        if !keyword.is_empty() {
+                            self.state.add_keyword(String::from(""));
+                        }
+                    }
                 }
+
                 Mode::Search(self)
             },
             KeyCode::Char(char) if valid_filter_character(char) => {
-                self.filter.push(char.to_ascii_lowercase());
-                self.filter_snippets();
-                self.ensure_snippet_selection();
+                let new_keyword = match self.state.pop_keyword() {
+                    Some(keyword) => {
+                        let mut keyword = keyword;
+                        keyword.push(char);
+                        keyword
+                    },
+                    None => {
+                        String::from(char)
+                    }
+                };
+                self.state.add_keyword(new_keyword);
+                self.state.refresh();
                 Mode::Search(self)
             },
             _ => Mode::Search(self)
         }
     }
 
-    fn filter_snippets(&mut self) {
-        let keywords = self.filter.split(' ');
-        let filtered_snippets = self.library.search(keywords, self.search_parameters.tags.iter().map(|s| s.as_str()));
+    // fn filter_snippets(&mut self) {
+    //     let keywords = self.filter.split(' ');
+    //     let filtered_snippets = self.library.search(keywords, self.search_parameters.tags.iter().map(|s| s.as_str()));
 
-        self.snippet_list = filtered_snippets;
-    }
+    //     self.snippet_list = filtered_snippets;
+    // }
 
-    fn ensure_snippet_selection(&mut self) {
-        if !self.snippet_list.is_empty() {
-            match self.description_list_state.selected() {
-                Some(_) => {}
-                None => self.description_list_state.select_first(),
-            }
-        }
-    }
+    // fn ensure_snippet_selection(&mut self) {
+    //     if !self.snippet_list.is_empty() {
+    //         match self.description_list_state.selected() {
+    //             Some(_) => {}
+    //             None => self.description_list_state.select_first(),
+    //         }
+    //     }
+    // }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
+        let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
         let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
+        // let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
+        // let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
+        // let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
+        // let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
+
+        // StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         match self.description_list_state.selected() {
             None => {},
             Some(selected_snippet_index) => {
-                let snippet = self.library.snippet(selected_snippet_index);
-                let snippet_view = SnippetView::new(snippet, &self.syntax_highlighter);
+                let snippet = self.state.library.snippet(self.state.visible_snippets[selected_snippet_index]);
+                let snippet_view = SnippetView::new(snippet, &self.state.syntax_highlighter);
                 snippet_view.render(area, buffer, &mut self.snippet_view_state);
             }
         }
@@ -110,7 +144,8 @@ impl SearchMode {
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
         let mut contents = String::from("> ");
-        contents.push_str(&self.filter);
+        let keywords = self.state.keywords.join(" ");
+        contents.push_str(keywords.as_str());
         Paragraph::new(contents).render(area, buffer);
     }
 
@@ -137,5 +172,5 @@ impl Widget for &mut SearchMode {
 }
 
 fn valid_filter_character(c: char) -> bool {
-    c.is_ascii_graphic() || c == ' '
+    c.is_ascii_graphic()
 }

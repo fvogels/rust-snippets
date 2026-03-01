@@ -1,18 +1,19 @@
 use std::borrow::Borrow;
 
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, state::Mode, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}, tree_view::TreeViewState}}};
+use crate::{snippets::Library, ui::{SearchParameters, state::{Mode, State}, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}, tree_view::TreeViewState}}};
 
 
 pub(super) struct TagSearchMode {
-    pub(super) library: Box<Library>,
-    pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
-    pub(super) snippet_list: Vec<usize>,
-    pub(super) description_list_state: ListState,
-    pub(super) snippet_view_state: SnippetViewState,
-    pub(super) search_parameters: SearchParameters,
-    pub(super) tag_input: String,
+    pub state: State,
     pub(super) tags_view_state: TagsViewState,
+    // pub(super) library: Box<Library>,
+    // pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
+    // pub(super) snippet_list: Vec<usize>,
+    // pub(super) description_list_state: ListState,
+    // pub(super) snippet_view_state: SnippetViewState,
+    // pub(super) search_parameters: SearchParameters,
+    // pub(super) tag_input: String,
 }
 
 impl TagSearchMode {
@@ -26,106 +27,132 @@ impl TagSearchMode {
                 self.tags_view_state.select_next();
                 Mode::TagSearch(self)
             },
-            KeyCode::Tab => {
-                self.snippet_view_state.select_next();
-                Mode::TagSearch(self)
-            },
-            KeyCode::BackTab => {
-                self.snippet_view_state.select_previous();
-                Mode::TagSearch(self)
-            },
+            // KeyCode::Tab => {
+            //     self.snippet_view_state.select_next();
+            //     Mode::TagSearch(self)
+            // },
+            // KeyCode::BackTab => {
+            //     self.snippet_view_state.select_previous();
+            //     Mode::TagSearch(self)
+            // },
             KeyCode::Esc => {
-                let selected_nodes = self.library.snippets().collect();
-                self.description_list_state.select_first();
+                Mode::View(ViewMode { state: self.state, description_list_state: ListState::default().with_selected(Some(0)), snippet_view_state: SnippetViewState::new() })
 
-                Mode::View(ViewMode{
-                    library: self.library,
-                    syntax_highlighter: self.syntax_highlighter,
-                    snippet_list: selected_nodes,
-                    description_list_state: self.description_list_state,
-                    snippet_view_state: self.snippet_view_state,
-                    search_parameters: self.search_parameters,
-                })
+                // let selected_nodes = self.library.snippets().collect();
+                // self.description_list_state.select_first();
+
+                // Mode::View(ViewMode{
+                //     library: self.library,
+                //     syntax_highlighter: self.syntax_highlighter,
+                //     snippet_list: selected_nodes,
+                //     description_list_state: self.description_list_state,
+                //     snippet_view_state: self.snippet_view_state,
+                //     search_parameters: self.search_parameters,
+                // })
             },
-            KeyCode::Enter => {
-                Mode::View(ViewMode{
-                    library: self.library,
-                    syntax_highlighter: self.syntax_highlighter,
-                    snippet_list: self.snippet_list,
-                    description_list_state: self.description_list_state,
-                    snippet_view_state: self.snippet_view_state,
-                    search_parameters: self.search_parameters,
-                })
-            },
-            KeyCode::Backspace => {
-                if self.tag_input.len() > 0 {
-                    self.tag_input.truncate(self.tag_input.len() - 1);
-                    self.filter_snippets();
-                    self.ensure_snippet_selection();
-                }
-                Mode::TagSearch(self)
-            },
-            KeyCode::Char(char) if valid_filter_character(char) => {
-                self.tag_input.push(char.to_ascii_lowercase());
-                self.filter_snippets();
-                self.ensure_snippet_selection();
-                Mode::TagSearch(self)
-            },
+            // KeyCode::Enter => {
+            //     Mode::View(ViewMode{
+            //         library: self.library,
+            //         syntax_highlighter: self.syntax_highlighter,
+            //         snippet_list: self.snippet_list,
+            //         description_list_state: self.description_list_state,
+            //         snippet_view_state: self.snippet_view_state,
+            //         search_parameters: self.search_parameters,
+            //     })
+            // },
+            // KeyCode::Backspace => {
+            //     if self.tag_input.len() > 0 {
+            //         self.tag_input.truncate(self.tag_input.len() - 1);
+            //         self.filter_snippets();
+            //         self.ensure_snippet_selection();
+            //     }
+            //     Mode::TagSearch(self)
+            // },
+            // KeyCode::Char(char) if valid_filter_character(char) => {
+            //     self.tag_input.push(char.to_ascii_lowercase());
+            //     self.filter_snippets();
+            //     self.ensure_snippet_selection();
+            //     Mode::TagSearch(self)
+            // },
             _ => Mode::TagSearch(self)
         }
     }
 
-    fn filter_snippets(&mut self) {
-        let keywords = self.tag_input.split(' ');
-        let filtered_snippets = self.library.search(keywords, self.search_parameters.tags.iter().map(|s| s.as_str()));
+    // fn filter_snippets(&mut self) {
+    //     let keywords = self.tag_input.split(' ');
+    //     let filtered_snippets = self.library.search(keywords, self.search_parameters.tags.iter().map(|s| s.as_str()));
 
-        self.snippet_list = filtered_snippets;
-    }
+    //     self.snippet_list = filtered_snippets;
+    // }
 
-    fn ensure_snippet_selection(&mut self) {
-        if !self.snippet_list.is_empty() {
-            match self.description_list_state.selected() {
-                Some(_) => {}
-                None => self.description_list_state.select_first(),
-            }
-        }
-    }
+    // fn ensure_snippet_selection(&mut self) {
+    //     if !self.snippet_list.is_empty() {
+    //         match self.description_list_state.selected() {
+    //             Some(_) => {}
+    //             None => self.description_list_state.select_first(),
+    //         }
+    //     }
+    // }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
+        let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
         let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
-        StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
+        Widget::render(list, area, buffer);
+
+        // let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
+        // let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
+        // let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
+        // let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
+
+        // StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
-        match self.description_list_state.selected() {
-            None => {},
-            Some(selected_snippet_index) => {
-                let snippet = self.library.snippet(selected_snippet_index);
-                let snippet_view = SnippetView::new(snippet, &self.syntax_highlighter);
-                snippet_view.render(area, buffer, &mut self.snippet_view_state);
-            }
+        let snippet_id = self.state.visible_snippets.get(0);
+
+        if let Some(snippet_id) = snippet_id {
+            let snippet = self.state.library.snippet(*snippet_id);
+            let snippet_view = SnippetView::new(snippet, &self.state.syntax_highlighter);
+
+            let mut snippet_view_state = SnippetViewState::new();
+            snippet_view.render(area, buffer, &mut snippet_view_state);
         }
+
+        // match self.description_list_state.selected() {
+        //     None => {},
+        //     Some(selected_snippet_index) => {
+        //         let snippet = self.library.snippet(selected_snippet_index);
+        //         let snippet_view = SnippetView::new(snippet, &self.syntax_highlighter);
+        //         snippet_view.render(area, buffer, &mut self.snippet_view_state);
+        //     }
+        // }
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let selected_tags = &self.search_parameters.tags;
-        let available_tags = self.library.tags();
+        let tags = &self.state.visible_tags;
+        let list_items = tags.iter().map(|tag| ListItem::new(tag.as_str()));
+        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL);
+        let tag_list = List::new(list_items).block(block);
 
-        let tag_view = TagsView::new(selected_tags.iter().map(Borrow::borrow), available_tags.iter().map(Borrow::borrow));
-        let block = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
+        Widget::render(tag_list, area, buffer)
 
-        let block_inner_area = block.inner(area);
-        block.render(area, buffer);
-        tag_view.render(block_inner_area, buffer, &mut self.tags_view_state);
+        // let selected_tags = &self.search_parameters.tags;
+        // let available_tags = self.library.tags();
+
+        // let tag_view = TagsView::new(selected_tags.iter().map(Borrow::borrow), available_tags.iter().map(Borrow::borrow));
+        // let block = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
+
+        // let block_inner_area = block.inner(area);
+        // block.render(area, buffer);
+        // tag_view.render(block_inner_area, buffer, &mut self.tags_view_state);
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
         let mut contents = String::from("> ");
-        contents.push_str(&self.tag_input);
+        // contents.push_str(&self.filter);
         Paragraph::new(contents).render(area, buffer);
     }
 

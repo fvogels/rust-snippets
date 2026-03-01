@@ -44,8 +44,10 @@ impl Library {
         }
 
         for keyword in keywords {
-            let set = self.search_single(keyword);
-            intersection.retain(|i| set.contains(i));
+            if !keyword.is_empty() { // small optimization
+                let set = self.search_single(keyword);
+                intersection.retain(|i| set.contains(i));
+            }
         }
 
         let mut result: Vec<usize> = intersection.iter().copied().collect();

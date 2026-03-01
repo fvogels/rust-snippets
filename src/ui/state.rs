@@ -14,7 +14,7 @@ pub(super) enum Mode {
 
 impl Mode {
     pub fn default(library: Library) -> Self {
-        Mode::View(ViewMode::new(Box::new(library), Box::new(SyntaxHighlighter::new())))
+        Mode::View(ViewMode::new(library, SyntaxHighlighter::new()))
     }
 
     pub fn is_running(&self) -> bool {
@@ -68,6 +68,14 @@ impl State {
         self.keywords.push(keyword);
     }
 
+    pub fn pop_keyword(&mut self) -> Option<String> {
+        self.keywords.pop()
+    }
+
+    pub fn clear_keywords(&mut self) {
+        self.keywords.clear();
+    }
+
     pub fn select_tag(&mut self, tag: String) {
         self.selected_tags.push(tag);
     }
@@ -97,5 +105,9 @@ impl State {
 
         self.visible_tags = tags.into_iter().collect();
         self.visible_tags.sort();
+    }
+
+    pub fn visible_snippet_descriptions<'a>(&'a self) -> impl Iterator<Item=&'a str> {
+        self.visible_snippets.iter().copied().map(|id| self.library.snippet(id).description.as_str())
     }
 }
