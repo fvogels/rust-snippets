@@ -82,16 +82,6 @@ impl Library {
     }
 }
 
-fn build_hierarchy<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Hierarchy {
-    let mut hierarchy = Hierarchy::new();
-
-    for (index, snippet) in enumerate(snippets) {
-        hierarchy.add_snippet(index, snippet.path.iter().map(|s| s.as_str()))
-    }
-
-    hierarchy
-}
-
 fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<String> {
     let mut tag_set = HashSet::new();
 
