@@ -118,12 +118,15 @@ impl TagSearchMode {
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let tags = &self.state.visible_tags;
-        let list_items = tags.iter().map(|tag| ListItem::new(tag.as_str()));
-        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL);
-        let tag_list = List::new(list_items).block(block);
+        let selected_tags = self.state.selected_tags.iter().map(String::as_str);
+        let available_tags = self.state.visible_tags.iter().map(String::as_str);
+        let tag_list = TagsView::new(selected_tags, available_tags);
 
-        Widget::render(tag_list, area, buffer)
+        let block = Block::new().borders(Borders::all()).border_type(BorderType::Double);
+        let tag_list_area = block.inner(area);
+
+        block.render(area, buffer);
+        tag_list.render(tag_list_area, buffer, &mut self.tags_view_state);
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
