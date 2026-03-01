@@ -43,6 +43,12 @@ impl TagSearchMode {
                 })
             },
             KeyCode::Enter => {
+                if let Some(index) = self.tags_view_state.selected() {
+                    let selected_tag = &self.state.visible_tags[index];
+                    self.state.select_tag(selected_tag.clone());
+                    self.state.refresh();
+                }
+                
                 Mode::View(ViewMode {
                     state: self.state,
                     description_list_state: ListState::default().with_selected(Some(0)),

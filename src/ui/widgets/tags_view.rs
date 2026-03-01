@@ -30,6 +30,10 @@ impl TagsViewState {
             self.available_tag_list_state = self.available_tag_list_state.with_selected(Some(0));
         }
     }
+
+    pub fn selected(&self) -> Option<usize> {
+        self.available_tag_list_state.selected()
+    }
 }
 
 impl<'a> TagsView<'a> {

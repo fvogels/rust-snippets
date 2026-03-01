@@ -1,5 +1,5 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style}, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, search_mode::SearchMode, state::{Mode, State}, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::TagsViewState, tree_view::{TreeView, TreeViewState}}}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
+use crate::{snippets::Library, ui::{SearchParameters, search_mode::SearchMode, state::{Mode, State}, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}, tree_view::{TreeView, TreeViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -117,12 +117,16 @@ impl ViewMode {
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let tags = &self.state.visible_tags;
-        let list_items = tags.iter().map(|tag| ListItem::new(tag.as_str()));
-        let block = Block::new().title(Line::raw("Tags")).borders(Borders::ALL);
-        let tag_list = List::new(list_items).block(block);
+        let selected_tags = self.state.selected_tags.iter().map(String::as_str);
+        let available_tags = self.state.visible_tags.iter().map(String::as_str);
+        let tag_list = TagsView::new(selected_tags, available_tags);
 
-        Widget::render(tag_list, area, buffer)
+        let block = Block::new().borders(Borders::all()).border_type(BorderType::Double).title("Tags");
+        let tag_list_area = block.inner(area);
+
+        block.render(area, buffer);
+        let mut tags_view_state = TagsViewState::new();
+        tag_list.render(tag_list_area, buffer, &mut tags_view_state);
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
