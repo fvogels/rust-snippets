@@ -1,4 +1,5 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::{Line}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
+use itertools::Itertools;
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
 use crate::{snippets::Library, ui::{SearchParameters, state::{Mode, State}, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
 
 
@@ -59,14 +60,19 @@ impl SearchMode {
                 //     search_parameters: self.search_parameters,
                 // })
             },
-            // KeyCode::Backspace => {
-            //     if self.filter.len() > 0 {
-            //         self.filter.truncate(self.filter.len() - 1);
-            //         self.filter_snippets();
-            //         self.ensure_snippet_selection();
-            //     }
-            //     Mode::Search(self)
-            // },
+            KeyCode::Backspace => {
+                if let Some(mut last_keyword) = self.state.keywords.pop() {
+                    if last_keyword.is_empty() {
+                        self.state.keywords.pop();
+                    }
+                    else {
+                        last_keyword.truncate(last_keyword.len() - 1);
+                    }
+
+                    self.state.refresh();
+                }
+                Mode::Search(self)
+            },
             KeyCode::Char(' ') => {
                 match self.state.keywords.last() {
                     None => {
@@ -143,10 +149,14 @@ impl SearchMode {
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
-        let mut contents = String::from("> ");
-        let keywords = self.state.keywords.join(" ");
-        contents.push_str(keywords.as_str());
-        Paragraph::new(contents).render(area, buffer);
+        // let mut contents = String::from("> ");
+        let keyword_spans = self.state.keywords.iter().filter(|keyword| !keyword.is_empty()).map(|keyword| {
+            Span::default().content(format!(" {} ", keyword)).on_gray()
+        });
+        let separator_span = Span::default().content(" ");
+        let spans = itertools::intersperse(keyword_spans, separator_span);
+        let line = Line::default().spans(spans);
+        Paragraph::new(line).render(area, buffer);
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
