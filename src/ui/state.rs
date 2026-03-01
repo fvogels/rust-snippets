@@ -48,20 +48,35 @@ impl Mode {
 }
 
 pub struct ModelState {
-    library: Library,
-    selected_tags: Vec<String>,
-    keywords: Vec<String>,
-    visible_snippets: Vec<usize>,
-    visible_tags: Vec<String>,
+    pub library: Library,
+    pub syntax_highlighter: SyntaxHighlighter,
+    pub selected_tags: Vec<String>,
+    pub keywords: Vec<String>,
+    pub visible_snippets: Vec<usize>,
+    pub visible_tags: Vec<String>,
 }
 
 impl ModelState {
+    pub fn new(library: Library, syntax_highlighter: SyntaxHighlighter) -> ModelState {
+        ModelState {
+            visible_snippets: library.snippets().collect(),
+            visible_tags: library.tags().clone(),
+            library: library,
+            syntax_highlighter: syntax_highlighter,
+            selected_tags: Vec::new(),
+            keywords: Vec::new(),
+        }
+    }
+
     pub fn add_keyword(&mut self, keyword: String) {
         self.keywords.push(keyword);
     }
 
     pub fn select_tag(&mut self, tag: String) {
         self.selected_tags.push(tag);
+    }
+
+    pub fn refresh(&mut self) {
         self.update_visible_snippets();
         self.update_visible_tags();
     }
@@ -88,4 +103,3 @@ impl ModelState {
         self.visible_tags.sort();
     }
 }
-
