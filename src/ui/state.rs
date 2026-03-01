@@ -16,25 +16,20 @@ pub(super) enum Mode {
     Terminated,
 }
 
-impl State {
-    pub fn new(library: Library) -> Self {
-        let boxed_library = Box::new(library);
-        let boxed_highlighter = Box::new(SyntaxHighlighter::new());
-
-        State{
-            mode: Mode::View(ViewMode::new(boxed_library, boxed_highlighter)),
-        }
+impl Mode {
+    pub fn default(library: Library) -> Self {
+        Mode::View(ViewMode::new(Box::new(library), Box::new(SyntaxHighlighter::new())))
     }
 
     pub fn is_running(&self) -> bool {
-        match self.mode {
+        match self {
             Mode::Terminated => false,
             _ => true,
         }
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
-        match &mut self.mode {
+        match self {
             Mode::Terminated => panic!("should never occur"),
             Mode::View(view_mode) => view_mode.draw(frame),
             Mode::Search(search_mode) => search_mode.draw(frame),
@@ -42,10 +37,8 @@ impl State {
         }
     }
 
-    pub fn handle_event(&mut self, event: Event) {
-        let current_mode = mem::replace(&mut self.mode, Mode::Terminated);
-
-        self.mode = match current_mode {
+    pub fn handle_event(self, event: Event) -> Mode {
+        match self {
             Mode::Terminated => panic!("should never occur"),
             Mode::View(view_mode) => view_mode.handle_event(event),
             Mode::Search(search_mode) => search_mode.handle_event(event),

@@ -9,9 +9,9 @@ mod search_parameters;
 
 pub use search_parameters::SearchParameters;
 
-use state::State;
+use state::Mode;
 
-use std::{io, path::PathBuf};
+use std::{io, mem, path::PathBuf};
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event};
 
@@ -29,7 +29,7 @@ pub fn start_ui() {
 }
 
 struct Application {
-    state: State,
+    mode: Mode,
 }
 
 impl Application {
@@ -38,12 +38,12 @@ impl Application {
         let library = Library::load(&path).unwrap();
 
         Application{
-            state: State::new(library),
+            mode: Mode::default(library),
         }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while self.state.is_running() {
+        while self.mode.is_running() {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?
         }
@@ -52,12 +52,13 @@ impl Application {
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        self.state.draw(frame)
+        self.mode.draw(frame)
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
         let event = event::read()?;
-        self.state.handle_event(event);
+        let mut current_mode = mem::replace(&mut self.mode, Mode::Terminated);
+        self.mode = current_mode.handle_event(event);
         Ok(())
     }
 }
