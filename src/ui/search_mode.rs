@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
 use crate::{snippets::Library, ui::{SearchParameters, state::{Mode, State}, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
 
 
@@ -149,14 +149,15 @@ impl SearchMode {
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
-        // let mut contents = String::from("> ");
         let keyword_spans = self.state.keywords.iter().filter(|keyword| !keyword.is_empty()).map(|keyword| {
             Span::default().content(format!(" {} ", keyword)).on_gray()
         });
         let separator_span = Span::default().content(" ");
         let spans = itertools::intersperse(keyword_spans, separator_span);
         let line = Line::default().spans(spans);
-        Paragraph::new(line).render(area, buffer);
+        let paragraph = Paragraph::new(line).bg(Color::DarkGray);
+
+        paragraph.render(area, buffer);
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
