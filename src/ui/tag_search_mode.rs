@@ -41,18 +41,6 @@ impl TagSearchMode {
                     description_list_state: ListState::default().with_selected(Some(0)),
                     snippet_view_state: SnippetViewState::new()
                 })
-
-                // let selected_nodes = self.library.snippets().collect();
-                // self.description_list_state.select_first();
-
-                // Mode::View(ViewMode{
-                //     library: self.library,
-                //     syntax_highlighter: self.syntax_highlighter,
-                //     snippet_list: selected_nodes,
-                //     description_list_state: self.description_list_state,
-                //     snippet_view_state: self.snippet_view_state,
-                //     search_parameters: self.search_parameters,
-                // })
             },
             KeyCode::Enter => {
                 Mode::View(ViewMode {
