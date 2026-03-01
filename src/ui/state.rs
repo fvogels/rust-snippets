@@ -5,10 +5,6 @@ use ratatui::{Frame, crossterm::event::{Event}};
 use crate::{snippets::Library, ui::{search_mode::SearchMode, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
 
 
-pub struct State {
-    mode: Mode,
-}
-
 pub(super) enum Mode {
     View(ViewMode),
     Search(SearchMode),
@@ -47,7 +43,7 @@ impl Mode {
     }
 }
 
-pub struct ModelState {
+pub struct State {
     pub library: Library,
     pub syntax_highlighter: SyntaxHighlighter,
     pub selected_tags: Vec<String>,
@@ -56,9 +52,9 @@ pub struct ModelState {
     pub visible_tags: Vec<String>,
 }
 
-impl ModelState {
-    pub fn new(library: Library, syntax_highlighter: SyntaxHighlighter) -> ModelState {
-        ModelState {
+impl State {
+    pub fn new(library: Library, syntax_highlighter: SyntaxHighlighter) -> State {
+        State {
             visible_snippets: library.snippets().collect(),
             visible_tags: library.tags().clone(),
             library: library,
