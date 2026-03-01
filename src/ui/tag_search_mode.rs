@@ -91,31 +91,10 @@ impl TagSearchMode {
                 self.state.refresh();
 
                 Mode::TagSearch(self)
-
-                // self.tag_input.push(char.to_ascii_lowercase());
-                // self.filter_snippets();
-                // self.ensure_snippet_selection();
-                // Mode::TagSearch(self)
             },
             _ => Mode::TagSearch(self)
         }
     }
-
-    // fn filter_snippets(&mut self) {
-    //     let keywords = self.tag_input.split(' ');
-    //     let filtered_snippets = self.library.search(keywords, self.search_parameters.tags.iter().map(|s| s.as_str()));
-
-    //     self.snippet_list = filtered_snippets;
-    // }
-
-    // fn ensure_snippet_selection(&mut self) {
-    //     if !self.snippet_list.is_empty() {
-    //         match self.description_list_state.selected() {
-    //             Some(_) => {}
-    //             None => self.description_list_state.select_first(),
-    //         }
-    //     }
-    // }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
@@ -124,13 +103,6 @@ impl TagSearchMode {
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
         Widget::render(list, area, buffer);
-
-        // let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        // let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
-        // let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
-        // let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
-
-        // StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
@@ -143,15 +115,6 @@ impl TagSearchMode {
             let mut snippet_view_state = SnippetViewState::new();
             snippet_view.render(area, buffer, &mut snippet_view_state);
         }
-
-        // match self.description_list_state.selected() {
-        //     None => {},
-        //     Some(selected_snippet_index) => {
-        //         let snippet = self.library.snippet(selected_snippet_index);
-        //         let snippet_view = SnippetView::new(snippet, &self.syntax_highlighter);
-        //         snippet_view.render(area, buffer, &mut self.snippet_view_state);
-        //     }
-        // }
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
@@ -161,16 +124,6 @@ impl TagSearchMode {
         let tag_list = List::new(list_items).block(block);
 
         Widget::render(tag_list, area, buffer)
-
-        // let selected_tags = &self.search_parameters.tags;
-        // let available_tags = self.library.tags();
-
-        // let tag_view = TagsView::new(selected_tags.iter().map(Borrow::borrow), available_tags.iter().map(Borrow::borrow));
-        // let block = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
-
-        // let block_inner_area = block.inner(area);
-        // block.render(area, buffer);
-        // tag_view.render(block_inner_area, buffer, &mut self.tags_view_state);
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
