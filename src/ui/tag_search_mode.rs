@@ -124,7 +124,7 @@ impl TagSearchMode {
         let available_tags = self.state.visible_tags.iter().map(String::as_str);
         let tag_list = TagsView::new(selected_tags, available_tags);
 
-        let block = Block::new().borders(Borders::all()).border_type(BorderType::Double);
+        let block = Block::new().borders(Borders::all()).border_type(BorderType::Double).title("Tags");
         let tag_list_area = block.inner(area);
 
         block.render(area, buffer);
