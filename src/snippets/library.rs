@@ -7,7 +7,6 @@ use crate::{snippets::{hierarchy::Hierarchy, snippets::{Snippet, SnippetError, l
 pub struct Library {
     snippets: Vec<Snippet>,
     trie: trie::Trie<usize>,
-    hierarchy: Hierarchy,
     tags: Vec<String>,
 }
 
@@ -27,7 +26,6 @@ impl Library {
         }
 
         let library = Library{
-            hierarchy: build_hierarchy(snippets.iter()),
             tags: collect_tags(snippets.iter()),
             snippets: snippets,
             trie: trie_builder.finalize(),
@@ -77,10 +75,6 @@ impl Library {
 
     pub fn snippet<'a>(&'a self, index: usize) -> &'a Snippet {
         &self.snippets[index]
-    }
-
-    pub fn hierarchy<'a>(&'a self) -> &'a Hierarchy {
-        &self.hierarchy
     }
 
     pub fn tags<'a>(&'a self) -> &'a Vec<String> {
