@@ -24,6 +24,12 @@ impl TagsViewState {
     pub fn select_previous(&mut self) {
         self.available_tag_list_state.select_previous();
     }
+
+    pub fn ensure_selection(&mut self) {
+        if self.available_tag_list_state.selected().is_none() {
+            self.available_tag_list_state = self.available_tag_list_state.with_selected(Some(0));
+        }
+    }
 }
 
 impl<'a> TagsView<'a> {
