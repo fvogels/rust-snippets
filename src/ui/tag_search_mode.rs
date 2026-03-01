@@ -60,20 +60,43 @@ impl TagSearchMode {
             //         search_parameters: self.search_parameters,
             //     })
             // },
-            // KeyCode::Backspace => {
-            //     if self.tag_input.len() > 0 {
-            //         self.tag_input.truncate(self.tag_input.len() - 1);
-            //         self.filter_snippets();
-            //         self.ensure_snippet_selection();
-            //     }
-            //     Mode::TagSearch(self)
-            // },
-            // KeyCode::Char(char) if valid_filter_character(char) => {
-            //     self.tag_input.push(char.to_ascii_lowercase());
-            //     self.filter_snippets();
-            //     self.ensure_snippet_selection();
-            //     Mode::TagSearch(self)
-            // },
+            KeyCode::Backspace => {
+                if let Some(mut s) = self.state.tag_input {
+                    if s.len() > 1 {
+                        s.truncate(s.len() - 1);
+                        self.state.tag_input = Some(s);
+                    }
+                    else {
+                        self.state.tag_input = None;
+                    }
+
+                    self.state.refresh();
+                }
+
+                Mode::TagSearch(self)
+            },
+            KeyCode::Char(mut char) if valid_filter_character(char) => {
+                char = char.to_ascii_lowercase();
+
+                match self.state.tag_input {
+                    Some(mut s) => {
+                        s.push(char);
+                        self.state.tag_input = Some(s);
+                    }
+                    None => {
+                        self.state.tag_input = Some(String::from(char));
+                    }
+                }
+
+                self.state.refresh();
+
+                Mode::TagSearch(self)
+
+                // self.tag_input.push(char.to_ascii_lowercase());
+                // self.filter_snippets();
+                // self.ensure_snippet_selection();
+                // Mode::TagSearch(self)
+            },
             _ => Mode::TagSearch(self)
         }
     }
@@ -151,8 +174,10 @@ impl TagSearchMode {
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
-        let mut contents = String::from("> ");
-        // contents.push_str(&self.filter);
+        let mut contents = String::from("#");
+        if let Some(tag_input) = &self.state.tag_input {
+            contents.push_str(tag_input.as_str());
+        }
         Paragraph::new(contents).render(area, buffer);
     }
 
@@ -182,5 +207,5 @@ impl Widget for &mut TagSearchMode {
 }
 
 fn valid_filter_character(c: char) -> bool {
-    c.is_ascii_graphic() || c == ' '
+    c.is_ascii_graphic()
 }

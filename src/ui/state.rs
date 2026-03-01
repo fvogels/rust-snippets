@@ -50,6 +50,7 @@ pub struct State {
     pub keywords: Vec<String>,
     pub visible_snippets: Vec<usize>,
     pub visible_tags: Vec<String>,
+    pub tag_input: Option<String>,
 }
 
 impl State {
@@ -61,11 +62,8 @@ impl State {
             syntax_highlighter: syntax_highlighter,
             selected_tags: Vec::new(),
             keywords: Vec::new(),
+            tag_input: None,
         }
-    }
-
-    pub fn add_keyword(&mut self, keyword: String) {
-        self.keywords.push(keyword);
     }
 
     pub fn pop_keyword(&mut self) -> Option<String> {
@@ -90,20 +88,31 @@ impl State {
     }
 
     fn update_visible_tags(&mut self) {
-        let mut tags: HashSet<String> = HashSet::new();
+        let mut tags: HashSet<&str> = HashSet::new();
 
+        // Find the union of the tags of all visible snippets
         for snippet_id in self.visible_snippets.iter().copied() {
             let snippet = self.library.snippet(snippet_id);
             let snippet_tags = &snippet.tags;
 
-            tags.retain(|tag| snippet_tags.contains(tag));
+            for snippet_tag in snippet_tags.iter() {
+                if let Some(prefix) = &self.tag_input {
+                    if snippet_tag.starts_with(prefix.as_str()) {
+                        tags.insert(snippet_tag.as_str());
+                    }
+                }
+                else {
+                    tags.insert(snippet_tag.as_str());
+                }
+            }
         }
 
+        // Remove the already selected tags
         for selected_tag in self.selected_tags.iter() {
-            tags.remove(selected_tag);
+            tags.remove(selected_tag.as_str());
         }
 
-        self.visible_tags = tags.into_iter().collect();
+        self.visible_tags = tags.into_iter().map(String::from).collect();
         self.visible_tags.sort();
     }
 

@@ -80,7 +80,7 @@ impl SearchMode {
                     },
                     Some(keyword) => {
                         if !keyword.is_empty() {
-                            self.state.add_keyword(String::from(""));
+                            self.state.keywords.push(String::from(""));
                         }
                     }
                 }
@@ -98,7 +98,7 @@ impl SearchMode {
                         String::from(char)
                     }
                 };
-                self.state.add_keyword(new_keyword);
+                self.state.keywords.push(new_keyword);
                 self.state.refresh();
                 Mode::Search(self)
             },
