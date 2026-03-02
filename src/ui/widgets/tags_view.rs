@@ -45,6 +45,23 @@ impl<'a> TagsView<'a> {
     }
 }
 
+impl<'a> Widget for TagsView<'a> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let [selected_tags_area, available_tags_area] = Layout::vertical([Constraint::Length(self.selected_tags.len().try_into().unwrap()), Constraint::Fill(1)]).areas(area);
+
+        let selected_tags_items = self.selected_tags.iter().copied().map(|tag| ListItem::new(tag).white().on_blue());
+        let selected_tags_list = List::new(selected_tags_items);
+
+        let available_tags_items = self.available_tags.iter().copied().map(|tag| ListItem::new(tag));
+        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
+        let available_tags_list = List::new(available_tags_items).highlight_style(highlight_style);
+
+        Widget::render(selected_tags_list, selected_tags_area, buffer);
+        Widget::render(available_tags_list, available_tags_area, buffer);
+    }
+}
+
+
 impl<'a> StatefulWidget for TagsView<'a> {
     type State = TagsViewState;
 

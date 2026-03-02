@@ -169,8 +169,7 @@ impl SearchMode {
         let tag_list_area = block.inner(area);
 
         block.render(area, buffer);
-        let mut tags_view_state = TagsViewState::new();
-        tag_list.render(tag_list_area, buffer, &mut tags_view_state);
+        Widget::render(tag_list, tag_list_area, buffer);
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {

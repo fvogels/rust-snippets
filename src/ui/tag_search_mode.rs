@@ -48,7 +48,7 @@ impl TagSearchMode {
                     self.state.select_tag(selected_tag.clone());
                     self.state.refresh();
                 }
-                
+
                 Mode::View(ViewMode {
                     state: self.state,
                     description_list_state: ListState::default().with_selected(Some(0)),
@@ -122,7 +122,7 @@ impl TagSearchMode {
         let tag_list_area = block.inner(area);
 
         block.render(area, buffer);
-        tag_list.render(tag_list_area, buffer, &mut self.tags_view_state);
+        StatefulWidget::render(tag_list, tag_list_area, buffer, &mut self.tags_view_state);
     }
 
     fn render_input_field(&mut self, area: Rect, buffer: &mut Buffer) {
