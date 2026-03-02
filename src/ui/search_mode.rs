@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, state::{Mode, State}, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tree_view::TreeViewState}}};
+use crate::{snippets::Library, ui::{SearchParameters, state::{Mode, State}, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}, tree_view::TreeViewState}}};
 
 
 pub(super) struct SearchMode {
@@ -160,6 +160,19 @@ impl SearchMode {
         paragraph.render(area, buffer);
     }
 
+    fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        let selected_tags = self.state.selected_tags.iter().map(String::as_str);
+        let available_tags = self.state.visible_tags.iter().map(String::as_str);
+        let tag_list = TagsView::new(selected_tags, available_tags);
+
+        let block = Block::new().borders(Borders::all()).title("Tags");
+        let tag_list_area = block.inner(area);
+
+        block.render(area, buffer);
+        let mut tags_view_state = TagsViewState::new();
+        tag_list.render(tag_list_area, buffer, &mut tags_view_state);
+    }
+
     pub fn draw(&mut self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
     }
@@ -174,11 +187,14 @@ impl SearchMode {
 
 impl Widget for &mut SearchMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let [snippet_list_area, snippet_area, input_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+        let [upper_area, input_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+        let [tag_list_area, right_area] = Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(upper_area);
+        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
 
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_selected_snippet(snippet_area, buffer);
         self.render_input_field(input_area, buffer);
+        self.render_tag_list(tag_list_area, buffer);
     }
 }
 
