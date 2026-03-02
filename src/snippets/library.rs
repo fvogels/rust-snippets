@@ -39,7 +39,7 @@ impl Library {
         Ok(library)
     }
 
-    pub fn search<'a, 'b, 'c>(&'a self, keywords: impl Iterator<Item=&'b str>, tags: impl Iterator<Item=&'c str>) -> Vec<usize> {
+    pub fn search<'a, 'b>(&self, keywords: impl Iterator<Item=&'a str>, tags: impl Iterator<Item=&'b str>) -> Vec<usize> {
         let mut intersection = self.collect_snippets_with_tags(tags);
 
         for keyword in keywords {
