@@ -19,13 +19,16 @@ impl SyntaxHighlighter {
         SyntaxHighlighter { syntax_set, theme }
     }
 
-    pub fn highlight_lines<'a>(&self, language: &str, lines: impl Iterator<Item=&'a str>) -> Option<Paragraph<'a>> {
-        let syntax = self.syntax_set.find_syntax_by_name(language)?;
+    pub fn highlight_lines<'a>(&self, language: &str, lines: impl Iterator<Item=&'a str>) -> Paragraph<'a> {
+        let syntax = match self.syntax_set.find_syntax_by_name(language) {
+            Some(s) => s,
+            None => self.syntax_set.find_syntax_plain_text(),
+        };
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
         let highlighted_lines: Vec<Line> = lines.map(|line| self.highlight_line(line, &mut highlighter)).collect();
         let paragraph = Paragraph::new(highlighted_lines);
 
-        Some(paragraph)
+        paragraph
     }
 
     fn highlight_line<'a>(&self, line: &'a str, highlighter: &mut HighlightLines) -> Line<'a> {

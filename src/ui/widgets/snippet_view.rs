@@ -67,7 +67,7 @@ impl<'a> StatefulWidget for SnippetView<'a> {
         let lines = selected_part.lines.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
         let bottom_title = Line::raw(snippet_caption);
         let snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
-        let paragraph = self.syntax_highlighter.highlight_lines("Go", lines.into_iter()).unwrap().block(snippet_caption_block);
+        let paragraph = self.syntax_highlighter.highlight_lines("Go", lines.into_iter()).block(snippet_caption_block);
         paragraph.render(area, buffer)
     }
 }
