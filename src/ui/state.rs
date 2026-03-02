@@ -1,4 +1,4 @@
-use std::{collections::HashSet, mem};
+use std::{collections::HashSet};
 
 use ratatui::{Frame, crossterm::event::{Event}};
 

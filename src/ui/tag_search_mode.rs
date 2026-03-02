@@ -1,17 +1,10 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, Paragraph, StatefulWidget, Widget}};
 use crate::{ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct TagSearchMode {
     pub state: State,
     pub(super) tags_view_state: TagsViewState,
-    // pub(super) library: Box<Library>,
-    // pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
-    // pub(super) snippet_list: Vec<usize>,
-    // pub(super) description_list_state: ListState,
-    // pub(super) snippet_view_state: SnippetViewState,
-    // pub(super) search_parameters: SearchParameters,
-    // pub(super) tag_input: String,
 }
 
 impl TagSearchMode {
@@ -25,14 +18,6 @@ impl TagSearchMode {
                 self.tags_view_state.select_next();
                 Mode::TagSearch(self)
             },
-            // KeyCode::Tab => {
-            //     self.snippet_view_state.select_next();
-            //     Mode::TagSearch(self)
-            // },
-            // KeyCode::BackTab => {
-            //     self.snippet_view_state.select_previous();
-            //     Mode::TagSearch(self)
-            // },
             KeyCode::Esc => {
                 Mode::View(ViewMode {
                     state: self.state,

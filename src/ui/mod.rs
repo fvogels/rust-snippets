@@ -53,7 +53,7 @@ impl Application {
 
     fn handle_events(&mut self) -> io::Result<()> {
         let event = event::read()?;
-        let mut current_mode = mem::replace(&mut self.mode, Mode::Terminated);
+        let current_mode = mem::replace(&mut self.mode, Mode::Terminated);
         self.mode = current_mode.handle_event(event);
         Ok(())
     }
