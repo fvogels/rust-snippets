@@ -1,17 +1,11 @@
-use itertools::Itertools;
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, state::{Mode, State}, syntax::SyntaxHighlighter, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}, tree_view::TreeViewState}}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, text::{Line, Span}, widgets::{Block, Borders, List, ListState, Paragraph, StatefulWidget, Widget}};
+use crate::{ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView}}}};
 
 
 pub(super) struct SearchMode {
     pub state: State,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
-    // pub(super) library: Box<Library>,
-    // pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
-    // pub(super) snippet_list: Vec<usize>,
-    // pub(super) search_parameters: SearchParameters,
-    // pub(super) filter: String,
 }
 
 impl SearchMode {
@@ -38,27 +32,9 @@ impl SearchMode {
                 self.state.refresh();
                 self.description_list_state.select(Some(0));
                 Mode::View(ViewMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
-
-                // Mode::View(ViewMode{
-                //     library: self.library,
-                //     syntax_highlighter: self.syntax_highlighter,
-                //     snippet_list: selected_nodes,
-                //     description_list_state: self.description_list_state,
-                //     snippet_view_state: self.snippet_view_state,
-                //     search_parameters: self.search_parameters,
-                // })
             },
             KeyCode::Enter => {
                 Mode::View(ViewMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
-
-                // Mode::View(ViewMode{
-                //     library: self.library,
-                //     syntax_highlighter: self.syntax_highlighter,
-                //     snippet_list: self.snippet_list,
-                //     description_list_state: self.description_list_state,
-                //     snippet_view_state: self.snippet_view_state,
-                //     search_parameters: self.search_parameters,
-                // })
             },
             KeyCode::Backspace => {
                 if let Some(mut last_keyword) = self.state.keywords.pop() {
@@ -106,22 +82,6 @@ impl SearchMode {
         }
     }
 
-    // fn filter_snippets(&mut self) {
-    //     let keywords = self.filter.split(' ');
-    //     let filtered_snippets = self.library.search(keywords, self.search_parameters.tags.iter().map(|s| s.as_str()));
-
-    //     self.snippet_list = filtered_snippets;
-    // }
-
-    // fn ensure_snippet_selection(&mut self) {
-    //     if !self.snippet_list.is_empty() {
-    //         match self.description_list_state.selected() {
-    //             Some(_) => {}
-    //             None => self.description_list_state.select_first(),
-    //         }
-    //     }
-    // }
-
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
         let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
@@ -129,12 +89,6 @@ impl SearchMode {
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
-        // let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        // let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
-        // let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
-        // let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
-
-        // StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
