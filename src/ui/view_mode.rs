@@ -38,31 +38,12 @@ impl ViewMode {
             },
             KeyCode::Char('/') => {
                 Mode::Search(SearchMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
-                // Mode::Search(SearchMode{
-                //     library: self.library,
-                //     syntax_highlighter: self.syntax_highlighter,
-                //     snippet_list: self.snippet_list,
-                //     description_list_state: self.description_list_state,
-                //     snippet_view_state: self.snippet_view_state,
-                //     filter: String::new(),
-                //     search_parameters: self.search_parameters,
-                // })
             },
             KeyCode::Char('#') => {
                 Mode::TagSearch(TagSearchMode {
                     state: self.state,
                     tags_view_state: TagsViewState::new(),
                 })
-                // Mode::TagSearch(TagSearchMode{
-                //     library: self.library,
-                //     syntax_highlighter: self.syntax_highlighter,
-                //     snippet_list: self.snippet_list,
-                //     description_list_state: self.description_list_state,
-                //     snippet_view_state: self.snippet_view_state,
-                //     tag_input: String::new(),
-                //     search_parameters: self.search_parameters,
-                //     tags_view_state: TagsViewState::new(),
-                // })
             },
             KeyCode::Up => {
                 self.description_list_state.select_previous();
