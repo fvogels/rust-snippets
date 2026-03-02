@@ -31,14 +31,12 @@ pub enum SnippetError {
 #[derive(Debug, Deserialize)]
 struct Metadata {
     description: String,
-    language: String,
     tags: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct Snippet {
     pub description: String,
-    pub language: String,
     pub parts: Vec<Part>,
     pub tags: HashSet<String>,
     pub path: Vec<String>,
@@ -54,7 +52,6 @@ impl Snippet {
     pub fn keywords(&self) -> Vec<String> {
         let mut keywords = Vec::new();
 
-        keywords.push(self.language.to_lowercase());
         self.description.split(" ").for_each(|s| keywords.push(s.to_lowercase()));
         self.tags.iter().for_each(|tag| keywords.push(tag.to_lowercase()));
 
@@ -116,7 +113,6 @@ where P: AsRef<Path>, Q: AsRef<Path> {
 
     let snippet = Snippet{
         description: metadata.description,
-        language: metadata.language,
         parts: parts?,
         tags: tags,
         path: derive_path(root_path, file_path)?,

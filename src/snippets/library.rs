@@ -108,7 +108,6 @@ mod test {
     fn search_with_tags() {
         let snippet1 = Snippet{
             description: String::from("a"),
-            language: String::from("c"),
             parts: Vec::new(),
             path: Vec::new(),
             tags: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
@@ -125,7 +124,6 @@ mod test {
     fn search_with_tags_zero_results() {
         let snippet1 = Snippet{
             description: String::from("a"),
-            language: String::from("c"),
             parts: Vec::new(),
             path: Vec::new(),
             tags: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
