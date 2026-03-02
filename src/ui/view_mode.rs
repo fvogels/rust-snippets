@@ -56,7 +56,23 @@ impl ViewMode {
                 self.state.pop_selected_tag();
                 self.state.refresh();
                 Mode::View(self)
-            }
+            },
+            KeyCode::Char('c') => {
+                if let Some(index) = self.description_list_state.selected() {
+                    let snippet_id = &self.state.visible_snippets[index];
+                    let snippet = self.state.library.snippet(*snippet_id);
+
+                    if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
+                        let lines = &part.lines;
+                        let text = lines.join("\n");
+
+                        if let Err(error) = cli_clipboard::set_contents(text) {
+                            panic!("failed to copy snippet to clipboard: {}", error)
+                        }
+                    }
+                }
+                Mode::View(self)
+            },
             _ => Mode::View(self)
         }
     }
@@ -100,6 +116,7 @@ impl ViewMode {
             Binding::new("del", "pop tag"),
             Binding::new("/", "search"),
             Binding::new("?", "reset search"),
+            Binding::new("c", "copy"),
         ];
         let keybindings_view = KeybindingsView::new(bindings);
 
