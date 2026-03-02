@@ -66,6 +66,11 @@ impl ViewMode {
                 self.state.refresh();
                 Mode::View(self)
             },
+            KeyCode::Delete => {
+                self.state.pop_selected_tag();
+                self.state.refresh();
+                Mode::View(self)
+            }
             _ => Mode::View(self)
         }
     }

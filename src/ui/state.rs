@@ -78,6 +78,10 @@ impl State {
         self.selected_tags.push(tag);
     }
 
+    pub fn pop_selected_tag(&mut self) {
+        self.selected_tags.pop();
+    }
+
     pub fn refresh(&mut self) {
         self.update_visible_snippets();
         self.update_visible_tags();
