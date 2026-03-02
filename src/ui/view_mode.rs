@@ -1,16 +1,11 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListItem, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{SearchParameters, search_mode::SearchMode, state::{Mode, State}, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, tree_adapter::TreeAdapter, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}, tree_view::{TreeView, TreeViewState}}}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, StatefulWidget, Widget}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct ViewMode {
     pub state: State,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
-
-    // pub(super) library: Box<Library>,
-    // pub(super) syntax_highlighter: Box<SyntaxHighlighter>,
-    // pub(super) snippet_list: Vec<usize>,
-    // pub(super) search_parameters: SearchParameters,
 }
 
 impl ViewMode {
@@ -20,15 +15,6 @@ impl ViewMode {
             description_list_state: ListState::default().with_selected(Some(0)),
             snippet_view_state: SnippetViewState::new(),
         }
-
-        // ViewMode {
-        //     snippet_list: library.snippets().collect(),
-        //     library: library,
-        //     syntax_highlighter: syntax_highlighter,
-        //     description_list_state: ListState::default().with_selected(Some(0)),
-        //     snippet_view_state: SnippetViewState::new(),
-        //     search_parameters: SearchParameters::new(),
-        // }
     }
 
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
