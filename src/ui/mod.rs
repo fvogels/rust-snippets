@@ -13,8 +13,8 @@ use ratatui::{DefaultTerminal, Frame, crossterm::event};
 
 use crate::{snippets::Library, ui::syntax::SyntaxHighlighter};
 
-pub fn start_ui() {
-    match ratatui::run(|terminal| Application::new().run(terminal)) {
+pub fn start_ui(library: Library) {
+    match ratatui::run(|terminal| Application::new(library).run(terminal)) {
         Ok(()) => {
             println!("TUI successfully terminated")
         },
@@ -29,9 +29,7 @@ struct Application {
 }
 
 impl Application {
-    fn new() -> Self {
-        let path = PathBuf::from("../data/snippets");
-        let library = Library::load_files(&path).unwrap();
+    fn new(library: Library) -> Self {
         let syntax_highlighter = create_syntax_highlighter();
 
         Application{

@@ -1,8 +1,6 @@
-use std::path::PathBuf;
-
 use clap::{Parser, Subcommand};
 
-use crate::{snippets::Library, ui::start_ui};
+use crate::{snippets::Library, ui};
 
 
 #[derive(Parser, Debug)]
@@ -87,4 +85,10 @@ fn create_archive() {
 
 fn load_library() -> Library {
     Library::read_archive(&"./archive.bin").unwrap()
+}
+
+fn start_ui() {
+    let library = load_library();
+
+    ui::start_ui(library);
 }
