@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+
 use ratatui::{text::{Line, Span}, widgets::Paragraph};
 use syntect::{easy::HighlightLines, highlighting::{FontStyle, Theme, ThemeSet}, parsing::{SyntaxReference, SyntaxSet}};
 
 
 pub struct SyntaxHighlighter {
     syntax_set: SyntaxSet,
+    aliases: HashMap<String, String>,
     theme: Theme,
 }
 
@@ -16,7 +19,20 @@ impl SyntaxHighlighter {
         let syntax_set = SyntaxSet::load_defaults_nonewlines();
         let theme = create_theme();
 
-        SyntaxHighlighter { syntax_set, theme }
+        SyntaxHighlighter {
+            syntax_set,
+            theme,
+            aliases: HashMap::new(),
+        }
+    }
+
+    pub fn supported_languages(&self) -> Vec<String> {
+        let syntax_set = syntect::parsing::SyntaxSet::load_defaults_newlines();
+        syntax_set.syntaxes().iter().map(|s| s.name.to_owned()).collect()
+    }
+
+    pub fn add_alias(&mut self, alias: &str, language: &str) {
+        self.aliases.insert(alias.to_owned(), language.to_owned());
     }
 
     pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>) -> Paragraph<'a> {
@@ -30,6 +46,8 @@ impl SyntaxHighlighter {
 
     fn get_syntax_reference(&self, language: Option<&str>) -> &SyntaxReference {
         if let Some(language) = language {
+            let language = self.aliases.get(language).map(String::as_str).unwrap_or(language);
+
             match self.syntax_set.find_syntax_by_name(language) {
                 Some(s) => s,
                 None => self.syntax_set.find_syntax_plain_text(),

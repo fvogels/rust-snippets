@@ -13,8 +13,8 @@ pub(super) enum Mode {
 }
 
 impl Mode {
-    pub fn default(library: Library) -> Self {
-        Mode::View(ViewMode::new(library, SyntaxHighlighter::new()))
+    pub fn default(library: Library, syntax_highlighter: SyntaxHighlighter) -> Self {
+        Mode::View(ViewMode::new(library, syntax_highlighter))
     }
 
     pub fn is_running(&self) -> bool {
