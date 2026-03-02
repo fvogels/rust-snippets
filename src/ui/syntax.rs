@@ -1,5 +1,5 @@
 use ratatui::{text::{Line, Span}, widgets::Paragraph};
-use syntect::{easy::HighlightLines, highlighting::{FontStyle, Theme, ThemeSet}, parsing::SyntaxSet};
+use syntect::{easy::HighlightLines, highlighting::{FontStyle, Theme, ThemeSet}, parsing::{SyntaxReference, SyntaxSet}};
 
 
 pub struct SyntaxHighlighter {
@@ -19,16 +19,25 @@ impl SyntaxHighlighter {
         SyntaxHighlighter { syntax_set, theme }
     }
 
-    pub fn highlight_lines<'a>(&self, language: &str, lines: impl Iterator<Item=&'a str>) -> Paragraph<'a> {
-        let syntax = match self.syntax_set.find_syntax_by_name(language) {
-            Some(s) => s,
-            None => self.syntax_set.find_syntax_plain_text(),
-        };
+    pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>) -> Paragraph<'a> {
+        let syntax = self.get_syntax_reference(language);
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
         let highlighted_lines: Vec<Line> = lines.map(|line| self.highlight_line(line, &mut highlighter)).collect();
         let paragraph = Paragraph::new(highlighted_lines);
 
         paragraph
+    }
+
+    fn get_syntax_reference(&self, language: Option<&str>) -> &SyntaxReference {
+        if let Some(language) = language {
+            match self.syntax_set.find_syntax_by_name(language) {
+                Some(s) => s,
+                None => self.syntax_set.find_syntax_plain_text(),
+            }
+        }
+        else {
+            self.syntax_set.find_syntax_plain_text()
+        }
     }
 
     fn highlight_line<'a>(&self, line: &'a str, highlighter: &mut HighlightLines) -> Line<'a> {
