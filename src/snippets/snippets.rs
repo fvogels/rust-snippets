@@ -1,10 +1,10 @@
 use std::{collections::{HashMap, HashSet}, path::{Path, PathBuf}};
+use rkyv::{Archive, Deserialize, Serialize};
 
 use walkdir::WalkDir;
 use crate::util::{attstring, segment_file};
 use thiserror::Error;
 use std::io;
-use serde::{Deserialize};
 
 
 #[derive(Debug, Error)]
@@ -21,6 +21,9 @@ pub enum SnippetError {
     #[error("Path error")]
     PathError,
 
+    #[error("Serialization error")]
+    SerializationError,
+
     #[error("YAML error: {0}")]
     MalformedMetadata(#[from] serde_yaml::Error),
 
@@ -28,13 +31,13 @@ pub enum SnippetError {
     AttributeError(#[from] attstring::Error),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct Metadata {
     description: String,
     tags: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Archive, Serialize, Deserialize, PartialEq)]
 pub struct Snippet {
     pub description: String,
     pub parts: Vec<Part>,
@@ -42,7 +45,7 @@ pub struct Snippet {
     pub path: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Archive, Serialize, Deserialize, PartialEq)]
 pub struct Part {
     pub attributes: HashMap<String, String>,
     pub lines: Vec<String>,

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 
 use crate::{snippets::Library, ui::start_ui};
@@ -21,6 +23,7 @@ enum Commands {
     Languages,
     #[command(about, long_about = Some("Supported themes for syntax highlighting"))]
     Themes,
+    Archive,
 }
 
 impl Commands {
@@ -31,6 +34,7 @@ impl Commands {
             Self::UI => start_ui(),
             Self::Languages => list_syntax_highlighting_languages(),
             Self::Themes => list_syntax_highlighting_themes(),
+            Self::Archive => create_archive(),
         }
     }
 }
@@ -40,7 +44,7 @@ pub fn start() {
 }
 
 fn search<'a>(keywords: &Vec<String>) {
-    let library = Library::load(&"../data/snippets").unwrap();
+    let library = load_library();
     let tags: Vec<&str> = Vec::new();
     let snippets = library.search(keywords.iter().map(std::ops::Deref::deref), tags.into_iter());
 
@@ -63,7 +67,7 @@ fn list_syntax_highlighting_themes() {
 }
 
 fn list_snippets() {
-    let library = Library::load(&"../data/snippets").unwrap();
+    let library = load_library();
     let snippet_ids = library.snippets();
 
     for snippet_id in snippet_ids {
@@ -72,4 +76,15 @@ fn list_snippets() {
 
         println!("Description: {}\nPath: {}\n", snippet.description, path)
     }
+}
+
+fn create_archive() {
+    let library = Library::load_files(&"../data/snippets").unwrap();
+    if let Err(error) = library.write_to_archive(&"./archive.bin") {
+        println!("Failure: {}", error);
+    }
+}
+
+fn load_library() -> Library {
+    Library::read_archive(&"./archive.bin").unwrap()
 }

@@ -9,6 +9,7 @@ clap = { version = "4.5.60", features = ["derive"] }
 cli-clipboard = "0.4.0"
 itertools = "0.14.0"
 ratatui = "0.30.0"
+rkyv = "0.8.15"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9.34"
 syntect = "5.3.0"

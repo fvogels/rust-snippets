@@ -31,7 +31,7 @@ struct Application {
 impl Application {
     fn new() -> Self {
         let path = PathBuf::from("../data/snippets");
-        let library = Library::load(&path).unwrap();
+        let library = Library::load_files(&path).unwrap();
         let syntax_highlighter = create_syntax_highlighter();
 
         Application{
