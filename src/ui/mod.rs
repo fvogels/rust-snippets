@@ -4,9 +4,6 @@ mod search_mode;
 mod tag_search_mode;
 mod syntax;
 mod widgets;
-mod search_parameters;
-
-pub use search_parameters::SearchParameters;
 
 use state::Mode;
 

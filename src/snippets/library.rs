@@ -1,7 +1,5 @@
 use std::{collections::HashSet, path::Path};
 
-use itertools::enumerate;
-
 use crate::{snippets::{snippets::{Snippet, SnippetError, load_snippets}}, util::trie};
 
 pub struct Library {
