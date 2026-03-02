@@ -43,6 +43,7 @@ impl SearchMode {
                     }
                     else {
                         last_keyword.truncate(last_keyword.len() - 1);
+                        self.state.keywords.push(last_keyword);
                     }
 
                     self.state.refresh();
