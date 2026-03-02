@@ -7,7 +7,7 @@ mod widgets;
 
 use state::Mode;
 
-use std::{io, mem, path::PathBuf};
+use std::{io, mem};
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event};
 

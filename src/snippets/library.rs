@@ -1,6 +1,6 @@
-use std::{collections::HashSet, fs::{self, File}, io::Read, path::Path};
+use std::{collections::HashSet, fs, path::Path};
 
-use rkyv::{api::low::{deserialize, from_bytes}, rancor::Error, to_bytes};
+use rkyv::{api::low::{from_bytes}, rancor::Error, to_bytes};
 
 use crate::{snippets::{snippets::{Snippet, SnippetError, load_snippets}}, util::trie};
 
