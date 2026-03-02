@@ -11,9 +11,8 @@ pub struct Library {
 }
 
 impl Library {
-    pub fn load<P>(root: &P) -> Result<Library, SnippetError>
-    where P: AsRef<Path> {
-        let mut snippets = load_snippets(root)?;
+    pub fn new(snippets: impl Iterator<Item=Snippet>) -> Self {
+        let mut snippets = snippets.collect::<Vec<_>>();
         snippets.sort_by(|x, y| x.description.cmp(&y.description));
 
         let mut trie_builder = trie::Builder::new();
@@ -31,15 +30,19 @@ impl Library {
             trie: trie_builder.finalize(),
         };
 
+        library
+    }
+
+    pub fn load<P>(root: &P) -> Result<Self, SnippetError>
+    where P: AsRef<Path> {
+        let snippets = load_snippets(root)?;
+        let library = Library::new(snippets.into_iter());
+
         Ok(library)
     }
 
     pub fn search<'a, 'b, 'c>(&'a self, keywords: impl Iterator<Item=&'b str>, tags: impl Iterator<Item=&'c str>) -> Vec<usize> {
         let mut intersection = self.collect_snippets_with_tags(tags);
-
-        for index in 0..self.snippets.len() {
-            intersection.insert(index);
-        }
 
         for keyword in keywords {
             if !keyword.is_empty() { // small optimization
@@ -95,4 +98,45 @@ fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<String> {
     tags.sort();
 
     tags
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
+
+    use crate::snippets::{Library, snippets::Snippet};
+
+    #[test]
+    fn search_with_tags() {
+        let snippet1 = Snippet{
+            description: String::from("a"),
+            language: String::from("c"),
+            parts: Vec::new(),
+            path: Vec::new(),
+            tags: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
+        };
+
+        let library = Library::new(vec![snippet1].into_iter());
+
+        let found_snippets = library.search(Vec::new().into_iter(), Vec::new().into_iter());
+
+        assert_eq!(found_snippets.len(), 1);
+    }
+
+    #[test]
+    fn search_with_tags_zero_results() {
+        let snippet1 = Snippet{
+            description: String::from("a"),
+            language: String::from("c"),
+            parts: Vec::new(),
+            path: Vec::new(),
+            tags: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
+        };
+
+        let library = Library::new(vec![snippet1].into_iter());
+
+        let found_snippets = library.search(Vec::new().into_iter(), vec![String::from("tag-x").as_str()].into_iter());
+
+        assert_eq!(found_snippets.len(), 0);
+    }
 }
