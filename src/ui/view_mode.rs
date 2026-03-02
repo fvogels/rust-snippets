@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, widgets::{keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -47,7 +47,7 @@ impl ViewMode {
                 self.snippet_view_state.select_previous();
                 Mode::View(self)
             },
-            KeyCode::Esc => {
+            KeyCode::Char('?') => {
                 self.state.clear_keywords();
                 self.state.refresh();
                 Mode::View(self)
@@ -93,6 +93,19 @@ impl ViewMode {
         Widget::render(tag_list, tag_list_area, buffer);
     }
 
+    fn render_keybindings(&self, area: Rect, buffer: &mut Buffer) {
+        let bindings = vec![
+            Binding::new("q", "quit"),
+            Binding::new("#", "add tag"),
+            Binding::new("del", "pop tag"),
+            Binding::new("/", "search"),
+            Binding::new("?", "reset search"),
+        ];
+        let keybindings_view = KeybindingsView::new(bindings);
+
+        keybindings_view.render(area, buffer);
+    }
+
     pub fn draw(&mut self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
     }
@@ -109,11 +122,13 @@ impl ViewMode {
 
 impl Widget for &mut ViewMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let [hierarchy_area, right_area] = Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(area);
+        let [upper_area, bottom_line_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+        let [tag_list_area, right_area] = Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(upper_area);
         let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
 
-        self.render_tag_list(hierarchy_area, buffer);
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_selected_snippet(snippet_area, buffer);
+        self.render_keybindings(bottom_line_area, buffer);
+        self.render_tag_list(tag_list_area, buffer);
     }
 }
