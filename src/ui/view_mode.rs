@@ -78,7 +78,7 @@ impl ViewMode {
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
         let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
-        let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
+        let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned()).border_type(BorderType::Double);
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
@@ -100,7 +100,7 @@ impl ViewMode {
         let available_tags = self.state.visible_tags.iter().map(String::as_str);
         let tag_list = TagsView::new(selected_tags, available_tags);
 
-        let block = Block::new().borders(Borders::all()).border_type(BorderType::Double).title("Tags");
+        let block = Block::new().borders(Borders::all()).title("Tags");
         let tag_list_area = block.inner(area);
 
         block.render(area, buffer);
