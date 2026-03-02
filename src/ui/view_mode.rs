@@ -82,13 +82,6 @@ impl ViewMode {
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
-
-        // let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        // let descriptions = self.snippet_list.iter().copied().map(|index| ListItem::new(self.library.snippet(index).description.as_str()) );
-        // let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
-        // let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
-
-        // StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
