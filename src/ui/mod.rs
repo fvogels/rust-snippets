@@ -4,7 +4,6 @@ mod search_mode;
 mod tag_search_mode;
 mod syntax;
 mod widgets;
-mod tree_adapter;
 mod search_parameters;
 
 pub use search_parameters::SearchParameters;
