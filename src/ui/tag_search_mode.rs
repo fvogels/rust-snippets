@@ -38,6 +38,15 @@ impl TagSearchMode {
                     snippet_view_state: SnippetViewState::new()
                 })
             },
+            KeyCode::Char(' ') => {
+                if let Some(index) = self.tags_view_state.selected() {
+                    let selected_tag = &self.state.visible_tags[index];
+                    self.state.select_tag(selected_tag.clone());
+                    self.state.refresh();
+                }
+
+                Mode::TagSearch(self)
+            },
             KeyCode::Backspace => {
                 if let Some(mut s) = self.state.tag_input {
                     if s.len() > 1 {
