@@ -76,6 +76,7 @@ impl State {
 
     pub fn select_tag(&mut self, tag: String) {
         self.selected_tags.push(tag);
+        self.tag_input = None;
     }
 
     pub fn pop_selected_tag(&mut self) {
