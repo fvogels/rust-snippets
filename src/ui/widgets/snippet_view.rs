@@ -64,12 +64,12 @@ impl<'a> StatefulWidget for SnippetView<'a> {
         let (selected_part_index, selected_part) = self.selected_snippet_part(state);
         let one_based_index = selected_part_index + 1;
         let part_count = self.snippet.parts.len();
-        let snippet_caption = match selected_part.attributes.get("caption") {
+        let part_caption = match selected_part.caption() {
             Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
             None => format!(" {}/{} ", one_based_index, part_count),
         };
         let lines = selected_part.lines.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
-        let bottom_title = Line::raw(snippet_caption);
+        let bottom_title = Line::raw(part_caption);
         let snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
         let paragraph = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).block(snippet_caption_block);
         paragraph.render(area, buffer)

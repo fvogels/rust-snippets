@@ -70,6 +70,10 @@ impl Part {
     pub fn language(&self) -> Option<&str> {
         self.attributes.get("language").map(String::as_str)
     }
+
+    pub fn caption(&self) -> Option<&str> {
+        self.attributes.get("caption").map(String::as_str)
+    }
 }
 
 pub fn discover_files<P>(root: &P) -> Result<Vec<PathBuf>, SnippetError>
