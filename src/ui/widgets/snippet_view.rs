@@ -69,8 +69,13 @@ impl<'a> StatefulWidget for SnippetView<'a> {
             None => format!(" {}/{} ", one_based_index, part_count),
         };
         let lines = selected_part.lines.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
+
         let bottom_title = Line::raw(part_caption);
-        let snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        let mut snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        if let Some(language) = selected_part.language() {
+            snippet_caption_block = snippet_caption_block.title_top(language);
+        }
+
         let paragraph = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).block(snippet_caption_block);
         paragraph.render(area, buffer)
     }
