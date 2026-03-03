@@ -12,10 +12,6 @@ struct CommandLineInterface {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Foo {
-        #[clap(subcommand)]
-        subcommand: HighlightSubcommand
-    },
     List,
     Search {
         keywords: Vec<String>,
@@ -39,7 +35,6 @@ enum HighlightSubcommand {
 impl Commands {
     fn handle(&self) {
         match self {
-            Self::Foo { subcommand } => println!("{:?}", subcommand),
             Self::List => list_snippets(),
             Self::Search { keywords } => search(keywords),
             Self::UI => start_ui(),
