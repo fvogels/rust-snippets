@@ -12,26 +12,44 @@ struct CommandLineInterface {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    Foo {
+        #[clap(subcommand)]
+        subcommand: HighlightSubcommand
+    },
     List,
     Search {
         keywords: Vec<String>,
     },
     UI,
-    #[command(about, long_about = Some("Supported languages for syntax highlighting"))]
-    Languages,
-    #[command(about, long_about = Some("Supported themes for syntax highlighting"))]
-    Themes,
+    Highlight {
+        #[clap(subcommand)]
+        subcommand: HighlightSubcommand,
+    },
     Archive,
 }
+
+#[derive(Subcommand, Debug)]
+enum HighlightSubcommand {
+    #[command(about = "List supported languages", long_about = None)]
+    Languages,
+    #[command(about = "List supported themes", long_about = None)]
+    Themes
+}
+
 
 impl Commands {
     fn handle(&self) {
         match self {
+            Self::Foo { subcommand } => println!("{:?}", subcommand),
             Self::List => list_snippets(),
             Self::Search { keywords } => search(keywords),
             Self::UI => start_ui(),
-            Self::Languages => list_syntax_highlighting_languages(),
-            Self::Themes => list_syntax_highlighting_themes(),
+            Self::Highlight { subcommand } => {
+                match *subcommand {
+                    HighlightSubcommand::Languages => list_syntax_highlighting_languages(),
+                    HighlightSubcommand::Themes => list_syntax_highlighting_themes(),
+                }
+            },
             Self::Archive => create_archive(),
         }
     }
