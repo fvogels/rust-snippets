@@ -36,7 +36,6 @@ enum HighlightSubcommand {
     Themes
 }
 
-
 impl Commands {
     fn handle(&self) {
         match self {
