@@ -78,14 +78,12 @@ impl Part {
 
 pub fn discover_files<P>(root: &P) -> Result<Vec<PathBuf>, SnippetError>
 where P: AsRef<Path> {
-    let result = WalkDir::new(root)
+    WalkDir::new(root)
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.metadata().unwrap().is_file())
             .map(|e| e.path().canonicalize().map_err(SnippetError::IoError).map(|p| p.to_owned()))
-            .collect::<Result<Vec<PathBuf>, SnippetError>>()?;
-
-    Ok(result)
+            .collect()
 }
 
 pub fn load_snippet_file<P, Q>(root_path: &P, file_path: &Q) -> Result<Snippet, SnippetError>
