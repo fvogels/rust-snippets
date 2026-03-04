@@ -82,10 +82,8 @@ where P: AsRef<Path> {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.metadata().unwrap().is_file())
-            .map(|e| -> Result<PathBuf, SnippetError> {
-                let canonical = e.path().canonicalize()?;
-                Ok(PathBuf::from(canonical))
-            }).collect::<Result<Vec<PathBuf>, SnippetError>>()?;
+            .map(|e| e.path().canonicalize().map_err(SnippetError::IoError).map(|p| p.to_owned()))
+            .collect::<Result<Vec<PathBuf>, SnippetError>>()?;
 
     Ok(result)
 }
