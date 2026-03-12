@@ -6,12 +6,13 @@ pub use style::Style;
 pub use color::Color;
 pub use theme::Theme;
 
-use markdown::{ParseOptions, mdast::{Heading, Node, Paragraph, Root}, to_mdast};
+use markdown::{ParseOptions, mdast::{Code, Heading, Node, Paragraph, Root}, to_mdast};
 
 pub type Document = Vec<Fragment>;
 
 pub enum Fragment {
     Wrapping(Vec<Word>),
+    Code { language: Option<String>, lines: Vec<String> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,8 +47,17 @@ impl<'a> Converter<'a> {
         match node {
             Node::Paragraph(paragraph) => self.convert_paragraph(paragraph),
             Node::Heading(heading) => self.convert_heading(heading),
+            Node::Code(code) => self.convert_code(code),
             _ => { panic!("unsupported node: {:?}", node); }
         }
+    }
+
+    fn convert_code(&mut self, code: Code) {
+        let language = code.lang;
+        let lines = code.value.lines().into_iter().map(|line| line.to_owned()).collect::<Vec<_>>();
+        let fragment = Fragment::Code { language, lines };
+
+        self.fragments.push(fragment);
     }
 
     fn convert_heading(&mut self, heading: Heading) {
@@ -224,6 +234,28 @@ mod test {
         if let Fragment::Wrapping(text) = &document[0] {
             let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
             assert_eq!(&expected, text);
+        }
+        else {
+            assert!(false, "fragment should be a paragraph");
+        }
+    }
+
+    #[test]
+    fn code_block() {
+        let markdown = indoc! { r#"
+        ```python
+        1 + 2
+        ```
+        "# };
+
+        let theme = Theme::default();
+        let document = parse(markdown, &theme);
+
+        assert_eq!(1, document.len());
+        if let Fragment::Code{language, lines} = &document[0] {
+            assert_eq!(&Some("python".to_owned()), language);
+            assert_eq!(1, lines.len());
+            assert_eq!("1 + 2", lines[0]);
         }
         else {
             assert!(false, "fragment should be a paragraph");
