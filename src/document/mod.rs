@@ -135,7 +135,7 @@ mod test {
     }
 
     #[test]
-    fn paragraph_single_line() {
+    fn wrapping_single_line() {
         let markdown = indoc! { r#"
         line of text
         "# };
@@ -154,7 +154,7 @@ mod test {
     }
 
     #[test]
-    fn paragraph_two_lines() {
+    fn wrapping_two_lines() {
         let markdown = indoc! { r#"
         line of text
         second line
@@ -174,7 +174,7 @@ mod test {
     }
 
     #[test]
-    fn code_inside_paragraph() {
+    fn inline_code() {
         let markdown = indoc! { r#"
         some `highlighted` word
         "# };
