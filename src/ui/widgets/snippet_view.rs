@@ -151,21 +151,36 @@ fn translate_style(style: &document::Style) -> ratatui::style::Style {
         result = result.bg(translate_color(&background_color));
     }
 
-    if style.bold {
-        result = result.bold();
+    if let Some(b) = style.bold {
+        if b {
+            result = result.bold();
+        }
+        else {
+            result = result.not_bold();
+        }
     }
 
-    if style.underline {
-        result = result.underlined();
+    if let Some(b) = style.underline {
+        if b {
+            result = result.underlined();
+        }
+        else {
+            result = result.not_underlined();
+        }
     }
 
-    if style.italic {
-        result = result.italic();
+    if let Some(b) = style.italic {
+        if b {
+            result = result.italic();
+        }
+        else {
+            result = result.not_italic();
+        }
     }
 
     result
 }
 
-fn translate_span(span: &document::Span) -> ratatui::text::Span {
+fn translate_span(span: &document::Span) -> ratatui::text::Span<'_> {
     ratatui::text::Span::default().content(span.text.as_str()).style(translate_style(&span.style))
 }

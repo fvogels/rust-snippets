@@ -5,9 +5,9 @@ use crate::document::Color;
 pub struct Style {
     pub foreground: Option<Color>,
     pub background: Option<Color>,
-    pub bold: bool,
-    pub italic: bool,
-    pub underline: bool,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub underline: Option<bool>,
 }
 
 impl Style {
@@ -15,9 +15,9 @@ impl Style {
         Style{
             foreground: Some(Color::white()),
             background: None,
-            bold: false,
-            italic: false,
-            underline: false,
+            bold: Some(false),
+            italic: Some(false),
+            underline: Some(false),
         }
     }
 
@@ -45,39 +45,39 @@ impl Style {
         result
     }
 
-    pub fn bold(&self) -> Self {
+    pub fn bold(&self, value: bool) -> Self {
         let mut result = self.clone();
-        result.bold = true;
+        result.bold = Some(value);
         result
     }
 
     pub fn no_bold(&self) -> Self {
         let mut result = self.clone();
-        result.bold = false;
+        result.bold = None;
         result
     }
 
-    pub fn italic(&self) -> Self {
+    pub fn italic(&self, value: bool) -> Self {
         let mut result = self.clone();
-        result.italic = true;
+        result.italic = Some(value);
         result
     }
 
     pub fn no_italic(&self) -> Self {
         let mut result = self.clone();
-        result.italic = false;
+        result.italic = None;
         result
     }
 
-    pub fn underline(&self) -> Self {
+    pub fn underline(&self, value: bool) -> Self {
         let mut result = self.clone();
-        result.underline = true;
+        result.underline = Some(value);
         result
     }
 
     pub fn no_underline(&self) -> Self {
         let mut result = self.clone();
-        result.underline = false;
+        result.underline = None;
         result
     }
 }

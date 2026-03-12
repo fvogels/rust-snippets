@@ -12,9 +12,9 @@ impl Theme {
             default: Style::default(),
             inline_code: Style::default().background(Color::gray(128)),
             headings: [
-                Style::default().background(Color::green(192)).bold(),
-                Style::default().background(Color::green(128)).bold(),
-                Style::default().background(Color::blue(192)).bold(),
+                Style::default().background(Color::green(192)).bold(true),
+                Style::default().background(Color::green(128)).bold(true),
+                Style::default().background(Color::blue(192)).bold(true),
             ]
         }
     }
