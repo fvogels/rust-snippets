@@ -101,25 +101,45 @@ impl<'a> Converter<'a> {
 
     fn convert_paragraph(&mut self, paragraph: Paragraph) {
         let mut words = Vec::new();
+        let mut spans = Vec::new();
 
         for child in paragraph.children {
             match child {
                 Node::Text(text) => {
-                    let string = text.value;
+                    let mut span: String = String::new();
 
-                    for word in split_string_into_words(string.as_str(), &self.theme.default) {
-                        words.push(word)
+                    for char in text.value.chars() {
+                        if char.is_whitespace() {
+                            if !span.is_empty() {
+                                spans.push(Span{text: span, style: self.theme.default});
+                                span = String::new();
+                            }
+
+                            if !spans.is_empty() {
+                                words.push(Word(spans));
+                                spans = Vec::new();
+                            }
+                        }
+                        else {
+                            span.push(char);
+                        }
+                    }
+
+                    if !span.is_empty() {
+                        spans.push(Span{text: span, style: self.theme.default})
                     }
                 },
                 Node::InlineCode(inline_code) => {
                     let string = inline_code.value;
                     let span = Span{text: string, style: self.theme.inline_code};
-                    let word = Word(vec![span]);
-
-                    words.push(word)
+                    spans.push(span);
                 }
                 _ => { panic!("unsupported node: {:?}", child); }
             }
+        }
+
+        if !spans.is_empty() {
+            words.push(Word(spans))
         }
 
         self.fragments.push(Fragment::Wrapping(words))
