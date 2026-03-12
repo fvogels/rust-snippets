@@ -21,15 +21,30 @@ pub struct Span {
     style: Style,
 }
 
-
-struct Converter {
-    fragments: Document,
+pub struct Theme {
+    default: Style,
+    inline_code: Style,
 }
 
-impl Converter {
-    fn new() -> Self {
+impl Theme {
+    pub fn default() -> Self {
+        Theme{
+            default: Style::default(),
+            inline_code: Style::default().background(Color::gray(128)),
+        }
+    }
+}
+
+struct Converter<'a> {
+    fragments: Document,
+    theme: &'a Theme,
+}
+
+impl<'a> Converter<'a> {
+    fn new(theme: &'a Theme) -> Self {
         Converter{
             fragments: Vec::new(),
+            theme: theme,
         }
     }
 
@@ -47,26 +62,38 @@ impl Converter {
     }
 
     fn convert_paragraph(&mut self, paragraph: Paragraph) {
+        let mut words = Vec::new();
+
         for child in paragraph.children {
             match child {
                 Node::Text(text) => {
                     let string = text.value;
-                    let words = split_string_into_words(string.as_str());
 
-                    self.fragments.push(Fragment::Paragraph(words));
+                    for word in split_string_into_words(string.as_str()) {
+                        words.push(word)
+                    }
                 },
+                Node::InlineCode(inline_code) => {
+                    let string = inline_code.value;
+                    let span = Span{text: string, style: self.theme.inline_code};
+                    let word = Word(vec![span]);
+
+                    words.push(word)
+                }
                 _ => { panic!("unsupported node: {:?}", child); }
             }
         }
+
+        self.fragments.push(Fragment::Paragraph(words))
     }
 }
 
-pub fn parse(markdown: &str) -> Document {
+pub fn parse(markdown: &str, theme: &Theme) -> Document {
     let ast = to_mdast(markdown, &ParseOptions::default()).unwrap();
 
     match ast {
         Node::Root(root) => {
-            let mut converter = Converter::new();
+            let mut converter = Converter::new(theme);
             converter.convert_root(root);
             converter.fragments
         },
@@ -89,8 +116,12 @@ mod test {
 
     use super::*;
 
-    fn word(s: &str) -> Word {
-        Word(vec![Span{text: s.into(), style: Style::default()}])
+    fn word(s: &str, style: &Style) -> Word {
+        Word(vec![Span{text: s.into(), style: style.clone()}])
+    }
+
+    fn words<'a>(strings: impl Iterator<Item=&'a str>, style: &Style) -> impl Iterator<Item=Word> {
+        strings.map(|s| word(s, style))
     }
 
     #[test]
@@ -99,11 +130,12 @@ mod test {
         line of text
         "# };
 
-        let document = parse(markdown);
+        let theme = Theme::default();
+        let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Paragraph(text) = &document[0] {
-            let expected = vec![word("line"), word("of"), word("text")];
+            let expected = words(["line", "of", "text"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
         else {
@@ -118,11 +150,12 @@ mod test {
         second line
         "# };
 
-        let document = parse(markdown);
+        let theme = Theme::default();
+        let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Paragraph(text) = &document[0] {
-            let expected = vec![word("line"), word("of"), word("text"), word("second"), word("line")];
+            let expected = words(["line", "of", "text", "second", "line"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
         else {
@@ -130,20 +163,22 @@ mod test {
         }
     }
 
-    // #[test]
-    // fn code_inside_paragraph() {
-    //     let markdown = indoc! { r#"
-    //     some `highlighted` word
-    //     "# };
+    #[test]
+    fn code_inside_paragraph() {
+        let markdown = indoc! { r#"
+        some `highlighted` word
+        "# };
 
-    //     let document = parse(markdown);
+        let theme = Theme::default();
+        let document = parse(markdown, &theme);
 
-    //     assert_eq!(1, document.len());
-    //     if let Fragment::Paragraph(text) = &document[0] {
-    //         assert_eq!("line of text\nsecond line", text);
-    //     }
-    //     else {
-    //         assert!(false, "fragment should be a paragraph");
-    //     }
-    // }
+        assert_eq!(1, document.len());
+        if let Fragment::Paragraph(text) = &document[0] {
+            let expected = vec![word("some", &theme.default), word("highlighted", &theme.inline_code), word("word", &theme.default)];
+            assert_eq!(&expected, text);
+        }
+        else {
+            assert!(false, "fragment should be a paragraph");
+        }
+    }
 }
