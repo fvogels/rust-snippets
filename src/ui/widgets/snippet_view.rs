@@ -61,7 +61,7 @@ impl<'a> SnippetView<'a> {
 
         for fragment in document {
             match fragment {
-                document::Fragment::Wrapping(words) => {
+                document::Fragment::Wrapping{words, style} => {
                     let mut spans = Vec::new();
                     let mut acc = 0;
 
@@ -77,10 +77,11 @@ impl<'a> SnippetView<'a> {
                         else {
                             // Word fits on current line
                             if !is_fresh_line {
-                                spans.push(Span::default().content(" "))
+                                // Add separating space between words
+                                spans.push(Span::default().content(" ").style(translate_style(style)))
                             }
                             for span in word.spans() {
-                                spans.push(translate_span(span));
+                                spans.push(translate_span(span, &style));
                             }
                             acc += word.len();
                         }
@@ -181,6 +182,8 @@ fn translate_style(style: &document::Style) -> ratatui::style::Style {
     result
 }
 
-fn translate_span(span: &document::Span) -> ratatui::text::Span<'_> {
-    ratatui::text::Span::default().content(span.text.as_str()).style(translate_style(&span.style))
+fn translate_span<'a>(span: &'a document::Span, style_base: &document::Style) -> ratatui::text::Span<'a> {
+    let combined_style = span.style.combine(style_base);
+
+    ratatui::text::Span::default().content(span.text.as_str()).style(translate_style(&combined_style))
 }

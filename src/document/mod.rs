@@ -13,7 +13,7 @@ pub type Document = Vec<Fragment>;
 
 #[derive(Debug, Archive, Serialize, Deserialize)]
 pub enum Fragment {
-    Wrapping(Vec<Word>),
+    Wrapping{ words: Vec<Word>, style: Style },
     Code { language: Option<String>, lines: Vec<String> },
 }
 
@@ -80,8 +80,8 @@ impl<'a> Converter<'a> {
 
     fn convert_heading(&mut self, heading: Heading) {
         let mut words = Vec::new();
-        let level = heading.depth - 1;
-        let style = self.theme.headings[level as usize];
+        let level = (heading.depth - 1) as usize;
+        let style = self.theme.headings[level];
 
         for child in heading.children {
             match child {
@@ -96,7 +96,7 @@ impl<'a> Converter<'a> {
             }
         }
 
-        self.fragments.push(Fragment::Wrapping(words))
+        self.fragments.push(Fragment::Wrapping{ words, style: self.theme.headings[level] })
     }
 
     fn convert_paragraph(&mut self, paragraph: Paragraph) {
@@ -142,7 +142,7 @@ impl<'a> Converter<'a> {
             words.push(Word(spans))
         }
 
-        self.fragments.push(Fragment::Wrapping(words))
+        self.fragments.push(Fragment::Wrapping { words, style: self.theme.default })
     }
 }
 
@@ -192,9 +192,9 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping(text) = &document[0] {
+        if let Fragment::Wrapping{ words: ws, style: _ }  = &document[0] {
             let expected = words(["line", "of", "text"].into_iter(), &theme.default).collect::<Vec<_>>();
-            assert_eq!(&expected, text);
+            assert_eq!(&expected, ws);
         }
         else {
             assert!(false, "fragment should be a paragraph");
@@ -212,7 +212,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping(text) = &document[0] {
+        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
             let expected = words(["line", "of", "text", "second", "line"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
@@ -231,7 +231,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping(text) = &document[0] {
+        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
             let expected = vec![word("some", &theme.default), word("highlighted", &theme.inline_code), word("word", &theme.default)];
             assert_eq!(&expected, text);
         }
@@ -250,7 +250,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping(text) = &document[0] {
+        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
             let expected = vec![word("Title", &theme.headings[0])];
             assert_eq!(&expected, text);
         }
@@ -269,7 +269,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping(text) = &document[0] {
+        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
             let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }

@@ -81,7 +81,7 @@ impl Style {
         result
     }
 
-    pub fn combine(&self, other: Self) -> Self {
+    pub fn combine(&self, other: &Self) -> Self {
         Style{
             foreground: self.foreground.or(other.foreground),
             background: self.background.or(other.background),
