@@ -31,4 +31,40 @@ impl Style {
         result.background = None;
         result
     }
+
+    pub fn bold(&self) -> Self {
+        let mut result = self.clone();
+        result.bold = true;
+        result
+    }
+
+    pub fn no_bold(&self) -> Self {
+        let mut result = self.clone();
+        result.bold = false;
+        result
+    }
+
+    pub fn italic(&self) -> Self {
+        let mut result = self.clone();
+        result.italic = true;
+        result
+    }
+
+    pub fn no_italic(&self) -> Self {
+        let mut result = self.clone();
+        result.italic = false;
+        result
+    }
+
+    pub fn underline(&self) -> Self {
+        let mut result = self.clone();
+        result.underline = true;
+        result
+    }
+
+    pub fn no_underline(&self) -> Self {
+        let mut result = self.clone();
+        result.underline = false;
+        result
+    }
 }
