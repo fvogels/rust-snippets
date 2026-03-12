@@ -18,6 +18,16 @@ pub enum Fragment {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Word(Vec<Span>);
 
+impl Word {
+    pub fn len(&self) -> usize {
+        self.0.iter().map(Span::len).sum()
+    }
+
+    pub fn spans(&self) -> impl Iterator<Item=&Span> {
+        self.0.iter()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
     text: String,
