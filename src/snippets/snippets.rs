@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet}, path::{Path, PathBuf}};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use walkdir::WalkDir;
-use crate::util::{attstring, segment_file};
+use crate::{document::{self, Document, Theme}, util::{attstring, segment_file}};
 use thiserror::Error;
 use std::io;
 
@@ -48,7 +48,7 @@ pub struct Snippet {
 #[derive(Debug, Archive, Serialize, Deserialize)]
 pub struct Part {
     pub attributes: HashMap<String, String>,
-    pub lines: Vec<String>,
+    pub contents: Document,
 }
 
 impl Snippet {
@@ -108,8 +108,11 @@ where P: AsRef<Path>, Q: AsRef<Path> {
                 }
             }?;
 
-            let lines = segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect();
-            let part = Part{ attributes, lines };
+            let lines = segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
+            let markdown_source = lines.join("\n");
+            let theme = Theme::default();
+            let contents = document::parse(markdown_source.as_str(), &theme);
+            let part = Part{ attributes, contents };
 
             Ok(part)
         }).collect();

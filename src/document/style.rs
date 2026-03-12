@@ -1,6 +1,7 @@
+use rkyv::{Archive, Deserialize, Serialize};
 use crate::document::Color;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Archive, Serialize, Deserialize)]
 pub struct Style {
     pub foreground: Option<Color>,
     pub background: Option<Color>,

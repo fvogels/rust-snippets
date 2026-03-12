@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use rkyv::{Archive, Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Archive, Serialize, Deserialize)]
 pub struct Color {
     pub r: u8,
     pub g: u8,

@@ -1,9 +1,6 @@
-use std::borrow::Cow;
+use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
-use indoc::indoc;
-use ratatui::{buffer::Buffer, layout::Rect, style::Style, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
-
-use crate::{document::{self}, snippets::snippets::{Part, Snippet}, ui::syntax::SyntaxHighlighter};
+use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}, ui::syntax::SyntaxHighlighter};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
@@ -58,51 +55,11 @@ impl<'a> SnippetView<'a> {
 
         (selected_part_index, &snippet.parts[selected_part_index])
     }
-}
 
-impl<'a> StatefulWidget for SnippetView<'a> {
-    type State = SnippetViewState;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        // let (selected_part_index, selected_part) = self.selected_snippet_part(state);
-        // let one_based_index = selected_part_index + 1;
-        // let part_count = self.snippet.parts.len();
-        // let part_caption = match selected_part.caption() {
-        //     Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
-        //     None => format!(" {}/{} ", one_based_index, part_count),
-        // };
-        // let lines = selected_part.lines.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
-
-        // let bottom_title = Line::raw(part_caption);
-        // let mut snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
-        // if let Some(language) = selected_part.language() {
-        //     snippet_caption_block = snippet_caption_block.title_top(language);
-        // }
-
-        // let paragraph_lines = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).collect::<Vec<_>>();
-        // let paragraph = Paragraph::new(paragraph_lines).block(snippet_caption_block);
-        // paragraph.render(area, buffer)
-
-        let theme = document::Theme::default();
-        let doc = document::parse(indoc! {r#"
-            # Title
-
-            ## Subtitle
-
-            ### Subsubtitle
-
-            Some `text`.
-
-            ```python
-            def foo():
-                return 5
-            ```
-        "#}, &theme);
-
+    fn render_document_as_paragraph<'b>(&self, document: &'b Document, line_width: usize) -> Paragraph<'b> {
         let mut lines = Vec::new();
-        let line_width = area.width as usize;
 
-        for fragment in &doc {
+        for fragment in document {
             match fragment {
                 document::Fragment::Wrapping(words) => {
                     let mut spans = Vec::new();
@@ -144,7 +101,51 @@ impl<'a> StatefulWidget for SnippetView<'a> {
             }
         }
 
-        let paragraph = Paragraph::new(lines);
+        Paragraph::new(lines)
+    }
+}
+
+impl<'a> StatefulWidget for SnippetView<'a> {
+    type State = SnippetViewState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        // let (selected_part_index, selected_part) = self.selected_snippet_part(state);
+        // let one_based_index = selected_part_index + 1;
+        // let part_count = self.snippet.parts.len();
+        // let part_caption = match selected_part.caption() {
+        //     Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
+        //     None => format!(" {}/{} ", one_based_index, part_count),
+        // };
+        // let lines = selected_part.lines.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
+
+        // let bottom_title = Line::raw(part_caption);
+        // let mut snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        // if let Some(language) = selected_part.language() {
+        //     snippet_caption_block = snippet_caption_block.title_top(language);
+        // }
+
+        // let paragraph_lines = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).collect::<Vec<_>>();
+        // let paragraph = Paragraph::new(paragraph_lines).block(snippet_caption_block);
+        // paragraph.render(area, buffer)
+
+
+        let (selected_part_index, selected_part) = self.selected_snippet_part(state);
+        let one_based_index = selected_part_index + 1;
+        let part_count = self.snippet.parts.len();
+        let part_caption = match selected_part.caption() {
+            Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
+            None => format!(" {}/{} ", one_based_index, part_count),
+        };
+        let bottom_title = Line::raw(part_caption);
+        let mut snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        if let Some(language) = selected_part.language() {
+            snippet_caption_block = snippet_caption_block.title_top(language);
+        }
+
+        let document = &selected_part.contents;
+        let line_width = snippet_caption_block.inner(area).width as usize;
+        let paragraph = self.render_document_as_paragraph(document, line_width);
+
         paragraph.render(area, buffer);
     }
 }

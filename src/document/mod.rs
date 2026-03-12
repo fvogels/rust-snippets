@@ -2,6 +2,7 @@ mod style;
 mod color;
 mod theme;
 
+use rkyv::{Archive, Deserialize, Serialize};
 pub use style::Style;
 pub use color::Color;
 pub use theme::Theme;
@@ -10,12 +11,13 @@ use markdown::{ParseOptions, mdast::{Code, Heading, Node, Paragraph, Root}, to_m
 
 pub type Document = Vec<Fragment>;
 
+#[derive(Debug, Archive, Serialize, Deserialize)]
 pub enum Fragment {
     Wrapping(Vec<Word>),
     Code { language: Option<String>, lines: Vec<String> },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 pub struct Word(Vec<Span>);
 
 impl Word {
@@ -28,7 +30,7 @@ impl Word {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 pub struct Span {
     pub text: String,
     pub style: Style,
