@@ -37,7 +37,7 @@ struct Metadata {
     tags: Vec<String>,
 }
 
-#[derive(Debug, Archive, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Archive, Serialize, Deserialize)]
 pub struct Snippet {
     pub description: String,
     pub parts: Vec<Part>,
@@ -45,7 +45,7 @@ pub struct Snippet {
     pub path: Vec<String>,
 }
 
-#[derive(Debug, Archive, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Archive, Serialize, Deserialize)]
 pub struct Part {
     pub attributes: HashMap<String, String>,
     pub lines: Vec<String>,
@@ -151,7 +151,7 @@ fn derive_path<P, Q>(root: &P, file: &Q) -> Result<Vec<String>, SnippetError> wh
 }
 
 fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
-    serde_yaml::from_str(source).map_err(|e| SnippetError::MalformedMetadata(e))
+    serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
 }
 
 pub fn load_snippets<P>(root: &P) -> Result<Vec<Snippet>, SnippetError> where P: AsRef<Path> {
