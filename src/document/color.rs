@@ -13,4 +13,8 @@ impl Color {
     pub fn white() -> Self {
         Color { r: 255, g: 255, b: 255 }
     }
+
+    pub fn gray(level: u8) -> Self {
+        Color { r: level, g: level, b: level }
+    }
 }
