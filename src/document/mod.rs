@@ -11,7 +11,7 @@ use markdown::{ParseOptions, mdast::{Heading, Node, Paragraph, Root}, to_mdast};
 pub type Document = Vec<Fragment>;
 
 pub enum Fragment {
-    Paragraph(Vec<Word>)
+    Paragraph(Vec<Word>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -204,6 +204,25 @@ mod test {
         assert_eq!(1, document.len());
         if let Fragment::Paragraph(text) = &document[0] {
             let expected = vec![word("Title", &theme.headings[0])];
+            assert_eq!(&expected, text);
+        }
+        else {
+            assert!(false, "fragment should be a paragraph");
+        }
+    }
+
+    #[test]
+    fn multiple_word_heading() {
+        let markdown = indoc! { r#"
+        # This is the title
+        "# };
+
+        let theme = Theme::default();
+        let document = parse(markdown, &theme);
+
+        assert_eq!(1, document.len());
+        if let Fragment::Paragraph(text) = &document[0] {
+            let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
         else {
