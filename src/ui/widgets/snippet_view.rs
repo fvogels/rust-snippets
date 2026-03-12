@@ -58,6 +58,7 @@ impl<'a> SnippetView<'a> {
 
     fn render_document_as_paragraph<'b>(&self, document: &'b Document, line_width: usize) -> Paragraph<'b> {
         let mut lines = Vec::new();
+        let mut code_block_index = 0;
 
         for fragment in document {
             match fragment {
@@ -98,6 +99,19 @@ impl<'a> SnippetView<'a> {
                     if !lines.is_empty() {
                         lines.push(Line::default());
                     }
+
+                    let code_block_caption = {
+                        let caption =
+                            if let Some(language) = language {
+                                format!("Code snippet #{} ({})", code_block_index, language)
+                            }
+                            else {
+                                format!("Code snippet #{}", code_block_index)
+                            };
+                        let style = document::Style::default().background(document::Color::gray(192));
+                        Line::raw(caption).style(translate_style(&style))
+                    };
+                    lines.push(code_block_caption);
 
                     for line in highlighted_lines {
                         lines.push(line);
