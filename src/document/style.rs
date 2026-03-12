@@ -19,4 +19,16 @@ impl Style {
             underline: false,
         }
     }
+
+    pub fn background(&self, color: Color) -> Self {
+        let mut result = self.clone();
+        result.background = Some(color);
+        result
+    }
+
+    pub fn no_background(&self) -> Self {
+        let mut result = self.clone();
+        result.background = None;
+        result
+    }
 }
