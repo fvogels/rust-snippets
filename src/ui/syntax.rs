@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ratatui::{text::{Line, Span}, widgets::Paragraph};
+use ratatui::{text::{Line, Span}};
 use syntect::{easy::HighlightLines, highlighting::{FontStyle, Theme, ThemeSet}, parsing::{SyntaxReference, SyntaxSet}};
 
 
