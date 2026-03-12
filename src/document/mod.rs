@@ -1,9 +1,24 @@
+mod style;
+mod color;
+
+pub use style::Style;
+pub use color::Color;
+
 use markdown::{ParseOptions, mdast::{Node, Paragraph, Root}, to_mdast};
 
 pub type Document = Vec<Fragment>;
 
 pub enum Fragment {
-    Paragraph(String)
+    Paragraph(Vec<Word>)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Word(Vec<Span>);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Span {
+    text: String,
+    style: Style,
 }
 
 
@@ -36,8 +51,9 @@ impl Converter {
             match child {
                 Node::Text(text) => {
                     let string = text.value;
+                    let words = split_string_into_words(string.as_str());
 
-                    self.fragments.push(Fragment::Paragraph(string));
+                    self.fragments.push(Fragment::Paragraph(words));
                 },
                 _ => { panic!("unsupported node: {:?}", child); }
             }
@@ -60,11 +76,22 @@ pub fn parse(markdown: &str) -> Document {
     }
 }
 
+fn split_string_into_words(string: &str) -> Vec<Word> {
+    string.split_ascii_whitespace().map(|part| {
+        let span = Span{text: part.into(), style: Style::default()};
+        Word(vec![span])
+    }).collect()
+}
+
 #[cfg(test)]
 mod test {
     use indoc::indoc;
 
     use super::*;
+
+    fn word(s: &str) -> Word {
+        Word(vec![Span{text: s.into(), style: Style::default()}])
+    }
 
     #[test]
     fn paragraph_single_line() {
@@ -76,7 +103,8 @@ mod test {
 
         assert_eq!(1, document.len());
         if let Fragment::Paragraph(text) = &document[0] {
-            assert_eq!("line of text", text);
+            let expected = vec![word("line"), word("of"), word("text")];
+            assert_eq!(&expected, text);
         }
         else {
             assert!(false, "fragment should be a paragraph");
@@ -94,10 +122,28 @@ mod test {
 
         assert_eq!(1, document.len());
         if let Fragment::Paragraph(text) = &document[0] {
-            assert_eq!("line of text\nsecond line", text);
+            let expected = vec![word("line"), word("of"), word("text"), word("second"), word("line")];
+            assert_eq!(&expected, text);
         }
         else {
             assert!(false, "fragment should be a paragraph");
         }
     }
+
+    // #[test]
+    // fn code_inside_paragraph() {
+    //     let markdown = indoc! { r#"
+    //     some `highlighted` word
+    //     "# };
+
+    //     let document = parse(markdown);
+
+    //     assert_eq!(1, document.len());
+    //     if let Fragment::Paragraph(text) = &document[0] {
+    //         assert_eq!("line of text\nsecond line", text);
+    //     }
+    //     else {
+    //         assert!(false, "fragment should be a paragraph");
+    //     }
+    // }
 }
