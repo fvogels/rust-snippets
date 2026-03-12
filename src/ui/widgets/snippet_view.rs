@@ -144,7 +144,7 @@ impl<'a> StatefulWidget for SnippetView<'a> {
 
         let document = &selected_part.contents;
         let line_width = snippet_caption_block.inner(area).width as usize;
-        let paragraph = self.render_document_as_paragraph(document, line_width);
+        let paragraph = self.render_document_as_paragraph(document, line_width).block(snippet_caption_block);
 
         paragraph.render(area, buffer);
     }
