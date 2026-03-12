@@ -80,4 +80,14 @@ impl Style {
         result.underline = None;
         result
     }
+
+    pub fn combine(&self, other: Self) -> Self {
+        Style{
+            foreground: self.foreground.or(other.foreground),
+            background: self.background.or(other.background),
+            bold: self.bold.or(other.bold),
+            italic: self.italic.or(other.italic),
+            underline: self.underline.or(other.underline),
+        }
+    }
 }
