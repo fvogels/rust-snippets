@@ -20,6 +20,18 @@ impl Style {
         }
     }
 
+    pub fn foreground(&self, color: Color) -> Self {
+        let mut result = self.clone();
+        result.foreground = Some(color);
+        result
+    }
+
+    pub fn no_foreground(&self) -> Self {
+        let mut result = self.clone();
+        result.foreground = None;
+        result
+    }
+
     pub fn background(&self, color: Color) -> Self {
         let mut result = self.clone();
         result.background = Some(color);
