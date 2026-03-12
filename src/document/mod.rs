@@ -193,7 +193,7 @@ mod test {
     }
 
     #[test]
-    fn heading() {
+    fn single_word_heading() {
         let markdown = indoc! { r#"
         # Title
         "# };
