@@ -1,8 +1,10 @@
 mod style;
 mod color;
+mod theme;
 
 pub use style::Style;
 pub use color::Color;
+pub use theme::Theme;
 
 use markdown::{ParseOptions, mdast::{Node, Paragraph, Root}, to_mdast};
 
@@ -19,20 +21,6 @@ pub struct Word(Vec<Span>);
 pub struct Span {
     text: String,
     style: Style,
-}
-
-pub struct Theme {
-    default: Style,
-    inline_code: Style,
-}
-
-impl Theme {
-    pub fn default() -> Self {
-        Theme{
-            default: Style::default(),
-            inline_code: Style::default().background(Color::gray(128)),
-        }
-    }
 }
 
 struct Converter<'a> {

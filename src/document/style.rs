@@ -2,11 +2,11 @@ use crate::document::Color;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Style {
-    foreground: Option<Color>,
-    background: Option<Color>,
-    bold: bool,
-    italic: bool,
-    underline: bool,
+    pub foreground: Option<Color>,
+    pub background: Option<Color>,
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
 }
 
 impl Style {
