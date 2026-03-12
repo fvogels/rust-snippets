@@ -94,9 +94,15 @@ impl<'a> SnippetView<'a> {
                 &document::Fragment::Code { ref language, lines: ref code_lines } => {
                     let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), code_lines.iter().map(String::as_str));
 
+                    if !lines.is_empty() {
+                        lines.push(Line::default());
+                    }
+
                     for line in highlighted_lines {
                         lines.push(line);
                     }
+
+                    lines.push(Line::default());
                 }
             }
         }
