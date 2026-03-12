@@ -35,13 +35,10 @@ impl SyntaxHighlighter {
         self.aliases.insert(alias.to_owned(), language.to_owned());
     }
 
-    pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>) -> Paragraph<'a> {
+    pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>) -> impl Iterator<Item=Line<'a>> {
         let syntax = self.get_syntax_reference(language);
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
-        let highlighted_lines: Vec<Line> = lines.map(|line| self.highlight_line(line, &mut highlighter)).collect();
-        let paragraph = Paragraph::new(highlighted_lines);
-
-        paragraph
+        lines.map(move |line| self.highlight_line(line, &mut highlighter))
     }
 
     fn get_syntax_reference(&self, language: Option<&str>) -> &SyntaxReference {

@@ -1,4 +1,4 @@
-use ratatui::{buffer::Buffer, layout::Rect, text::Line, widgets::{Block, Borders, StatefulWidget, Widget}};
+use ratatui::{buffer::Buffer, layout::Rect, text::Line, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
 use crate::{snippets::snippets::{Part, Snippet}, ui::syntax::SyntaxHighlighter};
 
@@ -76,7 +76,8 @@ impl<'a> StatefulWidget for SnippetView<'a> {
             snippet_caption_block = snippet_caption_block.title_top(language);
         }
 
-        let paragraph = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).block(snippet_caption_block);
+        let paragraph_lines = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).collect::<Vec<_>>();
+        let paragraph = Paragraph::new(paragraph_lines).block(snippet_caption_block);
         paragraph.render(area, buffer)
     }
 }
