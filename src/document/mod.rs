@@ -34,6 +34,12 @@ pub struct Span {
     pub style: Style,
 }
 
+impl Span {
+    pub fn len(&self) -> usize {
+        self.text.len()
+    }
+}
+
 struct Converter<'a> {
     fragments: Document,
     theme: &'a Theme,
