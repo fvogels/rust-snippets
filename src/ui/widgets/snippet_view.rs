@@ -1,6 +1,9 @@
-use ratatui::{buffer::Buffer, layout::Rect, text::Line, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
+use std::borrow::Cow;
 
-use crate::{snippets::snippets::{Part, Snippet}, ui::syntax::SyntaxHighlighter};
+use indoc::indoc;
+use ratatui::{buffer::Buffer, layout::Rect, style::Style, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
+
+use crate::{document::{self}, snippets::snippets::{Part, Snippet}, ui::syntax::SyntaxHighlighter};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
@@ -61,23 +64,121 @@ impl<'a> StatefulWidget for SnippetView<'a> {
     type State = SnippetViewState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let (selected_part_index, selected_part) = self.selected_snippet_part(state);
-        let one_based_index = selected_part_index + 1;
-        let part_count = self.snippet.parts.len();
-        let part_caption = match selected_part.caption() {
-            Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
-            None => format!(" {}/{} ", one_based_index, part_count),
-        };
-        let lines = selected_part.lines.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
+        // let (selected_part_index, selected_part) = self.selected_snippet_part(state);
+        // let one_based_index = selected_part_index + 1;
+        // let part_count = self.snippet.parts.len();
+        // let part_caption = match selected_part.caption() {
+        //     Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
+        //     None => format!(" {}/{} ", one_based_index, part_count),
+        // };
+        // let lines = selected_part.lines.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
 
-        let bottom_title = Line::raw(part_caption);
-        let mut snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
-        if let Some(language) = selected_part.language() {
-            snippet_caption_block = snippet_caption_block.title_top(language);
+        // let bottom_title = Line::raw(part_caption);
+        // let mut snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        // if let Some(language) = selected_part.language() {
+        //     snippet_caption_block = snippet_caption_block.title_top(language);
+        // }
+
+        // let paragraph_lines = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).collect::<Vec<_>>();
+        // let paragraph = Paragraph::new(paragraph_lines).block(snippet_caption_block);
+        // paragraph.render(area, buffer)
+
+        let theme = document::Theme::default();
+        let doc = document::parse(indoc! {r#"
+            # Title
+
+            ## Subtitle
+
+            ### Subsubtitle
+
+            Some `text`.
+
+            ```python
+            def foo():
+                return 5
+            ```
+        "#}, &theme);
+
+        let mut lines = Vec::new();
+        let line_width = area.width as usize;
+
+        for fragment in &doc {
+            match fragment {
+                document::Fragment::Wrapping(words) => {
+                    let mut spans = Vec::new();
+                    let mut acc = 0;
+
+                    for word in words {
+                        let is_fresh_line = acc == 0;
+                        let separator_size = if is_fresh_line { 0 } else { 1 };
+                        if acc + word.len() + separator_size > line_width && acc > 0 {
+                            // New line has to be started
+                            let line = Line::default().spans(spans);
+                            lines.push(line);
+                            spans = Vec::new();
+                        }
+                        else {
+                            // Word fits on current line
+                            if !is_fresh_line {
+                                spans.push(Span::default().content(" "))
+                            }
+                            for span in word.spans() {
+                                spans.push(translate_span(span));
+                            }
+                            acc += word.len();
+                        }
+                    }
+
+                    if !spans.is_empty() {
+                        let line = Line::default().spans(spans);
+                        lines.push(line);
+                    }
+                },
+                &document::Fragment::Code { ref language, lines: ref code_lines } => {
+                    let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), code_lines.iter().map(String::as_str));
+
+                    for line in highlighted_lines {
+                        lines.push(line);
+                    }
+                }
+            }
         }
 
-        let paragraph_lines = self.syntax_highlighter.highlight_lines(selected_part.language(), lines.into_iter()).collect::<Vec<_>>();
-        let paragraph = Paragraph::new(paragraph_lines).block(snippet_caption_block);
-        paragraph.render(area, buffer)
+        let paragraph = Paragraph::new(lines);
+        paragraph.render(area, buffer);
     }
+}
+
+fn translate_color(color: &document::Color) -> ratatui::style::Color {
+    ratatui::style::Color::Rgb(color.r, color.g, color.b)
+}
+
+fn translate_style(style: &document::Style) -> ratatui::style::Style {
+    let mut result = ratatui::style::Style::default();
+
+    if let Some(foreground_color) = style.foreground {
+        result = result.fg(translate_color(&foreground_color));
+    }
+
+    if let Some(background_color) = style.background {
+        result = result.bg(translate_color(&background_color));
+    }
+
+    if style.bold {
+        result = result.bold();
+    }
+
+    if style.underline {
+        result = result.underlined();
+    }
+
+    if style.italic {
+        result = result.italic();
+    }
+
+    result
+}
+
+fn translate_span(span: &document::Span) -> ratatui::text::Span {
+    ratatui::text::Span::default().content(span.text.as_str()).style(translate_style(&span.style))
 }
