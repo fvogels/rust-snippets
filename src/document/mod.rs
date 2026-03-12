@@ -11,7 +11,7 @@ use markdown::{ParseOptions, mdast::{Heading, Node, Paragraph, Root}, to_mdast};
 pub type Document = Vec<Fragment>;
 
 pub enum Fragment {
-    Paragraph(Vec<Word>),
+    Wrapping(Vec<Word>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,7 +68,7 @@ impl<'a> Converter<'a> {
             }
         }
 
-        self.fragments.push(Fragment::Paragraph(words))
+        self.fragments.push(Fragment::Wrapping(words))
     }
 
     fn convert_paragraph(&mut self, paragraph: Paragraph) {
@@ -94,7 +94,7 @@ impl<'a> Converter<'a> {
             }
         }
 
-        self.fragments.push(Fragment::Paragraph(words))
+        self.fragments.push(Fragment::Wrapping(words))
     }
 }
 
@@ -144,7 +144,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Paragraph(text) = &document[0] {
+        if let Fragment::Wrapping(text) = &document[0] {
             let expected = words(["line", "of", "text"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
@@ -164,7 +164,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Paragraph(text) = &document[0] {
+        if let Fragment::Wrapping(text) = &document[0] {
             let expected = words(["line", "of", "text", "second", "line"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
@@ -183,7 +183,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Paragraph(text) = &document[0] {
+        if let Fragment::Wrapping(text) = &document[0] {
             let expected = vec![word("some", &theme.default), word("highlighted", &theme.inline_code), word("word", &theme.default)];
             assert_eq!(&expected, text);
         }
@@ -202,7 +202,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Paragraph(text) = &document[0] {
+        if let Fragment::Wrapping(text) = &document[0] {
             let expected = vec![word("Title", &theme.headings[0])];
             assert_eq!(&expected, text);
         }
@@ -221,7 +221,7 @@ mod test {
         let document = parse(markdown, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Paragraph(text) = &document[0] {
+        if let Fragment::Wrapping(text) = &document[0] {
             let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
