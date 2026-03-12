@@ -30,8 +30,8 @@ impl Word {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
-    text: String,
-    style: Style,
+    pub text: String,
+    pub style: Style,
 }
 
 struct Converter<'a> {
