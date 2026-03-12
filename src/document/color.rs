@@ -17,4 +17,16 @@ impl Color {
     pub fn gray(level: u8) -> Self {
         Color { r: level, g: level, b: level }
     }
+
+    pub fn red(level: u8) -> Self {
+        Color { r: level, g: 0, b: 0 }
+    }
+
+    pub fn green(level: u8) -> Self {
+        Color { r: 0, g: level, b: 0 }
+    }
+
+    pub fn blue(level: u8) -> Self {
+        Color { r: 0, g: 0, b: level }
+    }
 }
