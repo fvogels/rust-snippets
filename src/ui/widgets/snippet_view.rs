@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
 use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}, ui::syntax::SyntaxHighlighter};
@@ -94,7 +96,7 @@ impl<'a> SnippetView<'a> {
                     }
                 },
                 &document::Fragment::Code { ref language, lines: ref code_lines } => {
-                    let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), code_lines.iter().map(String::as_str));
+                    let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), code_lines.iter().map(String::as_str), 2);
 
                     if !lines.is_empty() {
                         lines.push(Line::default());
@@ -103,15 +105,15 @@ impl<'a> SnippetView<'a> {
                     let code_block_caption = {
                         let mut caption =
                             if let Some(language) = language {
-                                format!("Code snippet #{} ({})", code_block_index, language)
+                                format!("  Code snippet #{} ({})", code_block_index, language)
                             }
                             else {
-                                format!("Code snippet #{}", code_block_index)
+                                format!("  Code snippet #{}", code_block_index)
                             };
                         while caption.len() < line_width {
                             caption.push(' ');
                         }
-                        let style = document::Style::default().background(document::Color::gray(192));
+                        let style = document::Style::default().background(document::Color::gray(64));
                         Line::raw(caption).style(translate_style(&style))
                     };
                     lines.push(code_block_caption);

@@ -35,10 +35,10 @@ impl SyntaxHighlighter {
         self.aliases.insert(alias.to_owned(), language.to_owned());
     }
 
-    pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>) -> impl Iterator<Item=Line<'a>> {
+    pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>, indentation: usize) -> impl Iterator<Item=Line<'a>> {
         let syntax = self.get_syntax_reference(language);
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
-        lines.map(move |line| self.highlight_line(line, &mut highlighter))
+        lines.map(move |line| self.highlight_line(line, &mut highlighter, indentation))
     }
 
     fn get_syntax_reference(&self, language: Option<&str>) -> &SyntaxReference {
@@ -55,13 +55,19 @@ impl SyntaxHighlighter {
         }
     }
 
-    fn highlight_line<'a>(&self, line: &'a str, highlighter: &mut HighlightLines) -> Line<'a> {
-        let spans=
-            highlighter.highlight_line(line, &self.syntax_set)
-                       .unwrap()
-                       .into_iter()
-                       .map(|segment| convert_to_span(segment.0, segment.1))
-                       .collect::<Vec<_>>();
+    fn highlight_line<'a>(&self, line: &'a str, highlighter: &mut HighlightLines, indentation: usize) -> Line<'a> {
+        let mut spans = Vec::new();
+
+        if indentation > 0 {
+            let indentation_span = Span::default().content(" ".repeat(indentation));
+            spans.push(indentation_span);
+        }
+
+        highlighter.highlight_line(line, &self.syntax_set)
+                    .unwrap()
+                    .into_iter()
+                    .map(|segment| convert_to_span(segment.0, segment.1))
+                    .for_each(|span| spans.push(span));
 
         Line::from(spans)
     }
