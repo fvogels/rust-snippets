@@ -2,7 +2,6 @@ mod state;
 mod view_mode;
 mod search_mode;
 mod tag_search_mode;
-mod syntax;
 mod widgets;
 
 use state::Mode;
@@ -11,7 +10,7 @@ use std::{io, mem};
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event};
 
-use crate::{snippets::Library, ui::syntax::SyntaxHighlighter};
+use crate::{snippets::Library};
 
 pub fn start_ui(library: Library) {
     match ratatui::run(|terminal| Application::new(library).run(terminal)) {
@@ -30,10 +29,8 @@ struct Application {
 
 impl Application {
     fn new(library: Library) -> Self {
-        let syntax_highlighter = create_syntax_highlighter();
-
         Application{
-            mode: Mode::default(library, syntax_highlighter),
+            mode: Mode::default(library),
         }
     }
 
@@ -57,16 +54,4 @@ impl Application {
         Ok(())
     }
 
-}
-
-fn create_syntax_highlighter() -> SyntaxHighlighter {
-    let mut syntax_highlighter = SyntaxHighlighter::new();
-
-    syntax_highlighter.add_alias("bash", "Bourne Again Shell (bash)");
-
-    for language in syntax_highlighter.supported_languages() {
-        syntax_highlighter.add_alias(language.to_lowercase().as_str(), language.as_str());
-    }
-
-    syntax_highlighter
 }

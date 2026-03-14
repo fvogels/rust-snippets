@@ -1,11 +1,13 @@
 mod style;
 mod color;
 mod theme;
+mod syntax;
 
 use rkyv::{Archive, Deserialize, Serialize};
 pub use style::Style;
 pub use color::Color;
 pub use theme::Theme;
+pub use syntax::SyntaxHighlighter;
 
 use markdown::{ParseOptions, mdast::{Code, Heading, Node, Paragraph, Root}, to_mdast};
 
@@ -51,16 +53,18 @@ impl Span {
     }
 }
 
-struct Converter<'a> {
+struct Converter<'a, 'b> {
+    syntax_highlighter: &'a SyntaxHighlighter,
     fragments: Document,
-    theme: &'a Theme,
+    theme: &'b Theme,
 }
 
-impl<'a> Converter<'a> {
-    fn new(theme: &'a Theme) -> Self {
+impl<'a, 'b> Converter<'a, 'b> {
+    fn new(syntax_highlighter: &'a SyntaxHighlighter, theme: &'b Theme) -> Self {
         Converter{
             fragments: Vec::new(),
-            theme: theme,
+            theme,
+            syntax_highlighter,
         }
     }
 
@@ -81,12 +85,10 @@ impl<'a> Converter<'a> {
 
     fn convert_code(&mut self, code: Code) {
         let language = code.lang;
-        let lines = code.value.lines().into_iter().map(|line| {
-            let text = line.to_owned();
-            let span = Span { text, style: Style::default() };
-            Line(vec![span])
-        }).collect::<Vec<_>>();
-        let fragment = Fragment::Code { language, lines };
+        let lines = code.value.lines();
+        let indentation = 0;
+        let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), lines, indentation).collect::<Vec<_>>();
+        let fragment = Fragment::Code { language, lines: highlighted_lines };
 
         self.fragments.push(fragment);
     }
@@ -159,12 +161,12 @@ impl<'a> Converter<'a> {
     }
 }
 
-pub fn parse(markdown: &str, theme: &Theme) -> Document {
+pub fn parse(markdown: &str, syntax_highlighter: &SyntaxHighlighter, theme: &Theme) -> Document {
     let ast = to_mdast(markdown, &ParseOptions::default()).unwrap();
 
     match ast {
         Node::Root(root) => {
-            let mut converter = Converter::new(theme);
+            let mut converter = Converter::new(syntax_highlighter, theme);
             converter.convert_root(root);
             converter.fragments
         },
@@ -201,8 +203,9 @@ mod test {
         line of text
         "# };
 
+        let syntax_highlighter = SyntaxHighlighter::new();
         let theme = Theme::default();
-        let document = parse(markdown, &theme);
+        let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Wrapping{ words: ws, style: _ }  = &document[0] {
@@ -221,8 +224,9 @@ mod test {
         second line
         "# };
 
+        let syntax_highlighter = SyntaxHighlighter::new();
         let theme = Theme::default();
-        let document = parse(markdown, &theme);
+        let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
@@ -240,8 +244,9 @@ mod test {
         some `highlighted` word
         "# };
 
+        let syntax_highlighter = SyntaxHighlighter::new();
         let theme = Theme::default();
-        let document = parse(markdown, &theme);
+        let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
@@ -259,8 +264,9 @@ mod test {
         # Title
         "# };
 
+        let syntax_highlighter = SyntaxHighlighter::new();
         let theme = Theme::default();
-        let document = parse(markdown, &theme);
+        let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
@@ -278,8 +284,9 @@ mod test {
         # This is the title
         "# };
 
+        let syntax_highlighter = SyntaxHighlighter::new();
         let theme = Theme::default();
-        let document = parse(markdown, &theme);
+        let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
@@ -299,8 +306,9 @@ mod test {
         ```
         "# };
 
+        let syntax_highlighter = SyntaxHighlighter::new();
         let theme = Theme::default();
-        let document = parse(markdown, &theme);
+        let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
         if let Fragment::Code{language, lines} = &document[0] {

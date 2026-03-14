@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::{snippets::Library, ui};
+use crate::{document, snippets::Library, ui};
 
 
 #[derive(Parser, Debug)]
@@ -89,7 +89,8 @@ fn list_snippets() {
 }
 
 fn create_archive() {
-    let library = Library::load_files(&"../data/snippets").unwrap();
+    let syntax_highlighter = create_syntax_highlighter();
+    let library = Library::load_files(&"../data/snippets", &syntax_highlighter).unwrap();
     if let Err(error) = library.write_to_archive(&"./archive.bin") {
         println!("Failure: {}", error);
     }
@@ -103,4 +104,16 @@ fn start_ui() {
     let library = load_library();
 
     ui::start_ui(library);
+}
+
+fn create_syntax_highlighter() -> document::SyntaxHighlighter {
+    let mut syntax_highlighter = document::SyntaxHighlighter::new();
+
+    syntax_highlighter.add_alias("bash", "Bourne Again Shell (bash)");
+
+    for language in syntax_highlighter.supported_languages() {
+        syntax_highlighter.add_alias(language.to_lowercase().as_str(), language.as_str());
+    }
+
+    syntax_highlighter
 }

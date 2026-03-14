@@ -2,7 +2,7 @@ use std::{collections::HashSet, fs, path::Path};
 
 use rkyv::{api::low::{from_bytes}, rancor::Error, to_bytes};
 
-use crate::{snippets::{snippets::{Snippet, SnippetError, load_snippets}}, util::trie};
+use crate::{document, snippets::snippets::{Snippet, SnippetError, load_snippets}, util::trie};
 
 pub struct Library {
     snippets: Vec<Snippet>,
@@ -33,9 +33,9 @@ impl Library {
         library
     }
 
-    pub fn load_files<P>(root: &P) -> Result<Self, SnippetError>
+    pub fn load_files<P>(root: &P, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Self, SnippetError>
     where P: AsRef<Path> {
-        let snippets = load_snippets(root)?;
+        let snippets = load_snippets(root, syntax_highlighter)?;
         let library = Library::new(snippets.into_iter());
 
         Ok(library)

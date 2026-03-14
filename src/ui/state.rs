@@ -2,7 +2,7 @@ use std::{collections::HashSet};
 
 use ratatui::{Frame, crossterm::event::{Event}};
 
-use crate::{snippets::Library, ui::{search_mode::SearchMode, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
 
 
 pub(super) enum Mode {
@@ -13,8 +13,8 @@ pub(super) enum Mode {
 }
 
 impl Mode {
-    pub fn default(library: Library, syntax_highlighter: SyntaxHighlighter) -> Self {
-        Mode::View(ViewMode::new(library, syntax_highlighter))
+    pub fn default(library: Library) -> Self {
+        Mode::View(ViewMode::new(library))
     }
 
     pub fn is_running(&self) -> bool {
@@ -45,7 +45,6 @@ impl Mode {
 
 pub struct State {
     pub library: Library,
-    pub syntax_highlighter: SyntaxHighlighter,
     pub selected_tags: Vec<String>,
     pub keywords: Vec<String>,
     pub visible_snippets: Vec<usize>,
@@ -54,12 +53,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(library: Library, syntax_highlighter: SyntaxHighlighter) -> State {
+    pub fn new(library: Library) -> State {
         State {
             visible_snippets: library.snippets().collect(),
             visible_tags: library.tags().clone(),
             library: library,
-            syntax_highlighter: syntax_highlighter,
             selected_tags: Vec::new(),
             keywords: Vec::new(),
             tag_input: None,

@@ -1,12 +1,9 @@
-use std::fmt::Debug;
-
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
-use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}, ui::syntax::SyntaxHighlighter};
+use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
-    syntax_highlighter: &'a SyntaxHighlighter,
 }
 
 pub struct SnippetViewState {
@@ -42,10 +39,9 @@ impl SnippetViewState {
 }
 
 impl<'a> SnippetView<'a> {
-    pub fn new(snippet: &'a Snippet, syntax_highlighter: &'a SyntaxHighlighter) -> Self {
+    pub fn new(snippet: &'a Snippet) -> Self {
         SnippetView{
             snippet,
-            syntax_highlighter,
         }
     }
 

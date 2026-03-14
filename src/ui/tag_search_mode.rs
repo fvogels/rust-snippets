@@ -90,7 +90,7 @@ impl TagSearchMode {
 
         if let Some(snippet_id) = snippet_id {
             let snippet = self.state.library.snippet(*snippet_id);
-            let snippet_view = SnippetView::new(snippet, &self.state.syntax_highlighter);
+            let snippet_view = SnippetView::new(snippet);
 
             let mut snippet_view_state = SnippetViewState::new();
             snippet_view.render(area, buffer, &mut snippet_view_state);

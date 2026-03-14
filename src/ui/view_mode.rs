@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, syntax::SyntaxHighlighter, tag_search_mode::TagSearchMode, widgets::{keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, tag_search_mode::TagSearchMode, widgets::{keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -10,9 +10,9 @@ pub(super) struct ViewMode {
 }
 
 impl ViewMode {
-    pub(super) fn new(library: Library, syntax_highlighter: SyntaxHighlighter) -> Self {
+    pub(super) fn new(library: Library) -> Self {
         ViewMode {
-            state: State::new(library, syntax_highlighter),
+            state: State::new(library),
             description_list_state: ListState::default().with_selected(Some(0)),
             snippet_view_state: SnippetViewState::new(),
             description_list_page_size: 10,
@@ -117,7 +117,7 @@ impl ViewMode {
             None => {},
             Some(selected_snippet_index) => {
                 let snippet = self.state.library.snippet(self.state.visible_snippets[selected_snippet_index]);
-                let snippet_view = SnippetView::new(snippet, &self.state.syntax_highlighter);
+                let snippet_view = SnippetView::new(snippet);
                 snippet_view.render(area, buffer, &mut self.snippet_view_state);
             }
         }

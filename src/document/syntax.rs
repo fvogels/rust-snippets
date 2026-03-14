@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use ratatui::{text::{Line, Span}};
 use syntect::{easy::HighlightLines, highlighting::{FontStyle, Theme, ThemeSet}, parsing::{SyntaxReference, SyntaxSet}};
+
+use crate::document::{Color, Line, Span, Style};
 
 
 pub struct SyntaxHighlighter {
@@ -35,7 +36,7 @@ impl SyntaxHighlighter {
         self.aliases.insert(alias.to_owned(), language.to_owned());
     }
 
-    pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>, indentation: usize) -> impl Iterator<Item=Line<'a>> {
+    pub fn highlight_lines<'a>(&self, language: Option<&str>, lines: impl Iterator<Item=&'a str>, indentation: usize) -> impl Iterator<Item=Line> {
         let syntax = self.get_syntax_reference(language);
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
         lines.map(move |line| self.highlight_line(line, &mut highlighter, indentation))
@@ -55,11 +56,11 @@ impl SyntaxHighlighter {
         }
     }
 
-    fn highlight_line<'a>(&self, line: &'a str, highlighter: &mut HighlightLines, indentation: usize) -> Line<'a> {
+    fn highlight_line<'a>(&self, line: &'a str, highlighter: &mut HighlightLines, indentation: usize) -> Line {
         let mut spans = Vec::new();
 
         if indentation > 0 {
-            let indentation_span = Span::default().content(" ".repeat(indentation));
+            let indentation_span = Span { text: " ".repeat(indentation), style: Style::default() };
             spans.push(indentation_span);
         }
 
@@ -69,40 +70,28 @@ impl SyntaxHighlighter {
                     .map(|segment| convert_to_span(segment.0, segment.1))
                     .for_each(|span| spans.push(span));
 
-        Line::from(spans)
+        Line(spans)
     }
 }
 
 
-fn convert_to_span<'a>(syntect_style: syntect::highlighting::Style, content: &'a str) -> Span<'a> {
-    let ratatui_style = translate_syntect_style(syntect_style);
+fn convert_to_span<'a>(syntect_style: syntect::highlighting::Style, content: &'a str) -> Span {
+    let translated_style = translate_syntect_style(syntect_style);
 
-    Span::styled(content, ratatui_style)
+    Span { text: content.to_owned(), style: translated_style }
 }
 
-fn translate_syntect_style(syntect_style: syntect::highlighting::Style) -> ratatui::style::Style {
+fn translate_syntect_style(syntect_style: syntect::highlighting::Style) -> Style {
     let foreground = translate_syntect_color(syntect_style.foreground);
-    // let background = translate_syntect_color(syntect_style.background);
 
     let syntect_font_style = syntect_style.font_style;
     let is_bold = !syntect_font_style.intersection(FontStyle::BOLD).is_empty();
     let is_italic = !syntect_font_style.intersection(FontStyle::ITALIC).is_empty();
     let is_underlined = !syntect_font_style.intersection(FontStyle::UNDERLINE).is_empty();
 
-    let mut result = ratatui::style::Style::default().fg(foreground);
-    if is_bold {
-        result = result.bold()
-    }
-    if is_italic {
-        result = result.italic()
-    }
-    if is_underlined {
-        result = result.underlined()
-    }
-
-    result
+    Style::default().foreground(foreground).bold(is_bold).italic(is_italic).underline(is_underlined)
 }
 
-fn translate_syntect_color(syntect_color: syntect::highlighting::Color) -> ratatui::style::Color {
-    ratatui::style::Color::Rgb(syntect_color.r, syntect_color.g, syntect_color.b)
+fn translate_syntect_color(syntect_color: syntect::highlighting::Color) -> Color {
+    Color { r: syntect_color.r, g: syntect_color.g, b: syntect_color.b }
 }

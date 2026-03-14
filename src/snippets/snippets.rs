@@ -86,7 +86,7 @@ where P: AsRef<Path> {
             .collect()
 }
 
-pub fn load_snippet_file<P, Q>(root_path: &P, file_path: &Q) -> Result<Snippet, SnippetError>
+pub fn load_snippet_file<P, Q>(root_path: &P, file_path: &Q, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Snippet, SnippetError>
 where P: AsRef<Path>, Q: AsRef<Path> {
     let segments = segment_file::load(file_path, |line| {
         line.strip_prefix("===").map(|x| x.trim())
@@ -111,7 +111,7 @@ where P: AsRef<Path>, Q: AsRef<Path> {
             let lines = segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
             let markdown_source = lines.join("\n");
             let theme = Theme::default();
-            let contents = document::parse(markdown_source.as_str(), &theme);
+            let contents = document::parse(markdown_source.as_str(), &syntax_highlighter, &theme);
             let part = Part{ attributes, contents };
 
             Ok(part)
@@ -157,10 +157,10 @@ fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
     serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
 }
 
-pub fn load_snippets<P>(root: &P) -> Result<Vec<Snippet>, SnippetError> where P: AsRef<Path> {
+pub fn load_snippets<P>(root: &P, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Vec<Snippet>, SnippetError> where P: AsRef<Path> {
     let absolute_root = root.as_ref().canonicalize().map_err(|_| SnippetError::PathError)?;
 
-    discover_files(root)?.into_iter().map(|path| load_snippet_file(&absolute_root, &path)).collect()
+    discover_files(root)?.into_iter().map(|path| load_snippet_file(&absolute_root, &path, syntax_highlighter)).collect()
 }
 
 fn convert_tabs_to_spaces(s: &str) -> String {
