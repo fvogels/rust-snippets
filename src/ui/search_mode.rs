@@ -31,10 +31,10 @@ impl SearchMode {
                 self.state.clear_keywords();
                 self.state.refresh();
                 self.description_list_state.select(Some(0));
-                Mode::View(ViewMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
+                Mode::View(ViewMode::init(self.state, self.description_list_state, self.snippet_view_state))
             },
             KeyCode::Enter => {
-                Mode::View(ViewMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
+                Mode::View(ViewMode::init(self.state, self.description_list_state, self.snippet_view_state))
             },
             KeyCode::Backspace => {
                 if let Some(mut last_keyword) = self.state.keywords.pop() {

@@ -6,6 +6,7 @@ pub(super) struct ViewMode {
     pub state: State,
     pub(super) description_list_state: ListState,
     pub(super) snippet_view_state: SnippetViewState,
+    description_list_page_size: u16,
 }
 
 impl ViewMode {
@@ -14,6 +15,16 @@ impl ViewMode {
             state: State::new(library, syntax_highlighter),
             description_list_state: ListState::default().with_selected(Some(0)),
             snippet_view_state: SnippetViewState::new(),
+            description_list_page_size: 10,
+        }
+    }
+
+    pub(super) fn init(state: State, description_list_state: ListState, snippet_view_state: SnippetViewState) -> Self {
+        ViewMode {
+            state,
+            description_list_state,
+            snippet_view_state,
+            description_list_page_size: 10,
         }
     }
 
@@ -37,6 +48,14 @@ impl ViewMode {
             },
             KeyCode::Down => {
                 self.description_list_state.select_next();
+                Mode::View(self)
+            },
+            KeyCode::PageUp => {
+                self.description_list_state.scroll_up_by(self.description_list_page_size);
+                Mode::View(self)
+            },
+            KeyCode::PageDown => {
+                self.description_list_state.scroll_down_by(self.description_list_page_size);
                 Mode::View(self)
             },
             KeyCode::Tab => {
@@ -82,6 +101,13 @@ impl ViewMode {
         let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
         let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!(" {} snippets ", descriptions.len())).right_aligned()).border_type(BorderType::Double);
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
+
+        if area.height >= 2 {
+            self.description_list_page_size = area.height - 2;
+        }
+        else {
+            self.description_list_page_size = 1;
+        }
 
         StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }

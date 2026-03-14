@@ -19,11 +19,7 @@ impl TagSearchMode {
                 Mode::TagSearch(self)
             },
             KeyCode::Esc => {
-                Mode::View(ViewMode {
-                    state: self.state,
-                    description_list_state: ListState::default().with_selected(Some(0)),
-                    snippet_view_state: SnippetViewState::new()
-                })
+                Mode::View(ViewMode::init(self.state, ListState::default().with_selected(Some(0)), SnippetViewState::new()))
             },
             KeyCode::Enter => {
                 if let Some(index) = self.tags_view_state.selected() {
@@ -32,11 +28,7 @@ impl TagSearchMode {
                     self.state.refresh();
                 }
 
-                Mode::View(ViewMode {
-                    state: self.state,
-                    description_list_state: ListState::default().with_selected(Some(0)),
-                    snippet_view_state: SnippetViewState::new()
-                })
+                Mode::View(ViewMode::init(self.state, ListState::default().with_selected(Some(0)), SnippetViewState::new()))
             },
             KeyCode::Char(' ') => {
                 if let Some(index) = self.tags_view_state.selected() {
