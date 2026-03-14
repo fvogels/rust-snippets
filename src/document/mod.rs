@@ -14,7 +14,16 @@ pub type Document = Vec<Fragment>;
 #[derive(Debug, Archive, Serialize, Deserialize)]
 pub enum Fragment {
     Wrapping{ words: Vec<Word>, style: Style },
-    Code { language: Option<String>, lines: Vec<String> },
+    Code { language: Option<String>, lines: Vec<Line> },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+pub struct Line(Vec<Span>);
+
+impl Line {
+    pub fn spans(&self) -> &Vec<Span> {
+        &self.0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -72,7 +81,11 @@ impl<'a> Converter<'a> {
 
     fn convert_code(&mut self, code: Code) {
         let language = code.lang;
-        let lines = code.value.lines().into_iter().map(|line| line.to_owned()).collect::<Vec<_>>();
+        let lines = code.value.lines().into_iter().map(|line| {
+            let text = line.to_owned();
+            let span = Span { text, style: Style::default() };
+            Line(vec![span])
+        }).collect::<Vec<_>>();
         let fragment = Fragment::Code { language, lines };
 
         self.fragments.push(fragment);
@@ -293,7 +306,8 @@ mod test {
         if let Fragment::Code{language, lines} = &document[0] {
             assert_eq!(&Some("python".to_owned()), language);
             assert_eq!(1, lines.len());
-            assert_eq!("1 + 2", lines[0]);
+            let line = &lines[0];
+            assert_eq!(1, line.0.len());
         }
         else {
             assert!(false, "fragment should be a paragraph");

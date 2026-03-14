@@ -96,7 +96,7 @@ impl<'a> SnippetView<'a> {
                     }
                 },
                 &document::Fragment::Code { ref language, lines: ref code_lines } => {
-                    let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), code_lines.iter().map(String::as_str), 2);
+                    // let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), code_lines.iter().map(String::as_str), 2);
 
                     if !lines.is_empty() {
                         lines.push(Line::default());
@@ -118,8 +118,11 @@ impl<'a> SnippetView<'a> {
                     };
                     lines.push(code_block_caption);
 
-                    for line in highlighted_lines {
-                        lines.push(line);
+                    let line_style = document::Style::default();
+                    for line in code_lines {
+                        let translated_spans = line.spans().iter().map(|span| translate_span(span, &line_style));
+
+                        lines.push(Line::default().spans(translated_spans));
                     }
 
                     lines.push(Line::default());
