@@ -178,10 +178,10 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
                 let style_base = document::Style::default().background(document::Color::gray(64));
                 let indentation_style = document::Style::default();
                 let caption_style = document::Style::default().background(document::Color::gray(128));
-                let indentation_span = document::Span { text: "  ".to_owned(), style: indentation_style };
+                let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
 
                 let code_block_caption = {
-                    let mut spans = vec![ translate_span(&indentation_span, &indentation_style) ];
+                    let mut spans = vec![ indentation_span.clone() ];
 
                     let mut caption =
                         if let Some(language) = language {
@@ -202,7 +202,7 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
 
                 let line_style = document::Style::default().background(Color::gray(90));
                 for line in code_lines {
-                    let mut translated_spans = vec![ translate_span(&indentation_span, &indentation_style) ];
+                    let mut translated_spans = vec![ indentation_span.clone() ];
 
                     line.spans().iter().for_each(|span| {
                         let translated_span = translate_span(span, &line_style);
