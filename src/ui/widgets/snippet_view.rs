@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
 use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}};
@@ -53,82 +55,6 @@ impl<'a> SnippetView<'a> {
 
         (selected_part_index, &snippet.parts[selected_part_index])
     }
-
-    fn render_document_as_paragraph<'b>(&self, document: &'b Document, line_width: usize) -> Paragraph<'b> {
-        let mut lines = Vec::new();
-        let mut code_block_index = 1;
-
-        for fragment in document {
-            match fragment {
-                document::Fragment::Wrapping{words, style} => {
-                    let mut spans = Vec::new();
-                    let mut acc = 0;
-
-                    for word in words {
-                        let is_fresh_line = acc == 0;
-                        let separator_size = if is_fresh_line { 0 } else { 1 };
-                        if acc + word.len() + separator_size > line_width && acc > 0 {
-                            // New line has to be started
-                            let line = Line::default().spans(spans);
-                            lines.push(line);
-                            spans = Vec::new();
-                        }
-                        else {
-                            // Word fits on current line
-                            if !is_fresh_line {
-                                // Add separating space between words
-                                spans.push(Span::default().content(" ").style(translate_style(style)))
-                            }
-                            for span in word.spans() {
-                                spans.push(translate_span(span, &style));
-                            }
-                            acc += word.len();
-                        }
-                    }
-
-                    if !spans.is_empty() {
-                        let line = Line::default().spans(spans);
-                        lines.push(line);
-                    }
-                },
-                &document::Fragment::Code { ref language, lines: ref code_lines } => {
-                    // let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), code_lines.iter().map(String::as_str), 2);
-
-                    if !lines.is_empty() {
-                        lines.push(Line::default());
-                    }
-
-                    let code_block_caption = {
-                        let mut caption =
-                            if let Some(language) = language {
-                                format!("  Code snippet #{} ({})", code_block_index, language)
-                            }
-                            else {
-                                format!("  Code snippet #{}", code_block_index)
-                            };
-                        while caption.len() < line_width {
-                            caption.push(' ');
-                        }
-                        let style = document::Style::default().background(document::Color::gray(64));
-                        Line::raw(caption).style(translate_style(&style))
-                    };
-                    lines.push(code_block_caption);
-
-                    let line_style = document::Style::default();
-                    for line in code_lines {
-                        let translated_spans = line.spans().iter().map(|span| translate_span(span, &line_style));
-
-                        lines.push(Line::default().spans(translated_spans));
-                    }
-
-                    lines.push(Line::default());
-                    code_block_index += 1;
-                }
-            }
-        }
-
-        Paragraph::new(lines)
-    }
 }
 
 impl<'a> StatefulWidget for SnippetView<'a> {
@@ -150,7 +76,7 @@ impl<'a> StatefulWidget for SnippetView<'a> {
 
         let document = &selected_part.contents;
         let line_width = snippet_caption_block.inner(area).width as usize;
-        let paragraph = self.render_document_as_paragraph(document, line_width).block(snippet_caption_block);
+        let paragraph = render_document_as_paragraph(document, line_width).block(snippet_caption_block);
 
         paragraph.render(area, buffer);
     }
@@ -201,8 +127,88 @@ fn translate_style(style: &document::Style) -> ratatui::style::Style {
     result
 }
 
-fn translate_span<'a>(span: &'a document::Span, style_base: &document::Style) -> ratatui::text::Span<'a> {
+fn translate_span<'a>(span: &document::Span, style_base: &document::Style) -> ratatui::text::Span<'a> {
     let combined_style = span.style.combine(style_base);
 
-    ratatui::text::Span::default().content(span.text.as_str()).style(translate_style(&combined_style))
+    ratatui::text::Span::default().content(Cow::from(span.text.clone())).style(translate_style(&combined_style))
+}
+
+fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> Paragraph<'a> {
+    let mut lines = Vec::new();
+    let mut code_block_index = 1;
+
+    for fragment in document {
+        match fragment {
+            document::Fragment::Wrapping{words, style} => {
+                let mut spans = Vec::new();
+                let mut acc = 0;
+
+                for word in words {
+                    let is_fresh_line = acc == 0;
+                    let separator_size = if is_fresh_line { 0 } else { 1 };
+                    if acc + word.len() + separator_size > line_width && acc > 0 {
+                        // New line has to be started
+                        let line = Line::default().spans(spans);
+                        lines.push(line);
+                        spans = Vec::new();
+                    }
+                    else {
+                        // Word fits on current line
+                        if !is_fresh_line {
+                            // Add separating space between words
+                            spans.push(Span::default().content(" ").style(translate_style(style)))
+                        }
+                        for span in word.spans() {
+                            spans.push(translate_span(span, &style));
+                        }
+                        acc += word.len();
+                    }
+                }
+
+                if !spans.is_empty() {
+                    let line = Line::default().spans(spans);
+                    lines.push(line);
+                }
+            },
+            &document::Fragment::Code { ref language, lines: ref code_lines } => {
+                if !lines.is_empty() {
+                    lines.push(Line::default());
+                }
+
+                let code_block_caption = {
+                    let mut caption =
+                        if let Some(language) = language {
+                            format!("  Code snippet #{} ({})", code_block_index, language)
+                        }
+                        else {
+                            format!("  Code snippet #{}", code_block_index)
+                        };
+                    while caption.len() < line_width {
+                        caption.push(' ');
+                    }
+                    let style = document::Style::default().background(document::Color::gray(64));
+                    Line::raw(caption).style(translate_style(&style))
+                };
+                lines.push(code_block_caption);
+
+                let line_style = document::Style::default();
+                for line in code_lines {
+                    let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: line_style }, &line_style );
+                    let mut translated_spans = vec![ indentation_span ];
+
+                    line.spans().iter().for_each(|span| {
+                        let translated_span = translate_span(span, &line_style);
+                        translated_spans.push(translated_span);
+                    });
+
+                    lines.push(Line::default().spans(translated_spans));
+                }
+
+                lines.push(Line::default());
+                code_block_index += 1;
+            }
+        }
+    }
+
+    Paragraph::new(lines)
 }
