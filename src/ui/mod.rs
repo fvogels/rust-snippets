@@ -8,10 +8,6 @@ mod application;
 use state::Mode;
 use application::Application;
 
-use std::{io, mem};
-
-use ratatui::{DefaultTerminal, Frame, crossterm::event};
-
 use crate::{snippets::Library};
 
 pub fn start_ui(library: Library) {
