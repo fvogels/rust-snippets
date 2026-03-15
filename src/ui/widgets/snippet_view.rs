@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
-use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}};
+use crate::{document::{self, Color, Document}, snippets::snippets::{Part, Snippet}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
@@ -175,26 +175,34 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
                     lines.push(Line::default());
                 }
 
+                let style_base = document::Style::default().background(document::Color::gray(64));
+                let indentation_style = document::Style::default();
+                let caption_style = document::Style::default().background(document::Color::gray(128));
+                let indentation_span = document::Span { text: "  ".to_owned(), style: indentation_style };
+
                 let code_block_caption = {
+                    let mut spans = vec![ translate_span(&indentation_span, &indentation_style) ];
+
                     let mut caption =
                         if let Some(language) = language {
-                            format!("  Code snippet #{} ({})", code_block_index, language)
+                            format!("Code snippet #{} ({})", code_block_index, language)
                         }
                         else {
-                            format!("  Code snippet #{}", code_block_index)
+                            format!("Code snippet #{}", code_block_index)
                         };
                     while caption.len() < line_width {
                         caption.push(' ');
                     }
-                    let style = document::Style::default().background(document::Color::gray(64));
-                    Line::raw(caption).style(translate_style(&style))
+                    let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
+                    spans.push(caption_span);
+                    Line::default().spans(spans)
                 };
                 lines.push(code_block_caption);
 
-                let line_style = document::Style::default();
+
+                let line_style = document::Style::default().background(Color::gray(90));
                 for line in code_lines {
-                    let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: line_style }, &line_style );
-                    let mut translated_spans = vec![ indentation_span ];
+                    let mut translated_spans = vec![ translate_span(&indentation_span, &indentation_style) ];
 
                     line.spans().iter().for_each(|span| {
                         let translated_span = translate_span(span, &line_style);
