@@ -62,13 +62,18 @@ impl<'a> StatefulWidget for SnippetView<'a> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let (selected_part_index, selected_part) = self.selected_snippet_part(state);
-        let one_based_index = selected_part_index + 1;
-        let part_count = self.snippet.parts.len();
-        let part_caption = match selected_part.caption() {
-            Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
-            None => format!(" {}/{} ", one_based_index, part_count),
+
+        let bottom_title = {
+            let one_based_index = selected_part_index + 1;
+            let part_count = self.snippet.parts.len();
+
+            let caption = match selected_part.caption() {
+                Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
+                None => format!(" {}/{} ", one_based_index, part_count),
+            };
+
+            Line::raw(caption)
         };
-        let bottom_title = Line::raw(part_caption);
         let mut snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
         if let Some(language) = selected_part.language() {
             snippet_caption_block = snippet_caption_block.title_top(language);
@@ -175,12 +180,13 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
                     lines.push(Line::default());
                 }
 
-                let style_base = document::Style::default().background(document::Color::gray(64));
+                let style_base = document::Style::default().background(document::Color::gray(32));
                 let indentation_style = document::Style::default();
                 let caption_style = document::Style::default().background(document::Color::gray(128));
                 let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
                 let code_block_width = code_lines.get(0).map(|line| line.len()).unwrap_or(0);
 
+                // Add line for code block caption
                 let code_block_caption = {
                     let mut spans = vec![ indentation_span.clone() ];
 
@@ -203,12 +209,12 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
                 lines.push(code_block_caption);
 
 
-                let line_style = document::Style::default().background(Color::gray(90));
+                // Add code block lines
                 for line in code_lines {
                     let mut translated_spans = vec![ indentation_span.clone() ];
 
                     line.spans().iter().for_each(|span| {
-                        let translated_span = translate_span(span, &line_style);
+                        let translated_span = translate_span(span, &style_base);
                         translated_spans.push(translated_span);
                     });
 
