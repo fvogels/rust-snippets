@@ -179,18 +179,21 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
                 let indentation_style = document::Style::default();
                 let caption_style = document::Style::default().background(document::Color::gray(128));
                 let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
+                let code_block_width = code_lines.get(0).map(|line| line.len()).unwrap_or(0);
 
                 let code_block_caption = {
                     let mut spans = vec![ indentation_span.clone() ];
 
                     let mut caption =
                         if let Some(language) = language {
-                            format!("Code snippet #{} ({})", code_block_index, language)
+                            format!(" Code snippet #{} ({})", code_block_index, language)
                         }
                         else {
-                            format!("Code snippet #{}", code_block_index)
+                            format!(" Code snippet #{}", code_block_index)
                         };
-                    while caption.len() < line_width {
+
+
+                    while caption.len() < code_block_width {
                         caption.push(' ');
                     }
                     let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
