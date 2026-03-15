@@ -26,6 +26,22 @@ impl Line {
     pub fn spans(&self) -> &Vec<Span> {
         &self.0
     }
+
+    pub fn len(&self) -> usize {
+        self.0.iter().map(|span| span.len()).sum()
+    }
+
+    fn indent(&mut self, indentation: usize) {
+        let indentation_span = Span{ text: " ".repeat(indentation), style: Style::default() };
+        self.0.insert(0, indentation_span);
+    }
+
+    fn pad_with_spaces(&mut self, target_length: usize) {
+        let padding_size = target_length - self.len();
+        let padding = " ".repeat(padding_size);
+        let padding_span = Span{ text: padding, style: Style::default() };
+        self.0.push(padding_span);
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -87,7 +103,24 @@ impl<'a, 'b> Converter<'a, 'b> {
         let language = code.lang;
         let lines = code.value.lines();
         let indentation = 0;
-        let highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), lines, indentation).collect::<Vec<_>>();
+        let mut highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), lines, indentation).collect::<Vec<_>>();
+        let longest_line_length = highlighted_lines.iter().map(|line| line.len()).max().unwrap_or(0);
+        let target_line_length = longest_line_length + 2;
+
+        // Indent and pad lines
+        for highlighted_line in &mut highlighted_lines {
+            highlighted_line.indent(1);
+            highlighted_line.pad_with_spaces(target_line_length);
+        }
+
+        // Add top and bottom empty line
+        let empty_line = {
+            let span = Span { text: " ".repeat(target_line_length), style: Style::default() };
+            Line(vec![span])
+        };
+        highlighted_lines.insert(0, empty_line.clone());
+        highlighted_lines.push(empty_line);
+
         let fragment = Fragment::Code { language, lines: highlighted_lines };
 
         self.fragments.push(fragment);
