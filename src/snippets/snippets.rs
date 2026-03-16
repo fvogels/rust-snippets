@@ -117,7 +117,6 @@ pub mod raw {
 }
 
 
-#[derive(Debug, Archive, Serialize, Deserialize)]
 pub struct Snippet {
     pub description: String,
     pub parts: Vec<Part>,
@@ -125,7 +124,6 @@ pub struct Snippet {
     pub path: Vec<String>,
 }
 
-#[derive(Debug, Archive, Serialize, Deserialize)]
 pub struct Part {
     pub attributes: HashMap<String, String>,
     pub contents: Document,
