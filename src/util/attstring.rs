@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, mem};
+use std::{fmt, mem};
 
 pub struct Attributes(Vec<(String, String)>);
 

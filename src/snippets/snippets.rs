@@ -1,5 +1,4 @@
-use std::{cell::{LazyCell, OnceCell}, collections::{HashMap, HashSet}, iter::Once, rc::Rc};
-use rkyv::{Archive, Deserialize, Serialize};
+use std::{cell::{OnceCell}, collections::{HashMap, HashSet}, rc::Rc};
 
 use crate::{document::{self, Document, Fragment, SyntaxHighlighter, Theme}, util::attstring::{self}};
 use thiserror::Error;
