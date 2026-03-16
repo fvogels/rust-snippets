@@ -8,3 +8,9 @@ ui:
 
 cleanlog:
 	rm -f snippets.log
+
+release:
+	cargo build --release
+
+produi: release
+	./target/release/snippets.exe ui
