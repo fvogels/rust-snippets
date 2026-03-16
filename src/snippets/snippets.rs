@@ -114,10 +114,6 @@ pub mod raw {
     fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
         serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
     }
-
-    fn convert_tabs_to_spaces(s: &str) -> String {
-        s.replace("\t", "    ")
-    }
 }
 
 
