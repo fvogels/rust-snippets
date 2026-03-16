@@ -137,7 +137,7 @@ impl<'a, 'b> Converter<'a, 'b> {
         let column_widths = (0..column_count).map(|column_index| {
             (0..row_count).map(|row_index| {
                 rows[row_index][column_index].len()
-            }).max().unwrap()
+            }).max().unwrap() + 2
         }).collect::<Vec<_>>();
 
         let lines = rows.into_iter().enumerate().map(|(row_index, row)| {

@@ -19,7 +19,7 @@ impl Theme {
                 Style::default().background(Color::blue(128)).bold(true),
                 Style::default().background(Color::blue(192)).bold(true),
             ],
-            table_heading: Style::default().background(Color::blue(128)),
+            table_heading: Style::default().background(Color::blue(128)).underline(true),
             table_even_row: Style::default().background(Color::gray(128)),
             table_odd_row: Style::default().background(Color::gray(64)),
         }
