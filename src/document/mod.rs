@@ -16,7 +16,7 @@ pub type Document = Vec<Fragment>;
 #[derive(Debug, Archive, Serialize, Deserialize)]
 pub enum Fragment {
     Wrapping{ words: Vec<Word>, style: Style },
-    Code { language: Option<String>, highlighted_lines: Vec<Line> },
+    Code { language: Option<String>, original: String, highlighted_lines: Vec<Line> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -121,7 +121,7 @@ impl<'a, 'b> Converter<'a, 'b> {
         highlighted_lines.insert(0, empty_line.clone());
         highlighted_lines.push(empty_line);
 
-        let fragment = Fragment::Code { language, highlighted_lines };
+        let fragment = Fragment::Code { language, original: code.value, highlighted_lines };
 
         self.fragments.push(fragment);
     }
@@ -344,11 +344,12 @@ mod test {
         let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Code{language, highlighted_lines: lines} = &document[0] {
+        if let Fragment::Code{language, highlighted_lines: lines, original} = &document[0] {
             assert_eq!(&Some("python".to_owned()), language);
             assert_eq!(1, lines.len());
             let line = &lines[0];
             assert_eq!(1, line.0.len());
+            assert_eq!("1 + 2", original);
         }
         else {
             assert!(false, "fragment should be a paragraph");
