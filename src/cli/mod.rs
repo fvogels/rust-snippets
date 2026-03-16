@@ -1,3 +1,4 @@
+use log;
 use clap::{Parser, Subcommand};
 
 use crate::{document, snippets::{self, Library}, ui};
@@ -103,6 +104,7 @@ fn load_library() -> Library {
 }
 
 fn start_ui() {
+    log::info!("Loading library");
     let library = load_library();
 
     ui::start_ui(library);
