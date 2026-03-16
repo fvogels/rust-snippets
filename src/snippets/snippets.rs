@@ -1,8 +1,7 @@
-use std::{collections::{HashMap, HashSet}, path::{Path, PathBuf}};
+use std::{collections::{HashMap, HashSet}};
 use rkyv::{Archive, Deserialize, Serialize};
 
-use walkdir::WalkDir;
-use crate::{document::{self, Document, Fragment, Theme}, util::{attstring::{self, Attributes}, segment_file}};
+use crate::{document::{self, Document, Fragment, Theme}, util::{attstring::{self}}};
 use thiserror::Error;
 use std::io;
 
@@ -29,12 +28,6 @@ pub enum SnippetError {
 
     #[error("Attribute error: {0}")]
     AttributeError(#[from] attstring::Error),
-}
-
-#[derive(Debug, serde::Deserialize)]
-struct Metadata {
-    description: String,
-    tags: Vec<String>,
 }
 
 pub mod raw {
@@ -211,47 +204,6 @@ impl Part {
 
         None
     }
-}
-
-pub fn discover_files<P>(root: &P) -> Result<Vec<PathBuf>, SnippetError>
-where P: AsRef<Path> {
-    WalkDir::new(root)
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.metadata().unwrap().is_file())
-            .map(|e| e.path().canonicalize().map_err(SnippetError::IoError).map(|p| p.to_owned()))
-            .collect()
-}
-
-pub fn load_snippet_file<P, Q>(root_path: &P, file_path: &Q, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Snippet, SnippetError>
-where P: AsRef<Path>, Q: AsRef<Path> {
-    let path = derive_path(root_path, file_path)?;
-    let raw_snippet = raw::Snippet::load(file_path, path)?;
-    let snippet = Snippet::from_raw(raw_snippet, syntax_highlighter);
-
-    Ok(snippet)
-}
-
-fn derive_path<P, Q>(root: &P, file: &Q) -> Result<Vec<String>, SnippetError> where P: AsRef<Path>, Q: AsRef<Path> {
-    debug_assert!(root.as_ref().is_absolute(), "{} must be absolute", root.as_ref().as_os_str().display());
-    debug_assert!(file.as_ref().is_absolute(), "{} must be absolute", file.as_ref().as_os_str().display());
-
-    let parent_path = file.as_ref().parent().ok_or(SnippetError::PathError)?;
-
-    let path =
-        parent_path.strip_prefix(root)
-                   .map_err(|_| SnippetError::PathError)?
-                   .components()
-                   .map(|component| component.as_os_str().to_str().unwrap().to_owned())
-                   .collect::<Vec<String>>();
-
-    Ok(path)
-}
-
-pub fn load_snippets<P>(root: &P, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Vec<Snippet>, SnippetError> where P: AsRef<Path> {
-    let absolute_root = root.as_ref().canonicalize().map_err(|_| SnippetError::PathError)?;
-
-    discover_files(root)?.into_iter().map(|path| load_snippet_file(&absolute_root, &path, syntax_highlighter)).collect()
 }
 
 fn convert_tabs_to_spaces(s: &str) -> String {

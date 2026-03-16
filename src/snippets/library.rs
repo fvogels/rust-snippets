@@ -1,8 +1,6 @@
-use std::{collections::HashSet, fs, path::Path};
+use std::{collections::HashSet};
 
-use rkyv::{api::low::{from_bytes}, rancor::Error, to_bytes};
-
-use crate::{document, snippets::{archive::Archive, snippets::{Snippet, SnippetError, load_snippets}}, util::trie};
+use crate::{document, snippets::{archive::Archive, snippets::{Snippet}}, util::trie};
 
 pub struct Library {
     snippets: Vec<Snippet>,

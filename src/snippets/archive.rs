@@ -1,4 +1,4 @@
-use std::{fs, io, path::{Path, PathBuf}};
+use std::{fs, path::{Path, PathBuf}};
 
 use rkyv::{from_bytes, to_bytes, rancor::Error};
 use walkdir::WalkDir;
@@ -40,14 +40,6 @@ impl Archive {
         fs::write(archive_path, bytes).map_err(SnippetError::IoError)?;
 
         Ok(())
-    }
-
-    fn load_snippet_file<P, Q>(root_path: &P, file_path: &Q) -> Result<raw::Snippet, SnippetError>
-    where P: AsRef<Path>, Q: AsRef<Path> {
-        let path = derive_path(root_path, file_path)?;
-        let raw_snippet = raw::Snippet::load(file_path, path)?;
-
-        Ok(raw_snippet)
     }
 }
 
