@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::{document, snippets::Library, ui};
+use crate::{document, snippets::{self, Library}, ui};
 
 
 #[derive(Parser, Debug)]
@@ -89,15 +89,17 @@ fn list_snippets() {
 }
 
 fn create_archive() {
-    let syntax_highlighter = create_syntax_highlighter();
-    let library = Library::load_files(&"../data/snippets", &syntax_highlighter).unwrap();
-    if let Err(error) = library.write_to_archive(&"./archive.bin") {
-        println!("Failure: {}", error);
-    }
+    let root = "../data/snippets";
+    let archive_path = "./archive.bin";
+    let archive = snippets::Archive::load_snippet_files(&root).unwrap();
+    archive.write(&archive_path).unwrap();
 }
 
 fn load_library() -> Library {
-    Library::read_archive(&"./archive.bin").unwrap()
+    let archive_path =  "./archive.bin";
+    let archive = snippets::Archive::load(&archive_path).unwrap();
+    let syntax_highlighter = create_syntax_highlighter();
+    Library::from_archive(archive, &syntax_highlighter)
 }
 
 fn start_ui() {

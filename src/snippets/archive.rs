@@ -6,7 +6,7 @@ use walkdir::WalkDir;
 use crate::snippets::snippets::{SnippetError, raw};
 
 pub struct Archive {
-    raw_snippets: Vec<raw::Snippet>,
+    pub raw_snippets: Vec<raw::Snippet>,
 }
 
 impl Archive {
@@ -49,7 +49,6 @@ impl Archive {
 
         Ok(raw_snippet)
     }
-
 }
 
 fn discover_files<P>(root: &P) -> Result<Vec<PathBuf>, SnippetError>

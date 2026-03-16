@@ -2,7 +2,7 @@ use std::{collections::HashSet, fs, path::Path};
 
 use rkyv::{api::low::{from_bytes}, rancor::Error, to_bytes};
 
-use crate::{document, snippets::snippets::{Snippet, SnippetError, load_snippets}, util::trie};
+use crate::{document, snippets::{archive::Archive, snippets::{Snippet, SnippetError, load_snippets}}, util::trie};
 
 pub struct Library {
     snippets: Vec<Snippet>,
@@ -33,31 +33,9 @@ impl Library {
         library
     }
 
-    pub fn load_files<P>(root: &P, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Self, SnippetError>
-    where P: AsRef<Path> {
-        let snippets = load_snippets(root, syntax_highlighter)?;
-        let library = Library::new(snippets.into_iter());
-
-        Ok(library)
-    }
-
-    pub fn read_archive<P>(archive_path: &P) -> Result<Self, SnippetError>
-    where P: AsRef<Path> {
-        let data = fs::read(archive_path).map_err(SnippetError::IoError)?;
-        let bytes = &data[..];
-
-        let snippets = from_bytes::<Vec<Snippet>, Error>(bytes).map_err(|_| SnippetError::SerializationError)?;
-        Ok(Self::new(snippets.into_iter()))
-    }
-
-    pub fn write_to_archive<P>(&self, archive_path: &P) -> Result<(), SnippetError>
-    where P: AsRef<Path> {
-        let snippets = &self.snippets;
-        let bytes = to_bytes::<rkyv::rancor::Error>(snippets).map_err(|_| SnippetError::SerializationError)?;
-
-        fs::write(archive_path, bytes).map_err(SnippetError::IoError)?;
-
-        Ok(())
+    pub fn from_archive(archive: Archive, syntax_highlighter: &document::SyntaxHighlighter) -> Self {
+        let snippets = archive.raw_snippets.into_iter().map(|raw_snippet| Snippet::from_raw(raw_snippet, syntax_highlighter));
+        Library::new(snippets)
     }
 
     pub fn search<'a, 'b>(&self, keywords: impl Iterator<Item=&'a str>, tags: impl Iterator<Item=&'b str>) -> Vec<usize> {
