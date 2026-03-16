@@ -9,7 +9,7 @@ pub use color::Color;
 pub use theme::Theme;
 pub use syntax::SyntaxHighlighter;
 
-use markdown::{ParseOptions, mdast::{Code, Heading, Node, Paragraph, Root, Table}, to_mdast};
+use markdown::{ParseOptions, mdast::{AlignKind, Code, Heading, Node, Paragraph, Root, Table}, to_mdast};
 
 pub type Document = Vec<Fragment>;
 
@@ -132,6 +132,7 @@ impl<'a, 'b> Converter<'a, 'b> {
             }
         }).collect::<Vec<_>>();
 
+        let alignments = table.align;
         let column_count = rows[0].len();
         let row_count = rows.len();
         let column_widths = (0..column_count).map(|column_index| {
@@ -156,7 +157,13 @@ impl<'a, 'b> Converter<'a, 'b> {
 
             let spans = row.into_iter().enumerate().map(|(column_index, cell_contents)| {
                 let column_width = column_widths[column_index];
-                let padded_text = format!("{content:<width$}", content=cell_contents, width=column_width);
+                let padded_text = {
+                    match alignments[column_index] {
+                        AlignKind::Left | AlignKind::None => format!("{content:<width$}", content=cell_contents, width=column_width),
+                        AlignKind::Right => format!("{content:>width$}", content=cell_contents, width=column_width),
+                        AlignKind::Center => format!("{content:^width$}", content=cell_contents, width=column_width),
+                    }
+                };
 
                 Span { text: padded_text, style: style }
             }).collect::<Vec<_>>();
