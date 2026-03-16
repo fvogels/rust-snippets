@@ -7,4 +7,4 @@ ui:
 	cargo run -- ui
 
 cleanlog:
-	rm snippets.log
+	rm -f snippets.log
