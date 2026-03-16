@@ -104,8 +104,13 @@ fn load_library() -> Library {
 }
 
 fn start_ui() {
-    log::info!("Loading library");
-    let library = load_library();
+    let library = {
+        let before = std::time::Instant::now();
+        let library = load_library();
+        let duration = before.elapsed();
+        log::info!("Library loaded in {}ms", duration.as_millis());
+        library
+    };
 
     ui::start_ui(library);
 }
