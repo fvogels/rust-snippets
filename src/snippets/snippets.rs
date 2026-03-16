@@ -71,7 +71,7 @@ mod raw {
             let metadata_string = metadata_segment.lines.join("\n");
             let metadata = parse_metadata(&metadata_string)?;
 
-            let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
+            let parts: Vec<Part> =  segment_iterator.map(|segment| {
                     let attributes = match segment.caption {
                         Some(caption) => {
                             attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError).map(|attrs| attrs.pairs())
@@ -84,7 +84,11 @@ mod raw {
                     let part = Part{ attributes, source: segment.lines };
 
                     Ok(part)
-                }).collect();
+                }).collect()?;
+
+            if parts.len() == 0 {
+                return Err(SnippetError::MissingSnippetSegments);
+            }
 
             let mut tags = metadata.tags;
             for path_component in path.iter() {
@@ -93,14 +97,10 @@ mod raw {
 
             let snippet = Snippet{
                 description: metadata.description,
-                parts: parts?,
+                parts: parts,
                 tags: tags,
                 path: path,
             };
-
-            if snippet.parts.len() == 0 {
-                return Err(SnippetError::MissingSnippetSegments);
-            }
 
             Ok(snippet)
         }
