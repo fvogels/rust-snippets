@@ -141,7 +141,8 @@ impl<'a, 'b> Converter<'a, 'b> {
             }).max().unwrap() + 2
         }).collect::<Vec<_>>();
 
-        let lines = rows.into_iter().enumerate().map(|(row_index, row)| {
+        let mut lines = Vec::new();
+        rows.into_iter().enumerate().map(|(row_index, row)| {
             let style = {
                 if row_index == 0 {
                     // Header row
@@ -172,7 +173,7 @@ impl<'a, 'b> Converter<'a, 'b> {
             }).for_each(|span| spans.push(span));
 
             Line(spans)
-        }).collect::<Vec<_>>();
+        }).for_each(|line| lines.push(line));
 
         let fragment = Fragment::Verbatim { lines };
 
