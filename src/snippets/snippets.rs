@@ -248,10 +248,6 @@ fn derive_path<P, Q>(root: &P, file: &Q) -> Result<Vec<String>, SnippetError> wh
     Ok(path)
 }
 
-fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
-    serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
-}
-
 pub fn load_snippets<P>(root: &P, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Vec<Snippet>, SnippetError> where P: AsRef<Path> {
     let absolute_root = root.as_ref().canonicalize().map_err(|_| SnippetError::PathError)?;
 
