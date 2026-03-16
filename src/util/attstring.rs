@@ -1,8 +1,25 @@
 use std::{collections::HashMap, fmt, mem};
 
+pub struct Attributes(Vec<(String, String)>);
 
-pub fn parse(s: &str) -> Result<HashMap<String, String>, Error> {
-    let mut result = HashMap::new();
+impl Attributes {
+    pub fn as_pairs(&self) -> &Vec<(String, String)> {
+        &self.0
+    }
+
+    pub fn as_hashmap(&self) -> HashMap<String, String> {
+        let mut result = HashMap::new();
+
+        for (key, value) in &self.0 {
+            result.insert(key.clone(), value.clone());
+        }
+
+        result
+    }
+}
+
+pub fn parse(s: &str) -> Result<Attributes, Error> {
+    let mut pairs = Vec::new();
     let mut state = State::Idle;
 
     for char in s.chars() {
@@ -30,7 +47,7 @@ pub fn parse(s: &str) -> Result<HashMap<String, String>, Error> {
             State::ReadingValue(key, value) => {
                 match char {
                     ' ' => {
-                        result.insert(key, value.into_iter().collect());
+                        pairs.push((key, value.into_iter().collect()));
                         state = State::Idle
                     },
                     '"' => {
@@ -51,7 +68,7 @@ pub fn parse(s: &str) -> Result<HashMap<String, String>, Error> {
             State::ReadingQuotedValue(key, value) => {
                 match char {
                     '"' => {
-                        result.insert(key, value.into_iter().collect());
+                        pairs.push((key, value.into_iter().collect()));
                         state = State::Idle
                     },
                     c => {
@@ -72,14 +89,14 @@ pub fn parse(s: &str) -> Result<HashMap<String, String>, Error> {
             return Err(Error::MissingValue)
         },
         State::ReadingValue(key, value) => {
-            result.insert(key, value.into_iter().collect());
+            pairs.push((key, value.into_iter().collect()));
         },
         State::ReadingQuotedValue(_, _) => {
             return Err(Error::UnexpectedEndOfString);
         }
     }
 
-    Ok(result)
+    Ok(Attributes(pairs))
 }
 
 #[derive(Debug, Clone)]
@@ -116,14 +133,14 @@ mod test {
 
     #[test]
     fn empty() {
-        let attributes = parse("").unwrap();
+        let attributes = parse("").unwrap().as_hashmap();
 
         assert_eq!(attributes.len(), 0)
     }
 
     #[test]
     fn a_is_b() {
-        let attributes = parse("a=b").unwrap();
+        let attributes = parse("a=b").unwrap().as_hashmap();
 
         assert_eq!(attributes.len(), 1);
         assert_eq!(attributes["a"], "b")
@@ -131,7 +148,7 @@ mod test {
 
     #[test]
     fn aa_is_xyz() {
-        let attributes = parse("aa=xyz").unwrap();
+        let attributes = parse("aa=xyz").unwrap().as_hashmap();
 
         assert_eq!(attributes.len(), 1);
         assert_eq!(attributes["aa"], "xyz")
@@ -139,7 +156,7 @@ mod test {
 
     #[test]
     fn aa_is_xyz_and_bb_is_x() {
-        let attributes = parse("aa=xyz bb=x").unwrap();
+        let attributes = parse("aa=xyz bb=x").unwrap().as_hashmap();
 
         assert_eq!(attributes.len(), 2);
         assert_eq!(attributes["aa"], "xyz");
@@ -148,7 +165,7 @@ mod test {
 
     #[test]
     fn redundant_spaces() {
-        let attributes = parse("    aa=xyz  bb=x  ").unwrap();
+        let attributes = parse("    aa=xyz  bb=x  ").unwrap().as_hashmap();
 
         assert_eq!(attributes.len(), 2);
         assert_eq!(attributes["aa"], "xyz");
@@ -157,7 +174,7 @@ mod test {
 
     #[test]
     fn empty_value() {
-        let attributes = parse("f= g=\"\" h=").unwrap();
+        let attributes = parse("f= g=\"\" h=").unwrap().as_hashmap();
 
         assert_eq!(attributes.len(), 3);
         assert_eq!(attributes["f"], "");

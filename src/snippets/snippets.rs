@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet}, path::{Path, PathBuf}};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use walkdir::WalkDir;
-use crate::{document::{self, Document, Fragment, Theme}, util::{attstring, segment_file}};
+use crate::{document::{self, Document, Fragment, Theme}, util::{attstring::{self, Attributes}, segment_file}};
 use thiserror::Error;
 use std::io;
 
@@ -12,8 +12,8 @@ pub enum SnippetError {
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
 
-    #[error("Missing metadata segment in {0}")]
-    MissingMetadataSegment(PathBuf),
+    #[error("Missing metadata segment")]
+    MissingMetadataSegment,
 
     #[error("Missing snippet segments in {0}")]
     MissingSnippetSegments(PathBuf),
@@ -36,6 +36,87 @@ struct Metadata {
     description: String,
     tags: Vec<String>,
 }
+
+// mod raw {
+//     use crate::{snippets::snippets::SnippetError, util::segment_file};
+
+//     #[derive(Debug, serde::Deserialize)]
+//     struct Metadata {
+//         description: String,
+//         tags: Vec<String>,
+//     }
+
+
+//     pub struct Snippet {
+//         pub description: String,
+//         pub parts: Vec<Part>,
+//         pub tags: Vec<String>,
+//         pub path: Vec<String>,
+//     }
+
+//     pub struct Part {
+//         pub attributes: Vec<(String, String)>,
+//         pub source: String,
+//     }
+
+//     impl Snippet {
+//         pub fn parse(source: &str, path: Vec<String>) -> Result<Self, SnippetError> {
+//             let segments = segment_file::parse(source.lines(), |line| {
+//                 line.strip_prefix("===").map(|x| x.trim())
+//             });
+
+//             let mut segment_iterator = segments.into_iter();
+//             let metadata_segment = segment_iterator.next().ok_or(SnippetError::MissingMetadataSegment)?;
+
+//             let metadata_string = metadata_segment.lines.join("\n");
+//             let metadata = parse_metadata(&metadata_string)?;
+
+//             let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
+//                     let attributes = match segment.caption {
+//                         Some(caption) => {
+//                             attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError)
+//                         },
+//                         None => {
+//                             Ok(HashMap::new())
+//                         }
+//                     }?;
+
+//                     let lines = segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
+//                     let markdown_source = lines.join("\n");
+//                     let theme = Theme::default();
+//                     let contents = document::parse(markdown_source.as_str(), &syntax_highlighter, &theme);
+//                     let part = Part{ attributes, contents };
+
+//                     Ok(part)
+//                 }).collect();
+
+//             let snippet_path = derive_path(root_path, file_path)?;
+//             let mut tags = metadata.tags.into_iter().collect::<HashSet<_>>();
+//             for path_component in snippet_path.iter() {
+//                 tags.insert(path_component.clone());
+//             }
+
+//             let snippet = Snippet{
+//                 description: metadata.description,
+//                 parts: parts?,
+//                 tags: tags,
+//                 path: derive_path(root_path, file_path)?,
+//             };
+
+//             if snippet.parts.len() == 0 {
+//                 return Err(SnippetError::MissingSnippetSegments(PathBuf::from(file_path.as_ref())));
+//             }
+
+//             Ok(snippet)
+//         }
+
+//     }
+
+//     fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
+//         serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
+//     }
+// }
+
 
 #[derive(Debug, Archive, Serialize, Deserialize)]
 pub struct Snippet {
@@ -110,7 +191,7 @@ where P: AsRef<Path>, Q: AsRef<Path> {
     })?;
 
     let mut segment_iterator = segments.into_iter();
-    let metadata_segment = segment_iterator.next().ok_or(SnippetError::MissingMetadataSegment(PathBuf::from(file_path.as_ref())))?;
+    let metadata_segment = segment_iterator.next().ok_or(SnippetError::MissingMetadataSegment)?;
 
     let metadata_string = metadata_segment.lines.join("\n");
     let metadata = parse_metadata(&metadata_string)?;
@@ -118,7 +199,7 @@ where P: AsRef<Path>, Q: AsRef<Path> {
     let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
             let attributes = match segment.caption {
                 Some(caption) => {
-                    attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError)
+                    attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError).map(|attrs| attrs.as_hashmap())
                 },
                 None => {
                     Ok(HashMap::new())
