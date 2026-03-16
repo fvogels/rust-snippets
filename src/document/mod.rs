@@ -272,6 +272,7 @@ impl<'a, 'b> Converter<'a, 'b> {
 }
 
 pub fn parse(markdown: &str, syntax_highlighter: &SyntaxHighlighter, theme: &Theme) -> Document {
+    // Enable GitHub flavored markdown (GFM) to enable tables
     let ast = to_mdast(markdown, &ParseOptions::gfm()).unwrap();
 
     match ast {
