@@ -58,6 +58,14 @@ impl ViewMode {
                 self.description_list_state.scroll_down_by(self.description_list_page_size);
                 Mode::View(self)
             },
+            KeyCode::Home => {
+                self.description_list_state.select_first();
+                Mode::View(self)
+            },
+            KeyCode::End => {
+                self.description_list_state.select_last();
+                Mode::View(self)
+            },
             KeyCode::Tab => {
                 self.snippet_view_state.select_next();
                 Mode::View(self)
