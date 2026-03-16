@@ -76,21 +76,38 @@ impl ViewMode {
                 self.state.refresh();
                 Mode::View(self)
             },
+            KeyCode::Char(digit) if digit.is_ascii_digit() => {
+                if let Some(index) = self.description_list_state.selected() {
+                    let snippet_id = &self.state.visible_snippets[index];
+                    let snippet = self.state.library.snippet(*snippet_id);
+                    if let Some(one_based_index) = digit.to_digit(10) {
+                        let index = one_based_index - 1;
+                        if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
+                            if let Some(source_code) = part.find_code_block_with_index(index as usize) {
+                                if let Err(error) = cli_clipboard::set_contents(source_code.to_owned()) {
+                                    panic!("failed to copy snippet to clipboard: {}", error)
+                                }
+                            }
+                        }
+                    }
+                }
+                Mode::View(self)
+            },
             // KeyCode::Char('c') => {
-            //     if let Some(index) = self.description_list_state.selected() {
-            //         let snippet_id = &self.state.visible_snippets[index];
-            //         let snippet = self.state.library.snippet(*snippet_id);
+                // if let Some(index) = self.description_list_state.selected() {
+                //     let snippet_id = &self.state.visible_snippets[index];
+                //     let snippet = self.state.library.snippet(*snippet_id);
 
-            //         if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
-            //             let lines = &part.lines;
-            //             let text = lines.join("\n");
+                //     if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
+                //         let lines = &part.lines;
+                //         let text = lines.join("\n");
 
-            //             if let Err(error) = cli_clipboard::set_contents(text) {
-            //                 panic!("failed to copy snippet to clipboard: {}", error)
-            //             }
-            //         }
-            //     }
-            //     Mode::View(self)
+                //         if let Err(error) = cli_clipboard::set_contents(text) {
+                //             panic!("failed to copy snippet to clipboard: {}", error)
+                //         }
+                //     }
+                // }
+                // Mode::View(self)
             // },
             _ => Mode::View(self)
         }

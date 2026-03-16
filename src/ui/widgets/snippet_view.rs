@@ -34,6 +34,10 @@ impl SnippetViewState {
             self.selected_part = 0
         }
     }
+
+    pub fn selected(&self) -> usize {
+        self.selected_part
+    }
 }
 
 impl<'a> SnippetView<'a> {

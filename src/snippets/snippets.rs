@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet}, path::{Path, PathBuf}};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use walkdir::WalkDir;
-use crate::{document::{self, Document, Theme}, util::{attstring, segment_file}};
+use crate::{document::{self, Document, Fragment, Theme}, util::{attstring, segment_file}};
 use thiserror::Error;
 use std::io;
 
@@ -73,6 +73,23 @@ impl Part {
 
     pub fn caption(&self) -> Option<&str> {
         self.attributes.get("caption").map(String::as_str)
+    }
+
+    pub fn find_code_block_with_index(&self, index: usize) -> Option<&str> {
+        let mut counter = index;
+
+        for fragment in &self.contents {
+            if let Fragment::Code { original, .. } = fragment {
+                if counter == 0 {
+                    return Some(original.as_str())
+                }
+                else {
+                    counter -= 1;
+                }
+            }
+        }
+
+        None
     }
 }
 
