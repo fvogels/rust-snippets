@@ -38,6 +38,8 @@ struct Metadata {
 }
 
 pub mod raw {
+    use std::{fs, path::Path};
+
     use rkyv::{Archive, Deserialize, Serialize};
     use crate::{snippets::snippets::SnippetError, util::{attstring, segment_file}};
 
@@ -109,6 +111,11 @@ pub mod raw {
             Ok(snippet)
         }
 
+        pub fn load<P>(file_path: P, path: Vec<String>) -> Result<Self, SnippetError> where P: AsRef<Path> {
+            let source = fs::read_to_string(file_path).map_err(SnippetError::IoError)?;
+
+            Snippet::parse(source.as_str(), path)
+        }
     }
 
     fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
