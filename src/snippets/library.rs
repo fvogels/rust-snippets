@@ -1,4 +1,4 @@
-use std::{collections::HashSet};
+use std::{collections::HashSet, rc::Rc};
 
 use crate::{document, snippets::{archive::Archive, snippets::{Snippet}}, util::trie};
 
@@ -31,8 +31,8 @@ impl Library {
         library
     }
 
-    pub fn from_archive(archive: Archive, syntax_highlighter: &document::SyntaxHighlighter) -> Self {
-        let snippets = archive.raw_snippets.into_iter().map(|raw_snippet| Snippet::from_raw(raw_snippet, syntax_highlighter));
+    pub fn from_archive(archive: Archive, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
+        let snippets = archive.raw_snippets.into_iter().map(|raw_snippet| Snippet::from_raw(raw_snippet, syntax_highlighter.clone()));
         Library::new(snippets)
     }
 

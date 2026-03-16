@@ -79,7 +79,7 @@ impl<'a> StatefulWidget for SnippetView<'a> {
             snippet_caption_block = snippet_caption_block.title_top(language);
         }
 
-        let document = &selected_part.contents;
+        let document = selected_part.document();
         let line_width = snippet_caption_block.inner(area).width as usize;
         let paragraph = render_document_as_paragraph(document, line_width).block(snippet_caption_block);
 

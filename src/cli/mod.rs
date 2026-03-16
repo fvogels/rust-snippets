@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use log;
 use clap::{Parser, Subcommand};
 
@@ -99,8 +101,8 @@ fn create_archive() {
 fn load_library() -> Library {
     let archive_path =  "./archive.bin";
     let archive = snippets::Archive::load(&archive_path).unwrap();
-    let syntax_highlighter = create_syntax_highlighter();
-    Library::from_archive(archive, &syntax_highlighter)
+    let syntax_highlighter = Rc::new(create_syntax_highlighter());
+    Library::from_archive(archive, syntax_highlighter)
 }
 
 fn start_ui() {

@@ -1,7 +1,7 @@
-use std::{collections::{HashMap, HashSet}};
+use std::{cell::{LazyCell, OnceCell}, collections::{HashMap, HashSet}, iter::Once, rc::Rc};
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::{document::{self, Document, Fragment, Theme}, util::{attstring::{self}}};
+use crate::{document::{self, Document, Fragment, SyntaxHighlighter, Theme}, util::attstring::{self}};
 use thiserror::Error;
 use std::io;
 
@@ -126,15 +126,17 @@ pub struct Snippet {
 
 pub struct Part {
     pub attributes: HashMap<String, String>,
-    pub contents: Document,
+    pub syntax_highlighter: Rc<SyntaxHighlighter>,
+    pub source: Vec<String>,
+    pub contents: OnceCell<Document>,
 }
 
 impl Snippet {
-    pub fn from_raw(raw_snippet: raw::Snippet, syntax_highlighter: &document::SyntaxHighlighter) -> Self {
+    pub fn from_raw(raw_snippet: raw::Snippet, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
         let description = raw_snippet.description;
         let tags = raw_snippet.tags.into_iter().collect();
         let path = raw_snippet.path;
-        let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter)).collect();
+        let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter.clone())).collect();
 
         Snippet {
             description,
@@ -159,23 +161,11 @@ impl Snippet {
 }
 
 impl Part {
-    pub fn from_raw(raw_part: raw::Part, syntax_highlighter: &document::SyntaxHighlighter) -> Self {
-        let attributes = {
-            let mut result = HashMap::new();
-            for (key, value) in raw_part.attributes {
-                result.insert(key, value);
-            }
-            result
-        };
+    pub fn from_raw(raw_part: raw::Part, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
+        let raw::Part { attributes, source } = raw_part;
+        let attributes = attributes.into_iter().collect();
 
-        let contents = {
-            let lines = raw_part.source.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
-            let markdown_source = lines.join("\n");
-            let theme = Theme::default();
-            document::parse(markdown_source.as_str(), &syntax_highlighter, &theme)
-        };
-
-        Part{ attributes, contents }
+        Part{ attributes, source, syntax_highlighter, contents: OnceCell::new() }
     }
 
     pub fn language(&self) -> Option<&str> {
@@ -186,10 +176,19 @@ impl Part {
         self.attributes.get("caption").map(String::as_str)
     }
 
+    pub fn document(&self) -> &document::Document {
+        self.contents.get_or_init(|| {
+            let lines = self.source.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
+            let markdown_source = lines.join("\n");
+            let theme = Theme::default();
+            document::parse(markdown_source.as_str(), &*self.syntax_highlighter, &theme)
+        })
+    }
+
     pub fn find_code_block_with_index(&self, index: usize) -> Option<&str> {
         let mut counter = index;
 
-        for fragment in &self.contents {
+        for fragment in self.document() {
             if let Fragment::Code { original, .. } = fragment {
                 if counter == 0 {
                     return Some(original.as_str())
