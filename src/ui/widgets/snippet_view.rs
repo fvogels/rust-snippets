@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
-use crate::{document::{self, Color, Document}, snippets::snippets::{Part, Snippet}};
+use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
@@ -33,10 +33,6 @@ impl SnippetViewState {
         if self.selected_part >= part_count {
             self.selected_part = 0
         }
-    }
-
-    pub fn selected(&self) -> usize {
-        self.selected_part
     }
 }
 
