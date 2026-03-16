@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::{Path};
 use std::io::{self, BufRead};
 
@@ -13,32 +13,34 @@ pub struct Segment
 pub fn load<P>(file_path: &P, is_separator: fn(&str) -> Option<&str>) -> io::Result<Vec<Segment>>
 where P: AsRef<Path>
 {
-    let file = File::open(file_path)?;
-    let lines = io::BufReader::new(file).lines();
+    let contents = fs::read_to_string(file_path)?;
+    let lines = contents.lines();
+    let segments = parse(lines, is_separator);
+
+    Ok(segments)
+}
+
+pub fn parse<'a>(lines: impl Iterator<Item=&'a str>, is_separator: fn(&str) -> Option<&str>) -> Vec<Segment>
+{
     let mut segments = Vec::new();
     let mut current_segment = Segment{caption: None, lines: Vec::new()};
 
     for line in lines {
-        match line {
-            Ok(line) => {
-                match is_separator(line.as_str()) {
-                    Some(caption) => {
-                        segments.push(current_segment);
-                        current_segment = Segment{
-                            caption: if caption.len() > 0 { Some(String::from(caption)) } else { None },
-                            lines: Vec::new(),
-                        };
-                    },
-                    None => {
-                        current_segment.lines.push(line);
-                    }
-                }
+        match is_separator(line) {
+            Some(caption) => {
+                segments.push(current_segment);
+                current_segment = Segment{
+                    caption: if caption.len() > 0 { Some(String::from(caption)) } else { None },
+                    lines: Vec::new(),
+                };
             },
-            Err(err) => return Err(err),
+            None => {
+                current_segment.lines.push(line.to_owned());
+            }
         }
     }
 
     segments.push(current_segment);
 
-    Ok(segments)
+    segments
 }
