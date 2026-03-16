@@ -142,7 +142,6 @@ impl ViewMode {
             Binding::new("del", "pop tag"),
             Binding::new("/", "search"),
             Binding::new("?", "reset search"),
-            Binding::new("c", "copy"),
         ];
         let keybindings_view = KeybindingsView::new(bindings);
 
