@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
-use crate::{document::{self, Document}, snippets::snippets::{Part, Snippet}};
+use crate::{document::{self, Document, Style}, snippets::snippets::{Part, Snippet}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
@@ -223,6 +223,15 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
 
                 lines.push(Line::default());
                 code_block_index += 1;
+            },
+            document::Fragment::Verbatim { lines: verbatim_lines} => {
+                let style_base = Style::default();
+
+                for verbatim_line in verbatim_lines {
+                    let translated_spans = verbatim_line.spans().iter().map(|span| translate_span(span, &style_base));
+                    let translated_line = Line::default().spans(translated_spans);
+                    lines.push(translated_line);
+                }
             }
         }
     }

@@ -9,18 +9,22 @@ pub use color::Color;
 pub use theme::Theme;
 pub use syntax::SyntaxHighlighter;
 
-use markdown::{ParseOptions, mdast::{Code, Heading, Node, Paragraph, Root}, to_mdast};
+use markdown::{ParseOptions, mdast::{Code, Heading, Node, Paragraph, Root, Table}, to_mdast};
 
 pub type Document = Vec<Fragment>;
 
 #[derive(Debug, Archive, Serialize, Deserialize)]
 pub enum Fragment {
-    Wrapping{ words: Vec<Word>, style: Style },
+    Wrapping { words: Vec<Word>, style: Style },
     Code { language: Option<String>, original: String, highlighted_lines: Vec<Line> },
+    Verbatim { lines: Vec<Line> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 pub struct Line(Vec<Span>);
+
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+pub struct TableRow(Vec<Span>);
 
 impl Line {
     pub fn spans(&self) -> &Vec<Span> {
@@ -95,8 +99,74 @@ impl<'a, 'b> Converter<'a, 'b> {
             Node::Paragraph(paragraph) => self.convert_paragraph(paragraph),
             Node::Heading(heading) => self.convert_heading(heading),
             Node::Code(code) => self.convert_code(code),
+            Node::Table(table) => self.convert_table(table),
             _ => { panic!("unsupported node: {:?}", node); }
         }
+    }
+
+    fn convert_table(&mut self, table: Table) {
+        let rows = table.children.into_iter().map(|child| {
+            match child {
+                Node::TableRow(row) => {
+                    row.children.into_iter().map(|row_child| {
+                        match row_child {
+                            Node::TableCell(mut cell) => {
+                                assert_eq!(1, cell.children.len(), "table cell should only contain one child");
+                                let cell_child = cell.children.pop().unwrap();
+                                match cell_child {
+                                    Node::Text(text) => {
+                                        text.value
+                                    },
+                                    _ => {
+                                        panic!("table cell should contain text; found {:?}", cell)
+                                    }
+                                }
+                            },
+                            _ => {
+                                panic!("table row children should be table cells; found {:?}", row_child)
+                            }
+                        }
+                    }).collect::<Vec<_>>()
+                },
+                _ => { panic!("table children should be table rows; found {:?}", child) }
+            }
+        }).collect::<Vec<_>>();
+
+        let column_count = rows[0].len();
+        let row_count = rows.len();
+        let column_widths = (0..column_count).map(|column_index| {
+            (0..row_count).map(|row_index| {
+                rows[row_index][column_index].len()
+            }).max().unwrap()
+        }).collect::<Vec<_>>();
+
+        let lines = rows.into_iter().enumerate().map(|(row_index, row)| {
+            let style = {
+                if row_index == 0 {
+                    // Header row
+                    self.theme.table_heading
+                }
+                else if row_index % 2 == 0 {
+                    self.theme.table_even_row
+                }
+                else {
+                    self.theme.table_odd_row
+                }
+            };
+
+            let spans = row.into_iter().enumerate().map(|(column_index, cell_contents)| {
+                let column_width = column_widths[column_index];
+                let padded_text = format!("{content:<width$}", content=cell_contents, width=column_width);
+
+                Span { text: padded_text, style: style }
+            }).collect::<Vec<_>>();
+
+            Line(spans)
+        }).collect::<Vec<_>>();
+
+        let fragment = Fragment::Verbatim { lines };
+
+        self.fragments.push(fragment);
     }
 
     fn convert_code(&mut self, code: Code) {
@@ -195,7 +265,7 @@ impl<'a, 'b> Converter<'a, 'b> {
 }
 
 pub fn parse(markdown: &str, syntax_highlighter: &SyntaxHighlighter, theme: &Theme) -> Document {
-    let ast = to_mdast(markdown, &ParseOptions::default()).unwrap();
+    let ast = to_mdast(markdown, &ParseOptions::gfm()).unwrap();
 
     match ast {
         Node::Root(root) => {
@@ -328,6 +398,28 @@ mod test {
         }
         else {
             assert!(false, "fragment should be a paragraph");
+        }
+    }
+
+    #[test]
+    fn table() {
+        let markdown = indoc! { r#"
+        | a | b |
+        | - | - |
+        | 1 | 2 |
+        "# };
+
+        let syntax_highlighter = SyntaxHighlighter::new();
+        let theme = Theme::default();
+        let document = parse(markdown, &syntax_highlighter, &theme);
+
+        assert_eq!(1, document.len());
+        if let Fragment::Verbatim{ lines } = &document[0] {
+            // let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
+            // assert_eq!(&expected, text);
+        }
+        else {
+            assert!(false, "fragment should be a table but was a {:?}", document[0]);
         }
     }
 }
