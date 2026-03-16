@@ -141,39 +141,47 @@ impl<'a, 'b> Converter<'a, 'b> {
             }).max().unwrap() + 2
         }).collect::<Vec<_>>();
 
-        let mut lines = Vec::new();
-        rows.into_iter().enumerate().map(|(row_index, row)| {
-            let style = {
-                if row_index == 0 {
-                    // Header row
-                    self.theme.table_heading
-                }
-                else if row_index % 2 == 0 {
-                    self.theme.table_even_row
-                }
-                else {
-                    self.theme.table_odd_row
-                }
-            };
+        let empty_line = Line(Vec::new());
+        let lines = {
+            let mut lines = Vec::new();
 
-            let indentation_span = Span { text: "  ".to_owned(), style: Style::default() };
-            let mut spans = vec![indentation_span];
-
-            row.into_iter().enumerate().map(|(column_index, cell_contents)| {
-                let column_width = column_widths[column_index];
-                let padded_text = {
-                    match alignments[column_index] {
-                        AlignKind::Left | AlignKind::None => format!("{content:<width$}", content=cell_contents, width=column_width),
-                        AlignKind::Right => format!("{content:>width$}", content=cell_contents, width=column_width),
-                        AlignKind::Center => format!("{content:^width$}", content=cell_contents, width=column_width),
+            lines.push(empty_line.clone());
+            rows.into_iter().enumerate().map(|(row_index, row)| {
+                let style = {
+                    if row_index == 0 {
+                        // Header row
+                        self.theme.table_heading
+                    }
+                    else if row_index % 2 == 0 {
+                        self.theme.table_even_row
+                    }
+                    else {
+                        self.theme.table_odd_row
                     }
                 };
 
-                Span { text: padded_text, style: style }
-            }).for_each(|span| spans.push(span));
+                let indentation_span = Span { text: "  ".to_owned(), style: Style::default() };
+                let mut spans = vec![indentation_span];
 
-            Line(spans)
-        }).for_each(|line| lines.push(line));
+                row.into_iter().enumerate().map(|(column_index, cell_contents)| {
+                    let column_width = column_widths[column_index];
+                    let padded_text = {
+                        match alignments[column_index] {
+                            AlignKind::Left | AlignKind::None => format!("{content:<width$}", content=cell_contents, width=column_width),
+                            AlignKind::Right => format!("{content:>width$}", content=cell_contents, width=column_width),
+                            AlignKind::Center => format!("{content:^width$}", content=cell_contents, width=column_width),
+                        }
+                    };
+
+                    Span { text: padded_text, style: style }
+                }).for_each(|span| spans.push(span));
+
+                Line(spans)
+            }).for_each(|line| lines.push(line));
+            lines.push(empty_line);
+
+            lines
+        };
 
         let fragment = Fragment::Verbatim { lines };
 
