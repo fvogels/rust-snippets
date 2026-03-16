@@ -6,16 +6,6 @@ impl Attributes {
     pub fn pairs(self) -> Vec<(String, String)> {
         self.0
     }
-
-    pub fn as_hashmap(&self) -> HashMap<String, String> {
-        let mut result = HashMap::new();
-
-        for (key, value) in &self.0 {
-            result.insert(key.clone(), value.clone());
-        }
-
-        result
-    }
 }
 
 pub fn parse(s: &str) -> Result<Attributes, Error> {
