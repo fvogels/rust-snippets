@@ -155,7 +155,8 @@ impl<'a, 'b> Converter<'a, 'b> {
                 }
             };
 
-            let mut spans = Vec::new();
+            let indentation_span = Span { text: "  ".to_owned(), style: Style::default() };
+            let mut spans = vec![indentation_span];
 
             row.into_iter().enumerate().map(|(column_index, cell_contents)| {
                 let column_width = column_widths[column_index];
