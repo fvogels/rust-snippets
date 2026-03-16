@@ -155,7 +155,9 @@ impl<'a, 'b> Converter<'a, 'b> {
                 }
             };
 
-            let spans = row.into_iter().enumerate().map(|(column_index, cell_contents)| {
+            let mut spans = Vec::new();
+
+            row.into_iter().enumerate().map(|(column_index, cell_contents)| {
                 let column_width = column_widths[column_index];
                 let padded_text = {
                     match alignments[column_index] {
@@ -166,7 +168,7 @@ impl<'a, 'b> Converter<'a, 'b> {
                 };
 
                 Span { text: padded_text, style: style }
-            }).collect::<Vec<_>>();
+            }).for_each(|span| spans.push(span));
 
             Line(spans)
         }).collect::<Vec<_>>();
