@@ -15,8 +15,8 @@ pub enum SnippetError {
     #[error("Missing metadata segment")]
     MissingMetadataSegment,
 
-    #[error("Missing snippet segments in {0}")]
-    MissingSnippetSegments(PathBuf),
+    #[error("Missing snippet segments")]
+    MissingSnippetSegments,
 
     #[error("Path error")]
     PathError,
@@ -37,85 +37,84 @@ struct Metadata {
     tags: Vec<String>,
 }
 
-// mod raw {
-//     use crate::{snippets::snippets::SnippetError, util::segment_file};
+mod raw {
+    use crate::{snippets::snippets::SnippetError, util::{attstring, segment_file}};
 
-//     #[derive(Debug, serde::Deserialize)]
-//     struct Metadata {
-//         description: String,
-//         tags: Vec<String>,
-//     }
+    #[derive(Debug, serde::Deserialize)]
+    struct Metadata {
+        description: String,
+        tags: Vec<String>,
+    }
 
 
-//     pub struct Snippet {
-//         pub description: String,
-//         pub parts: Vec<Part>,
-//         pub tags: Vec<String>,
-//         pub path: Vec<String>,
-//     }
+    pub struct Snippet {
+        pub description: String,
+        pub parts: Vec<Part>,
+        pub tags: Vec<String>,
+        pub path: Vec<String>,
+    }
 
-//     pub struct Part {
-//         pub attributes: Vec<(String, String)>,
-//         pub source: String,
-//     }
+    pub struct Part {
+        pub attributes: Vec<(String, String)>,
+        pub source: Vec<String>,
+    }
 
-//     impl Snippet {
-//         pub fn parse(source: &str, path: Vec<String>) -> Result<Self, SnippetError> {
-//             let segments = segment_file::parse(source.lines(), |line| {
-//                 line.strip_prefix("===").map(|x| x.trim())
-//             });
+    impl Snippet {
+        pub fn parse(source: &str, path: Vec<String>) -> Result<Self, SnippetError> {
+            let segments = segment_file::parse(source.lines(), |line| {
+                line.strip_prefix("===").map(|x| x.trim())
+            });
 
-//             let mut segment_iterator = segments.into_iter();
-//             let metadata_segment = segment_iterator.next().ok_or(SnippetError::MissingMetadataSegment)?;
+            let mut segment_iterator = segments.into_iter();
+            let metadata_segment = segment_iterator.next().ok_or(SnippetError::MissingMetadataSegment)?;
 
-//             let metadata_string = metadata_segment.lines.join("\n");
-//             let metadata = parse_metadata(&metadata_string)?;
+            let metadata_string = metadata_segment.lines.join("\n");
+            let metadata = parse_metadata(&metadata_string)?;
 
-//             let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
-//                     let attributes = match segment.caption {
-//                         Some(caption) => {
-//                             attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError)
-//                         },
-//                         None => {
-//                             Ok(HashMap::new())
-//                         }
-//                     }?;
+            let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
+                    let attributes = match segment.caption {
+                        Some(caption) => {
+                            attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError).map(|attrs| attrs.pairs())
+                        },
+                        None => {
+                            Ok(Vec::new())
+                        }
+                    }?;
 
-//                     let lines = segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
-//                     let markdown_source = lines.join("\n");
-//                     let theme = Theme::default();
-//                     let contents = document::parse(markdown_source.as_str(), &syntax_highlighter, &theme);
-//                     let part = Part{ attributes, contents };
+                    let part = Part{ attributes, source: segment.lines };
 
-//                     Ok(part)
-//                 }).collect();
+                    Ok(part)
+                }).collect();
 
-//             let snippet_path = derive_path(root_path, file_path)?;
-//             let mut tags = metadata.tags.into_iter().collect::<HashSet<_>>();
-//             for path_component in snippet_path.iter() {
-//                 tags.insert(path_component.clone());
-//             }
+            let mut tags = metadata.tags;
+            for path_component in path.iter() {
+                tags.push(path_component.clone());
+            }
 
-//             let snippet = Snippet{
-//                 description: metadata.description,
-//                 parts: parts?,
-//                 tags: tags,
-//                 path: derive_path(root_path, file_path)?,
-//             };
+            let snippet = Snippet{
+                description: metadata.description,
+                parts: parts?,
+                tags: tags,
+                path: path,
+            };
 
-//             if snippet.parts.len() == 0 {
-//                 return Err(SnippetError::MissingSnippetSegments(PathBuf::from(file_path.as_ref())));
-//             }
+            if snippet.parts.len() == 0 {
+                return Err(SnippetError::MissingSnippetSegments);
+            }
 
-//             Ok(snippet)
-//         }
+            Ok(snippet)
+        }
 
-//     }
+    }
 
-//     fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
-//         serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
-//     }
-// }
+    fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
+        serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
+    }
+
+    fn convert_tabs_to_spaces(s: &str) -> String {
+        s.replace("\t", "    ")
+    }
+}
 
 
 #[derive(Debug, Archive, Serialize, Deserialize)]
@@ -229,7 +228,7 @@ where P: AsRef<Path>, Q: AsRef<Path> {
     };
 
     if snippet.parts.len() == 0 {
-        return Err(SnippetError::MissingSnippetSegments(PathBuf::from(file_path.as_ref())));
+        return Err(SnippetError::MissingSnippetSegments);
     }
 
     Ok(snippet)
