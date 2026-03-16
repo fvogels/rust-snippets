@@ -171,7 +171,7 @@ fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> P
                     lines.push(line);
                 }
             },
-            &document::Fragment::Code { ref language, lines: ref code_lines } => {
+            &document::Fragment::Code { ref language, highlighted_lines: ref code_lines } => {
                 if !lines.is_empty() {
                     lines.push(Line::default());
                 }
