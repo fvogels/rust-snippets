@@ -37,7 +37,8 @@ struct Metadata {
     tags: Vec<String>,
 }
 
-mod raw {
+pub mod raw {
+    use rkyv::{Archive, Deserialize, Serialize};
     use crate::{snippets::snippets::SnippetError, util::{attstring, segment_file}};
 
     #[derive(Debug, serde::Deserialize)]
@@ -46,6 +47,7 @@ mod raw {
         tags: Vec<String>,
     }
 
+    #[derive(Debug, Archive, Serialize, Deserialize)]
 
     pub struct Snippet {
         pub description: String,
@@ -54,6 +56,7 @@ mod raw {
         pub path: Vec<String>,
     }
 
+    #[derive(Debug, Archive, Serialize, Deserialize)]
     pub struct Part {
         pub attributes: Vec<(String, String)>,
         pub source: Vec<String>,
