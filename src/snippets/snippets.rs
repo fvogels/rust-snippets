@@ -139,6 +139,20 @@ pub struct Part {
 }
 
 impl Snippet {
+    pub fn from_raw(raw_snippet: raw::Snippet, syntax_highlighter: &document::SyntaxHighlighter) -> Self {
+        let description = raw_snippet.description;
+        let tags = raw_snippet.tags.into_iter().collect();
+        let path = raw_snippet.path;
+        let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter)).collect();
+
+        Snippet {
+            description,
+            parts,
+            tags,
+            path
+        }
+    }
+
     pub fn keywords(&self) -> Vec<String> {
         let mut keywords = Vec::new();
 
@@ -154,6 +168,25 @@ impl Snippet {
 }
 
 impl Part {
+    pub fn from_raw(raw_part: raw::Part, syntax_highlighter: &document::SyntaxHighlighter) -> Self {
+        let attributes = {
+            let mut result = HashMap::new();
+            for (key, value) in raw_part.attributes {
+                result.insert(key, value);
+            }
+            result
+        };
+
+        let contents = {
+            let lines = raw_part.source.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
+            let markdown_source = lines.join("\n");
+            let theme = Theme::default();
+            document::parse(markdown_source.as_str(), &syntax_highlighter, &theme)
+        };
+
+        Part{ attributes, contents }
+    }
+
     pub fn language(&self) -> Option<&str> {
         self.attributes.get("language").map(String::as_str)
     }
@@ -192,51 +225,9 @@ where P: AsRef<Path> {
 
 pub fn load_snippet_file<P, Q>(root_path: &P, file_path: &Q, syntax_highlighter: &document::SyntaxHighlighter) -> Result<Snippet, SnippetError>
 where P: AsRef<Path>, Q: AsRef<Path> {
-    let segments = segment_file::load(file_path, |line| {
-        line.strip_prefix("===").map(|x| x.trim())
-    })?;
-
-    let mut segment_iterator = segments.into_iter();
-    let metadata_segment = segment_iterator.next().ok_or(SnippetError::MissingMetadataSegment)?;
-
-    let metadata_string = metadata_segment.lines.join("\n");
-    let metadata = parse_metadata(&metadata_string)?;
-
-    let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
-            let attributes = match segment.caption {
-                Some(caption) => {
-                    attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError).map(|attrs| attrs.as_hashmap())
-                },
-                None => {
-                    Ok(HashMap::new())
-                }
-            }?;
-
-            let lines = segment.lines.iter().map(|line| convert_tabs_to_spaces(line.as_str())).collect::<Vec<_>>();
-            let markdown_source = lines.join("\n");
-            let theme = Theme::default();
-            let contents = document::parse(markdown_source.as_str(), &syntax_highlighter, &theme);
-            let part = Part{ attributes, contents };
-
-            Ok(part)
-        }).collect();
-
-    let snippet_path = derive_path(root_path, file_path)?;
-    let mut tags = metadata.tags.into_iter().collect::<HashSet<_>>();
-    for path_component in snippet_path.iter() {
-        tags.insert(path_component.clone());
-    }
-
-    let snippet = Snippet{
-        description: metadata.description,
-        parts: parts?,
-        tags: tags,
-        path: derive_path(root_path, file_path)?,
-    };
-
-    if snippet.parts.len() == 0 {
-        return Err(SnippetError::MissingSnippetSegments);
-    }
+    let path = derive_path(root_path, file_path)?;
+    let raw_snippet = raw::Snippet::load(file_path, path)?;
+    let snippet = Snippet::from_raw(raw_snippet, syntax_highlighter);
 
     Ok(snippet)
 }
