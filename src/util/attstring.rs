@@ -3,8 +3,8 @@ use std::{collections::HashMap, fmt, mem};
 pub struct Attributes(Vec<(String, String)>);
 
 impl Attributes {
-    pub fn as_pairs(&self) -> &Vec<(String, String)> {
-        &self.0
+    pub fn pairs(self) -> Vec<(String, String)> {
+        self.0
     }
 
     pub fn as_hashmap(&self) -> HashMap<String, String> {
