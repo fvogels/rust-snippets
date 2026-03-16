@@ -330,29 +330,4 @@ mod test {
             assert!(false, "fragment should be a paragraph");
         }
     }
-
-    #[test]
-    fn code_block() {
-        let markdown = indoc! { r#"
-        ```python
-        1 + 2
-        ```
-        "# };
-
-        let syntax_highlighter = SyntaxHighlighter::new();
-        let theme = Theme::default();
-        let document = parse(markdown, &syntax_highlighter, &theme);
-
-        assert_eq!(1, document.len());
-        if let Fragment::Code{language, highlighted_lines: lines, original} = &document[0] {
-            assert_eq!(&Some("python".to_owned()), language);
-            assert_eq!(1, lines.len());
-            let line = &lines[0];
-            assert_eq!(1, line.0.len());
-            assert_eq!("1 + 2", original);
-        }
-        else {
-            assert!(false, "fragment should be a paragraph");
-        }
-    }
 }

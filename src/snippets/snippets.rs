@@ -71,7 +71,7 @@ pub mod raw {
             let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
                     let attributes = match segment.caption {
                         Some(caption) => {
-                            attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError).map(|attrs| attrs.pairs())
+                            attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError).map(|attrs| attrs)
                         },
                         None => {
                             Ok(Vec::new())

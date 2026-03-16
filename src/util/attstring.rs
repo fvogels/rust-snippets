@@ -1,14 +1,6 @@
 use std::{fmt, mem};
 
-pub struct Attributes(Vec<(String, String)>);
-
-impl Attributes {
-    pub fn pairs(self) -> Vec<(String, String)> {
-        self.0
-    }
-}
-
-pub fn parse(s: &str) -> Result<Attributes, Error> {
+pub fn parse(s: &str) -> Result<Vec<(String, String)>, Error> {
     let mut pairs = Vec::new();
     let mut state = State::Idle;
 
@@ -86,7 +78,7 @@ pub fn parse(s: &str) -> Result<Attributes, Error> {
         }
     }
 
-    Ok(Attributes(pairs))
+    Ok(pairs)
 }
 
 #[derive(Debug, Clone)]
@@ -119,18 +111,22 @@ enum State {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use super::parse;
 
     #[test]
     fn empty() {
-        let attributes = parse("").unwrap().as_hashmap();
+        let string = "";
+        let attributes: HashMap<String, String> = parse(string).unwrap().into_iter().collect();
 
         assert_eq!(attributes.len(), 0)
     }
 
     #[test]
     fn a_is_b() {
-        let attributes = parse("a=b").unwrap().as_hashmap();
+        let string = "a=b";
+        let attributes: HashMap<String, String> = parse(string).unwrap().into_iter().collect();
 
         assert_eq!(attributes.len(), 1);
         assert_eq!(attributes["a"], "b")
@@ -138,7 +134,8 @@ mod test {
 
     #[test]
     fn aa_is_xyz() {
-        let attributes = parse("aa=xyz").unwrap().as_hashmap();
+        let string = "aa=xyz";
+        let attributes: HashMap<String, String> = parse(string).unwrap().into_iter().collect();
 
         assert_eq!(attributes.len(), 1);
         assert_eq!(attributes["aa"], "xyz")
@@ -146,7 +143,8 @@ mod test {
 
     #[test]
     fn aa_is_xyz_and_bb_is_x() {
-        let attributes = parse("aa=xyz bb=x").unwrap().as_hashmap();
+        let string = "aa=xyz bb=x";
+        let attributes: HashMap<String, String> = parse(string).unwrap().into_iter().collect();
 
         assert_eq!(attributes.len(), 2);
         assert_eq!(attributes["aa"], "xyz");
@@ -155,7 +153,8 @@ mod test {
 
     #[test]
     fn redundant_spaces() {
-        let attributes = parse("    aa=xyz  bb=x  ").unwrap().as_hashmap();
+        let string = "    aa=xyz  bb=x  ";
+        let attributes: HashMap<String, String> = parse(string).unwrap().into_iter().collect();
 
         assert_eq!(attributes.len(), 2);
         assert_eq!(attributes["aa"], "xyz");
@@ -164,7 +163,8 @@ mod test {
 
     #[test]
     fn empty_value() {
-        let attributes = parse("f= g=\"\" h=").unwrap().as_hashmap();
+        let string = "f= g=\"\" h=";
+        let attributes: HashMap<String, String> = parse(string).unwrap().into_iter().collect();
 
         assert_eq!(attributes.len(), 3);
         assert_eq!(attributes["f"], "");
