@@ -144,6 +144,19 @@ struct DocumentRenderer<'a> {
 }
 
 impl<'a> DocumentRenderer<'a> {
+    // Adds a new empty line if the most recently added line is not empty.
+    // If no lines have been generated yet, does nothing.
+    fn add_separating_line(&mut self) {
+        if let Some(last_line) = self.lines.last() && last_line.width() != 0 {
+            self.add_empty_line();
+        }
+    }
+
+    fn add_empty_line(&mut self) {
+        let empty_line = Line::default();
+        self.lines.push(empty_line);
+    }
+
     fn render(mut self, document: &Document, line_width: usize) -> Paragraph<'a> {
         for fragment in document {
             match fragment {
@@ -179,9 +192,7 @@ impl<'a> DocumentRenderer<'a> {
                     }
                 },
                 &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
-                    if !self.lines.is_empty() {
-                        self.lines.push(Line::default());
-                    }
+                    self.add_separating_line();
 
                     let style_base = document::Style::default().background(document::Color::gray(32));
                     let indentation_style = document::Style::default();
@@ -223,7 +234,7 @@ impl<'a> DocumentRenderer<'a> {
                         self.lines.push(Line::default().spans(translated_spans));
                     }
 
-                    self.lines.push(Line::default());
+                    self.add_empty_line();
                     self.code_block_index += 1;
                 },
                 document::Fragment::Verbatim { lines: verbatim_lines} => {
