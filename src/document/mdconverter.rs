@@ -163,7 +163,7 @@ impl<'a, 'b> Converter<'a, 'b> {
             }
         }
 
-        self.fragments.push(Fragment::Wrapping{ words, style: self.theme.headings[level] })
+        self.fragments.push(Fragment::Heading{ words, style: self.theme.headings[level], depth: level })
     }
 
     fn convert_paragraph(&mut self, paragraph: Paragraph) {

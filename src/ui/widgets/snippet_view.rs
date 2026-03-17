@@ -139,6 +139,7 @@ fn translate_span<'a>(span: &document::Span, style_base: &document::Style) -> ra
 }
 
 struct DocumentRenderer<'a> {
+    line_width: usize,
     lines: Vec<Line<'a>>,
     code_block_index: i32,
 }
@@ -157,39 +158,47 @@ impl<'a> DocumentRenderer<'a> {
         self.lines.push(empty_line);
     }
 
-    fn render(mut self, document: &Document, line_width: usize) -> Paragraph<'a> {
+    fn add_wrapped(&mut self, words: &Vec<document::Word>, style: &Style) {
+        let mut spans = Vec::new();
+        let mut acc = 0;
+
+        for word in words {
+            let is_fresh_line = acc == 0;
+            let separator_size = if is_fresh_line { 0 } else { 1 };
+            if acc + word.len() + separator_size > self.line_width && acc > 0 {
+                // New line has to be started
+                let line = Line::default().spans(spans);
+                self.lines.push(line);
+                spans = Vec::new();
+            }
+            else {
+                // Word fits on current line
+                if !is_fresh_line {
+                    // Add separating space between words
+                    spans.push(Span::default().content(" ").style(translate_style(style)))
+                }
+                for span in word.spans() {
+                    spans.push(translate_span(span, &style));
+                }
+                acc += word.len();
+            }
+        }
+
+        if !spans.is_empty() {
+            let line = Line::default().spans(spans);
+            self.lines.push(line);
+        }
+    }
+
+    fn render(mut self, document: &Document) -> Paragraph<'a> {
         for fragment in document {
             match fragment {
                 document::Fragment::Wrapping{words, style} => {
-                    let mut spans = Vec::new();
-                    let mut acc = 0;
-
-                    for word in words {
-                        let is_fresh_line = acc == 0;
-                        let separator_size = if is_fresh_line { 0 } else { 1 };
-                        if acc + word.len() + separator_size > line_width && acc > 0 {
-                            // New line has to be started
-                            let line = Line::default().spans(spans);
-                            self.lines.push(line);
-                            spans = Vec::new();
-                        }
-                        else {
-                            // Word fits on current line
-                            if !is_fresh_line {
-                                // Add separating space between words
-                                spans.push(Span::default().content(" ").style(translate_style(style)))
-                            }
-                            for span in word.spans() {
-                                spans.push(translate_span(span, &style));
-                            }
-                            acc += word.len();
-                        }
-                    }
-
-                    if !spans.is_empty() {
-                        let line = Line::default().spans(spans);
-                        self.lines.push(line);
-                    }
+                    self.add_wrapped(words, style);
+                },
+                document::Fragment::Heading{words, style, depth: _} => {
+                    self.add_separating_line();
+                    self.add_wrapped(words, style);
                 },
                 &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
                     self.add_separating_line();
@@ -255,9 +264,10 @@ impl<'a> DocumentRenderer<'a> {
 
 fn render_document_as_paragraph(document: &Document, line_width: usize) -> Paragraph<'_> {
     let renderer = DocumentRenderer{
+        line_width,
         lines: Vec::new(),
         code_block_index: 1,
     };
 
-    renderer.render(document, line_width)
+    renderer.render(document)
 }
