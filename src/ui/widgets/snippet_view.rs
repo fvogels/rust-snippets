@@ -19,6 +19,10 @@ impl SnippetViewState {
         }
     }
 
+    pub fn select_first(&mut self) {
+        self.selected_part = 0
+    }
+
     pub fn select_next(&mut self) {
         self.selected_part += 1
     }

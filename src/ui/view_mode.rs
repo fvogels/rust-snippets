@@ -43,27 +43,57 @@ impl ViewMode {
                 })
             },
             KeyCode::Up => {
+                let previously_selected = self.description_list_state.selected();
                 self.description_list_state.select_previous();
+                if self.description_list_state.selected() != previously_selected {
+                    self.snippet_view_state.select_first();
+                }
+
                 Mode::View(self)
             },
             KeyCode::Down => {
+                let previously_selected = self.description_list_state.selected();
                 self.description_list_state.select_next();
+                if self.description_list_state.selected() != previously_selected {
+                    self.snippet_view_state.select_first();
+                }
+
                 Mode::View(self)
             },
             KeyCode::PageUp => {
+                let previously_selected = self.description_list_state.selected();
                 self.description_list_state.scroll_up_by(self.description_list_page_size);
+                if self.description_list_state.selected() != previously_selected {
+                    self.snippet_view_state.select_first();
+                }
+
                 Mode::View(self)
             },
             KeyCode::PageDown => {
+                let previously_selected = self.description_list_state.selected();
                 self.description_list_state.scroll_down_by(self.description_list_page_size);
+                if self.description_list_state.selected() != previously_selected {
+                    self.snippet_view_state.select_first();
+                }
+
                 Mode::View(self)
             },
             KeyCode::Home => {
+                let previously_selected = self.description_list_state.selected();
                 self.description_list_state.select_first();
+                if self.description_list_state.selected() != previously_selected {
+                    self.snippet_view_state.select_first();
+                }
+
                 Mode::View(self)
             },
             KeyCode::End => {
+                let previously_selected = self.description_list_state.selected();
                 self.description_list_state.select_last();
+                if self.description_list_state.selected() != previously_selected {
+                    self.snippet_view_state.select_first();
+                }
+
                 Mode::View(self)
             },
             KeyCode::Tab => {
