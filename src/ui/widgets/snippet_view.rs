@@ -138,103 +138,115 @@ fn translate_span<'a>(span: &document::Span, style_base: &document::Style) -> ra
     ratatui::text::Span::default().content(Cow::from(span.text.clone())).style(translate_style(&combined_style))
 }
 
-fn render_document_as_paragraph<'a>(document: &Document, line_width: usize) -> Paragraph<'a> {
-    let mut lines = Vec::new();
-    let mut code_block_index = 1;
+struct DocumentRenderer<'a> {
+    lines: Vec<Line<'a>>,
+    code_block_index: i32,
+}
 
-    for fragment in document {
-        match fragment {
-            document::Fragment::Wrapping{words, style} => {
-                let mut spans = Vec::new();
-                let mut acc = 0;
+impl<'a> DocumentRenderer<'a> {
+    fn render(mut self, document: &Document, line_width: usize) -> Paragraph<'a> {
+        for fragment in document {
+            match fragment {
+                document::Fragment::Wrapping{words, style} => {
+                    let mut spans = Vec::new();
+                    let mut acc = 0;
 
-                for word in words {
-                    let is_fresh_line = acc == 0;
-                    let separator_size = if is_fresh_line { 0 } else { 1 };
-                    if acc + word.len() + separator_size > line_width && acc > 0 {
-                        // New line has to be started
-                        let line = Line::default().spans(spans);
-                        lines.push(line);
-                        spans = Vec::new();
-                    }
-                    else {
-                        // Word fits on current line
-                        if !is_fresh_line {
-                            // Add separating space between words
-                            spans.push(Span::default().content(" ").style(translate_style(style)))
-                        }
-                        for span in word.spans() {
-                            spans.push(translate_span(span, &style));
-                        }
-                        acc += word.len();
-                    }
-                }
-
-                if !spans.is_empty() {
-                    let line = Line::default().spans(spans);
-                    lines.push(line);
-                }
-            },
-            &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
-                if !lines.is_empty() {
-                    lines.push(Line::default());
-                }
-
-                let style_base = document::Style::default().background(document::Color::gray(32));
-                let indentation_style = document::Style::default();
-                let caption_style = document::Style::default().background(document::Color::gray(128));
-                let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
-                let code_block_width = code_lines.get(0).map(|line| line.len()).unwrap_or(0);
-
-                // Add line for code block caption
-                let code_block_caption = {
-                    let mut spans = vec![ indentation_span.clone() ];
-
-                    let mut caption =
-                        if let Some(language) = language {
-                            format!(" Code snippet #{} ({})", code_block_index, language)
+                    for word in words {
+                        let is_fresh_line = acc == 0;
+                        let separator_size = if is_fresh_line { 0 } else { 1 };
+                        if acc + word.len() + separator_size > line_width && acc > 0 {
+                            // New line has to be started
+                            let line = Line::default().spans(spans);
+                            self.lines.push(line);
+                            spans = Vec::new();
                         }
                         else {
-                            format!(" Code snippet #{}", code_block_index)
-                        };
-
-
-                    while caption.len() < code_block_width {
-                        caption.push(' ');
+                            // Word fits on current line
+                            if !is_fresh_line {
+                                // Add separating space between words
+                                spans.push(Span::default().content(" ").style(translate_style(style)))
+                            }
+                            for span in word.spans() {
+                                spans.push(translate_span(span, &style));
+                            }
+                            acc += word.len();
+                        }
                     }
-                    let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
-                    spans.push(caption_span);
-                    Line::default().spans(spans)
-                };
-                lines.push(code_block_caption);
+
+                    if !spans.is_empty() {
+                        let line = Line::default().spans(spans);
+                        self.lines.push(line);
+                    }
+                },
+                &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
+                    if !self.lines.is_empty() {
+                        self.lines.push(Line::default());
+                    }
+
+                    let style_base = document::Style::default().background(document::Color::gray(32));
+                    let indentation_style = document::Style::default();
+                    let caption_style = document::Style::default().background(document::Color::gray(128));
+                    let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
+                    let code_block_width = code_lines.get(0).map(|line| line.len()).unwrap_or(0);
+
+                    // Add line for code block caption
+                    let code_block_caption = {
+                        let mut spans = vec![ indentation_span.clone() ];
+
+                        let mut caption =
+                            if let Some(language) = language {
+                                format!(" Code snippet #{} ({})", self.code_block_index, language)
+                            }
+                            else {
+                                format!(" Code snippet #{}", self.code_block_index)
+                            };
 
 
-                // Add code block lines
-                for line in code_lines {
-                    let mut translated_spans = vec![ indentation_span.clone() ];
+                        while caption.len() < code_block_width {
+                            caption.push(' ');
+                        }
+                        let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
+                        spans.push(caption_span);
+                        Line::default().spans(spans)
+                    };
+                    self.lines.push(code_block_caption);
 
-                    line.spans().iter().for_each(|span| {
-                        let translated_span = translate_span(span, &style_base);
-                        translated_spans.push(translated_span);
-                    });
+                    // Add code block lines
+                    for line in code_lines {
+                        let mut translated_spans = vec![ indentation_span.clone() ];
 
-                    lines.push(Line::default().spans(translated_spans));
-                }
+                        line.spans().iter().for_each(|span| {
+                            let translated_span = translate_span(span, &style_base);
+                            translated_spans.push(translated_span);
+                        });
 
-                lines.push(Line::default());
-                code_block_index += 1;
-            },
-            document::Fragment::Verbatim { lines: verbatim_lines} => {
-                let style_base = Style::default();
+                        self.lines.push(Line::default().spans(translated_spans));
+                    }
 
-                for verbatim_line in verbatim_lines {
-                    let translated_spans = verbatim_line.spans().iter().map(|span| translate_span(span, &style_base));
-                    let translated_line = Line::default().spans(translated_spans);
-                    lines.push(translated_line);
+                    self.lines.push(Line::default());
+                    self.code_block_index += 1;
+                },
+                document::Fragment::Verbatim { lines: verbatim_lines} => {
+                    let style_base = Style::default();
+
+                    for verbatim_line in verbatim_lines {
+                        let translated_spans = verbatim_line.spans().iter().map(|span| translate_span(span, &style_base));
+                        let translated_line = Line::default().spans(translated_spans);
+                        self.lines.push(translated_line);
+                    }
                 }
             }
         }
-    }
 
-    Paragraph::new(lines)
+        Paragraph::new(self.lines)
+    }
+}
+
+fn render_document_as_paragraph(document: &Document, line_width: usize) -> Paragraph<'_> {
+    let renderer = DocumentRenderer{
+        lines: Vec::new(),
+        code_block_index: 1,
+    };
+
+    renderer.render(document, line_width)
 }
