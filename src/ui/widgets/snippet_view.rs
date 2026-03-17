@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::format};
 
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
@@ -207,18 +207,15 @@ impl<'a> DocumentRenderer<'a> {
         let code_block_caption = {
             let mut spans = vec![ indentation_span.clone() ];
 
-            let mut caption =
+            let caption =
                 if let Some(language) = language {
                     format!(" Code snippet #{} ({})", self.code_block_index, language)
                 }
                 else {
                     format!(" Code snippet #{}", self.code_block_index)
                 };
+            let caption = format!("{caption:<width$}", caption=caption, width=code_block_width);
 
-
-            while caption.len() < code_block_width {
-                caption.push(' ');
-            }
             let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
             spans.push(caption_span);
             Line::default().spans(spans)
