@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::format};
+use std::{borrow::Cow};
 
 use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
 
