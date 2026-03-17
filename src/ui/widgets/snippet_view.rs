@@ -194,6 +194,53 @@ impl<'a> DocumentRenderer<'a> {
         }
     }
 
+    fn render_code_fragment(&mut self, language: &Option<String>, code_lines: &Vec<document::Line>) {
+        self.add_separating_line();
+
+        let style_base = document::Style::default().background(document::Color::gray(32));
+        let indentation_style = document::Style::default();
+        let caption_style = document::Style::default().background(document::Color::gray(128));
+        let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
+        let code_block_width = code_lines.get(0).map(|line| line.len()).unwrap_or(0);
+
+        // Add line for code block caption
+        let code_block_caption = {
+            let mut spans = vec![ indentation_span.clone() ];
+
+            let mut caption =
+                if let Some(language) = language {
+                    format!(" Code snippet #{} ({})", self.code_block_index, language)
+                }
+                else {
+                    format!(" Code snippet #{}", self.code_block_index)
+                };
+
+
+            while caption.len() < code_block_width {
+                caption.push(' ');
+            }
+            let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
+            spans.push(caption_span);
+            Line::default().spans(spans)
+        };
+        self.lines.push(code_block_caption);
+
+        // Add code block lines
+        for line in code_lines {
+            let mut translated_spans = vec![ indentation_span.clone() ];
+
+            line.spans().iter().for_each(|span| {
+                let translated_span = translate_span(span, &style_base);
+                translated_spans.push(translated_span);
+            });
+
+            self.lines.push(Line::default().spans(translated_spans));
+        }
+
+        self.add_empty_line();
+        self.code_block_index += 1;
+    }
+
     fn render(mut self, document: &Document) -> Paragraph<'a> {
         for fragment in document {
             match fragment {
@@ -205,50 +252,7 @@ impl<'a> DocumentRenderer<'a> {
                     self.add_wrapped(words, style);
                 },
                 &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
-                    self.add_separating_line();
-
-                    let style_base = document::Style::default().background(document::Color::gray(32));
-                    let indentation_style = document::Style::default();
-                    let caption_style = document::Style::default().background(document::Color::gray(128));
-                    let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
-                    let code_block_width = code_lines.get(0).map(|line| line.len()).unwrap_or(0);
-
-                    // Add line for code block caption
-                    let code_block_caption = {
-                        let mut spans = vec![ indentation_span.clone() ];
-
-                        let mut caption =
-                            if let Some(language) = language {
-                                format!(" Code snippet #{} ({})", self.code_block_index, language)
-                            }
-                            else {
-                                format!(" Code snippet #{}", self.code_block_index)
-                            };
-
-
-                        while caption.len() < code_block_width {
-                            caption.push(' ');
-                        }
-                        let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
-                        spans.push(caption_span);
-                        Line::default().spans(spans)
-                    };
-                    self.lines.push(code_block_caption);
-
-                    // Add code block lines
-                    for line in code_lines {
-                        let mut translated_spans = vec![ indentation_span.clone() ];
-
-                        line.spans().iter().for_each(|span| {
-                            let translated_span = translate_span(span, &style_base);
-                            translated_spans.push(translated_span);
-                        });
-
-                        self.lines.push(Line::default().spans(translated_spans));
-                    }
-
-                    self.add_empty_line();
-                    self.code_block_index += 1;
+                    self.render_code_fragment(language, code_lines);
                 },
                 document::Fragment::Verbatim { lines: verbatim_lines} => {
                     let style_base = Style::default();
