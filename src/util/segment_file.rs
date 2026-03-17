@@ -1,21 +1,7 @@
-use std::fs::{self};
-use std::path::{Path};
-use std::io::{self};
-
-
 #[derive(Debug)]
 pub struct Segment {
     pub caption: Option<String>,
     pub lines: Vec<String>,
-}
-
-pub fn load<P>(file_path: &P, is_separator: fn(&str) -> Option<&str>) -> io::Result<Vec<Segment>>
-where P: AsRef<Path> {
-    let contents = fs::read_to_string(file_path)?;
-    let lines = contents.lines();
-    let segments = parse(lines, is_separator);
-
-    Ok(segments)
 }
 
 pub fn parse<'a>(lines: impl Iterator<Item=&'a str>, is_separator: fn(&str) -> Option<&str>) -> Vec<Segment> {
