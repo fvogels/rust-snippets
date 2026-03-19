@@ -139,8 +139,10 @@ impl ViewMode {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
         let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
         let list_block = {
-            let title = Line::raw(format!(" {} snippets ", descriptions.len())).right_aligned();
-            Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(title).border_type(BorderType::Double)
+            let title = Line::raw("Snippets");
+            let bottom_title = Line::raw(format!(" {} snippets ", descriptions.len())).right_aligned();
+
+            Block::new().title(title).borders(Borders::ALL).title_bottom(bottom_title).border_type(BorderType::Double)
         };
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
 
