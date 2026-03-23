@@ -1,4 +1,4 @@
-use ratatui::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, StatefulWidget}};
+use ratatui::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState}};
 
 
 pub struct Widget<'a> {

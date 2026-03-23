@@ -1,4 +1,4 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, widgets::{Block, Borders, StatefulWidget, Widget}};
 use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 

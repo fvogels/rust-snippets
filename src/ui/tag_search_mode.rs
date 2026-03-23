@@ -1,4 +1,4 @@
-use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, Paragraph, StatefulWidget, Widget}};
+use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget}};
 use crate::ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{description_list, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}};
 
 
