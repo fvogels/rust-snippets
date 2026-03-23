@@ -1,10 +1,10 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, tag_search_mode::TagSearchMode, widgets::{keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct ViewMode {
     pub state: State,
-    pub(super) description_list_state: ListState,
+    pub(super) description_list_state: description_list::State,
     pub(super) snippet_view_state: SnippetViewState,
     description_list_page_size: u16,
 }
@@ -13,13 +13,13 @@ impl ViewMode {
     pub(super) fn new(library: Library) -> Self {
         ViewMode {
             state: State::new(library),
-            description_list_state: ListState::default().with_selected(Some(0)),
+            description_list_state: description_list::State::default(),
             snippet_view_state: SnippetViewState::new(),
             description_list_page_size: 10,
         }
     }
 
-    pub(super) fn init(state: State, description_list_state: ListState, snippet_view_state: SnippetViewState) -> Self {
+    pub(super) fn init(state: State, description_list_state: description_list::State, snippet_view_state: SnippetViewState) -> Self {
         ViewMode {
             state,
             description_list_state,
@@ -136,22 +136,9 @@ impl ViewMode {
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
-        let list_block = {
-            let title = Line::raw("Snippets");
-            let bottom_title = {
-                if let Some(selected) = self.description_list_state.selected() {
-                    // checked_add is necessary: jumping to the last element sets the selected index to the maximum value, and doing +1 on this causes a panic
-                    Line::raw(format!(" Snippet {}/{} ", selected.checked_add(1).unwrap_or(descriptions.len()), descriptions.len())).right_aligned()
-                }
-                else {
-                    Line::raw(format!(" {} snippets ", descriptions.len())).right_aligned()
-                }
-            };
-            Block::new().title(title).borders(Borders::ALL).title_bottom(bottom_title).border_type(BorderType::Double)
-        };
-        let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
+        let descriptions = self.state.visible_snippet_descriptions();
+        let description_list_view = description_list::Widget::new(descriptions);
+        StatefulWidget::render(description_list_view, area, buffer, &mut self.description_list_state);
 
         if area.height >= 2 {
             self.description_list_page_size = area.height - 2;
@@ -159,8 +146,6 @@ impl ViewMode {
         else {
             self.description_list_page_size = 1;
         }
-
-        StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {

@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, text::Line, widgets::{Block, BorderType, Borders, List, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
+use crate::ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{description_list, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}};
 
 
 pub(super) struct TagSearchMode {
@@ -19,7 +19,7 @@ impl TagSearchMode {
                 Mode::TagSearch(self)
             },
             KeyCode::Esc => {
-                Mode::View(ViewMode::init(self.state, ListState::default().with_selected(Some(0)), SnippetViewState::new()))
+                Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
             },
             KeyCode::Enter => {
                 if let Some(index) = self.tags_view_state.selected() {
@@ -28,7 +28,7 @@ impl TagSearchMode {
                     self.state.refresh();
                 }
 
-                Mode::View(ViewMode::init(self.state, ListState::default().with_selected(Some(0)), SnippetViewState::new()))
+                Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
             },
             KeyCode::Char(' ') => {
                 if let Some(index) = self.tags_view_state.selected() {
@@ -77,12 +77,9 @@ impl TagSearchMode {
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
-        let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
-        let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
-
-        Widget::render(list, area, buffer);
+        let descriptions = self.state.visible_snippet_descriptions();
+        let description_list_view = description_list::Widget::new(descriptions);
+        Widget::render(description_list_view, area, buffer);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {

@@ -1,10 +1,10 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, text::{Line, Span}, widgets::{Block, Borders, List, ListState, Paragraph, StatefulWidget, Widget}};
-use crate::{ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView}}}};
+use crate::ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{description_list, snippet_view::{SnippetView, SnippetViewState}, tags_view::TagsView}};
 
 
 pub(super) struct SearchMode {
     pub state: State,
-    pub(super) description_list_state: ListState,
+    pub(super) description_list_state: description_list::State,
     pub(super) snippet_view_state: SnippetViewState,
 }
 
@@ -30,7 +30,7 @@ impl SearchMode {
             KeyCode::Esc => {
                 self.state.clear_keywords();
                 self.state.refresh();
-                self.description_list_state.select(Some(0));
+                self.description_list_state.select_first();
                 Mode::View(ViewMode::init(self.state, self.description_list_state, self.snippet_view_state))
             },
             KeyCode::Enter => {
@@ -84,12 +84,9 @@ impl SearchMode {
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
-        let descriptions = self.state.visible_snippet_descriptions().collect::<Vec<_>>();
-        let list_block = Block::new().title(Line::raw("Snippets")).borders(Borders::ALL).title_bottom(Line::raw(format!("{} snippets", descriptions.len())).right_aligned());
-        let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
-
-        StatefulWidget::render(list, area, buffer, &mut self.description_list_state);
+        let descriptions = self.state.visible_snippet_descriptions();
+        let description_list_view = description_list::Widget::new(descriptions);
+        StatefulWidget::render(description_list_view, area, buffer, &mut self.description_list_state);
     }
 
     fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
