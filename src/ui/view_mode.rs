@@ -137,7 +137,7 @@ impl ViewMode {
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let descriptions = self.state.visible_snippet_descriptions();
-        let description_list_view = description_list::Widget::new(descriptions);
+        let description_list_view = description_list::Widget::new(descriptions, false);
         StatefulWidget::render(description_list_view, area, buffer, &mut self.description_list_state);
 
         if area.height >= 2 {

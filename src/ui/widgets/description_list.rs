@@ -2,6 +2,7 @@ use ratatui::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::{
 
 
 pub struct Widget<'a> {
+    has_focus: bool,
     items: Vec<&'a str>,
 }
 
@@ -46,8 +47,9 @@ impl State {
 }
 
 impl<'a> Widget<'a> {
-    pub fn new(items: impl Iterator<Item=&'a str>) -> Self {
+    pub fn new(items: impl Iterator<Item=&'a str>, has_focus: bool) -> Self {
         Widget{
+            has_focus,
             items: items.collect(),
         }
     }
@@ -89,7 +91,14 @@ impl<'a> ratatui::widgets::Widget for Widget<'a> {
             let bottom_title = {
                 Line::raw(format!(" {} snippets ", descriptions.len())).right_aligned()
             };
-            Block::new().title(title).borders(Borders::ALL).title_bottom(bottom_title).border_type(BorderType::Double)
+            let block = Block::new().title(title).borders(Borders::ALL).title_bottom(bottom_title);
+
+            if self.has_focus {
+                block.border_type(BorderType::Double)
+            }
+            else {
+                block.border_type(BorderType::Plain)
+            }
         };
 
         let list = List::new(descriptions).highlight_style(highlight_style).block(list_block);
