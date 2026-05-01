@@ -21,6 +21,10 @@ impl SearchMode {
                 if let Some(mut last_keyword) = self.state.keywords.pop() {
                     if last_keyword.is_empty() {
                         self.state.keywords.pop();
+
+                        // Without this, we would end up editing the last keyword instead
+                        // of starting a new one
+                        self.state.keywords.push("".to_owned());
                     }
                     else {
                         last_keyword.truncate(last_keyword.len() - 1);
