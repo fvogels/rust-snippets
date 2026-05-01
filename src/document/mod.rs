@@ -160,12 +160,13 @@ mod test {
         let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
+        if let Fragment::Heading{ words: text, style: _, depth } = &document[0] {
             let expected = vec![word("Title", &theme.headings[0])];
             assert_eq!(&expected, text);
+            assert_eq!(0, *depth);
         }
         else {
-            assert!(false, "fragment should be a paragraph");
+            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document[0]);
         }
     }
 
@@ -180,12 +181,34 @@ mod test {
         let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
+        if let Fragment::Heading{ words: text, style: _, depth } = &document[0] {
             let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
             assert_eq!(&expected, text);
+            assert_eq!(0, *depth);
         }
         else {
-            assert!(false, "fragment should be a paragraph");
+            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document[0]);
+        }
+    }
+
+    #[test]
+    fn heading_depth() {
+        let markdown = indoc! { r#"
+        ## Title
+        "# };
+
+        let syntax_highlighter = SyntaxHighlighter::new();
+        let theme = Theme::default();
+        let document = parse(markdown, &syntax_highlighter, &theme);
+
+        assert_eq!(1, document.len());
+        if let Fragment::Heading{ words: text, style: _, depth } = &document[0] {
+            let expected = words(["Title"].into_iter(), &theme.headings[1]).collect::<Vec<_>>();
+            assert_eq!(&expected, text);
+            assert_eq!(1, *depth);
+        }
+        else {
+            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document[0]);
         }
     }
 
