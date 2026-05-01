@@ -9,7 +9,7 @@ pub(super) struct SearchMode {
 }
 
 impl SearchMode {
-    fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
+    fn handle_key_event(self, key_event: KeyEvent) -> Mode {
         match key_event.code {
             KeyCode::Up => self.select_previous_description(),
             KeyCode::Down => self.select_next_description(),
