@@ -79,11 +79,15 @@ impl SearchMode {
 
     fn select_previous_description(mut self) -> Mode {
         self.description_list_state.select_previous();
-        Mode::Search(self)
+        self.remain_in_search_mode()
     }
 
     fn select_next_description(mut self) -> Mode {
         self.description_list_state.select_next();
+        self.remain_in_search_mode()
+    }
+
+    fn remain_in_search_mode(self) -> Mode {
         Mode::Search(self)
     }
 
