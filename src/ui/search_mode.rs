@@ -16,9 +16,7 @@ impl SearchMode {
             KeyCode::Tab => self.select_next_snippet_part(),
             KeyCode::BackTab => self.select_previous_snippet_part(),
             KeyCode::Esc => self.cancel_search(),
-            KeyCode::Enter => {
-                Mode::View(ViewMode::init(self.state, self.description_list_state, self.snippet_view_state))
-            },
+            KeyCode::Enter => self.switch_to_view_mode(),
             KeyCode::Backspace => {
                 if let Some(mut last_keyword) = self.state.keywords.pop() {
                     if last_keyword.is_empty() {
