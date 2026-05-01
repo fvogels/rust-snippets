@@ -15,12 +15,7 @@ impl SearchMode {
             KeyCode::Down => self.select_next_description(),
             KeyCode::Tab => self.select_next_snippet_part(),
             KeyCode::BackTab => self.select_previous_snippet_part(),
-            KeyCode::Esc => {
-                self.state.clear_keywords();
-                self.state.refresh();
-                self.description_list_state.select_first();
-                Mode::View(ViewMode::init(self.state, self.description_list_state, self.snippet_view_state))
-            },
+            KeyCode::Esc => self.cancel_search(),
             KeyCode::Enter => {
                 Mode::View(ViewMode::init(self.state, self.description_list_state, self.snippet_view_state))
             },
@@ -81,18 +76,29 @@ impl SearchMode {
         self.remain_in_search_mode()
     }
 
-    fn select_next_snippet_part(mut self) -> Node {
+    fn select_next_snippet_part(mut self) -> Mode {
         self.snippet_view_state.select_next();
         self.remain_in_search_mode()
     }
 
-    fn select_previous_snippet_part(mut self) -> Node {
+    fn select_previous_snippet_part(mut self) -> Mode {
         self.snippet_view_state.select_previous();
         self.remain_in_search_mode()
     }
 
+    fn cancel_search(mut self) -> Mode {
+        self.state.clear_keywords();
+        self.state.refresh();
+        self.description_list_state.select_first();
+        self.switch_to_view_mode()
+    }
+
     fn remain_in_search_mode(self) -> Mode {
         Mode::Search(self)
+    }
+
+    fn switch_to_view_mode(self) -> Mode {
+        Mode::View(ViewMode::init(self.state, self.description_list_state, self.snippet_view_state))
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
