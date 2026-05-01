@@ -19,21 +19,7 @@ impl SearchMode {
             KeyCode::Enter => self.switch_to_view_mode(),
             KeyCode::Backspace => self.remove_last_char_or_keyword(),
             KeyCode::Char(' ') => self.start_new_keyword(),
-            KeyCode::Char(char) if valid_filter_character(char) => {
-                let new_keyword = match self.state.pop_keyword() {
-                    Some(keyword) => {
-                        let mut keyword = keyword;
-                        keyword.push(char);
-                        keyword
-                    },
-                    None => {
-                        String::from(char)
-                    }
-                };
-                self.state.keywords.push(new_keyword);
-                self.state.refresh();
-                Mode::Search(self)
-            },
+            KeyCode::Char(char) if valid_filter_character(char) => self.add_char_to_keyword(char),
             _ => Mode::Search(self)
         }
     }
@@ -98,6 +84,24 @@ impl SearchMode {
                 }
             }
         }
+
+        self.remain_in_search_mode()
+    }
+
+    fn add_char_to_keyword(mut self, char: char) -> Mode {
+        let new_keyword = match self.state.pop_keyword() {
+            Some(keyword) => {
+                let mut keyword = keyword;
+                keyword.push(char);
+                keyword
+            },
+            None => {
+                String::from(char)
+            }
+        };
+
+        self.state.keywords.push(new_keyword);
+        self.state.refresh();
 
         self.remain_in_search_mode()
     }
