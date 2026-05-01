@@ -17,24 +17,7 @@ impl SearchMode {
             KeyCode::BackTab => self.select_previous_snippet_part(),
             KeyCode::Esc => self.cancel_search(),
             KeyCode::Enter => self.switch_to_view_mode(),
-            KeyCode::Backspace => {
-                if let Some(mut last_keyword) = self.state.keywords.pop() {
-                    if last_keyword.is_empty() {
-                        self.state.keywords.pop();
-
-                        // Without this, we would end up editing the last keyword instead
-                        // of starting a new one
-                        self.state.keywords.push("".to_owned());
-                    }
-                    else {
-                        last_keyword.truncate(last_keyword.len() - 1);
-                        self.state.keywords.push(last_keyword);
-                    }
-
-                    self.state.refresh();
-                }
-                Mode::Search(self)
-            },
+            KeyCode::Backspace => self.remove_last_char_or_keyword(),
             KeyCode::Char(' ') => {
                 match self.state.keywords.last() {
                     None => {
@@ -93,6 +76,28 @@ impl SearchMode {
         self.state.refresh();
         self.description_list_state.select_first();
         self.switch_to_view_mode()
+    }
+
+    // Removes the last char of the last keyword.
+    // If the last keyword is empty, remove the entire keyword that precedes it.
+    fn remove_last_char_or_keyword(mut self) -> Mode {
+        if let Some(mut last_keyword) = self.state.keywords.pop() {
+            if last_keyword.is_empty() {
+                self.state.keywords.pop();
+
+                // Without this, we would end up editing the last keyword instead
+                // of starting a new one
+                self.state.keywords.push("".to_owned());
+            }
+            else {
+                last_keyword.truncate(last_keyword.len() - 1);
+                self.state.keywords.push(last_keyword);
+            }
+
+            self.state.refresh();
+        }
+
+        self.remain_in_search_mode()
     }
 
     fn remain_in_search_mode(self) -> Mode {
