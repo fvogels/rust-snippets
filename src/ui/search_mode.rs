@@ -13,14 +13,8 @@ impl SearchMode {
         match key_event.code {
             KeyCode::Up => self.select_previous_description(),
             KeyCode::Down => self.select_next_description(),
-            KeyCode::Tab => {
-                self.snippet_view_state.select_next();
-                Mode::Search(self)
-            },
-            KeyCode::BackTab => {
-                self.snippet_view_state.select_previous();
-                Mode::Search(self)
-            },
+            KeyCode::Tab => self.select_next_snippet_part(),
+            KeyCode::BackTab => self.select_previous_snippet_part(),
             KeyCode::Esc => {
                 self.state.clear_keywords();
                 self.state.refresh();
@@ -84,6 +78,16 @@ impl SearchMode {
 
     fn select_next_description(mut self) -> Mode {
         self.description_list_state.select_next();
+        self.remain_in_search_mode()
+    }
+
+    fn select_next_snippet_part(mut self) -> Node {
+        self.snippet_view_state.select_next();
+        self.remain_in_search_mode()
+    }
+
+    fn select_previous_snippet_part(mut self) -> Node {
+        self.snippet_view_state.select_previous();
         self.remain_in_search_mode()
     }
 
