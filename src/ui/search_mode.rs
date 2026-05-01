@@ -20,7 +20,7 @@ impl SearchMode {
             KeyCode::Backspace => self.remove_last_char_or_keyword(),
             KeyCode::Char(' ') => self.start_new_keyword(),
             KeyCode::Char(char) if valid_filter_character(char) => self.add_char_to_keyword(char),
-            _ => Mode::Search(self)
+            _ => self.remain_in_search_mode()
         }
     }
 
