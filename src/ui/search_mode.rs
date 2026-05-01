@@ -18,20 +18,7 @@ impl SearchMode {
             KeyCode::Esc => self.cancel_search(),
             KeyCode::Enter => self.switch_to_view_mode(),
             KeyCode::Backspace => self.remove_last_char_or_keyword(),
-            KeyCode::Char(' ') => {
-                match self.state.keywords.last() {
-                    None => {
-                        // No keywords entered, nothing needs to be done
-                    },
-                    Some(keyword) => {
-                        if !keyword.is_empty() {
-                            self.state.keywords.push(String::from(""));
-                        }
-                    }
-                }
-
-                Mode::Search(self)
-            },
+            KeyCode::Char(' ') => self.start_new_keyword(),
             KeyCode::Char(char) if valid_filter_character(char) => {
                 let new_keyword = match self.state.pop_keyword() {
                     Some(keyword) => {
@@ -95,6 +82,21 @@ impl SearchMode {
             }
 
             self.state.refresh();
+        }
+
+        self.remain_in_search_mode()
+    }
+
+    fn start_new_keyword(mut self) -> Mode {
+        match self.state.keywords.last() {
+            None => {
+                // No keywords entered, nothing needs to be done
+            },
+            Some(keyword) => {
+                if !keyword.is_empty() {
+                    self.state.keywords.push(String::from(""));
+                }
+            }
         }
 
         self.remain_in_search_mode()
