@@ -11,10 +11,7 @@ pub(super) struct SearchMode {
 impl SearchMode {
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
-            KeyCode::Up => {
-                self.description_list_state.select_previous();
-                Mode::Search(self)
-            },
+            KeyCode::Up => self.select_previous_description(),
             KeyCode::Down => {
                 self.description_list_state.select_next();
                 Mode::Search(self)
@@ -81,6 +78,11 @@ impl SearchMode {
             },
             _ => Mode::Search(self)
         }
+    }
+
+    fn select_previous_description(mut self) -> Mode {
+        self.description_list_state.select_previous();
+        Mode::Search(self)
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
