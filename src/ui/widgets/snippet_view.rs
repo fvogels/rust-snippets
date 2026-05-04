@@ -195,8 +195,6 @@ impl<'a> DocumentRenderer<'a> {
     }
 
     fn render_code_fragment(&mut self, language: &Option<String>, code_lines: &Vec<document::Line>) {
-        self.add_separating_line();
-
         let style_base = document::Style::default().background(document::Color::gray(32));
         let indentation_style = document::Style::default();
         let caption_style = document::Style::default().background(document::Color::gray(128));
@@ -210,14 +208,12 @@ impl<'a> DocumentRenderer<'a> {
                 10
             }
         };
-
         // Empty line to surround snippet with
         let separator_line = {
             let empty_span = document::Span::spaces(code_block_width, document::Style::default());
             let spans = vec![ left_margin_span.clone(), translate_span(&empty_span, &style_base) ];
             Line::default().spans(spans)
         };
-
         // Add line for code block caption
         let code_block_caption = {
             let mut spans = vec![ left_margin_span.clone() ];
@@ -235,8 +231,9 @@ impl<'a> DocumentRenderer<'a> {
             spans.push(caption_span);
             Line::default().spans(spans)
         };
-        self.lines.push(code_block_caption);
 
+        self.add_separating_line();
+        self.lines.push(code_block_caption);
         self.lines.push(separator_line.clone());
 
         // Add code block lines
@@ -261,7 +258,6 @@ impl<'a> DocumentRenderer<'a> {
         }
 
         self.lines.push(separator_line);
-
         self.add_empty_line();
         self.code_block_index += 1;
     }
