@@ -9,6 +9,12 @@ pub struct Span {
 }
 
 impl Span {
+    pub fn spaces(length: usize, style: Style) -> Self {
+        let text = " ".repeat(length);
+        
+        Span { text, style }
+    }
+
     pub fn len(&self) -> usize {
         self.text.len()
     }

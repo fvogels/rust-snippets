@@ -15,14 +15,15 @@ impl Line {
     }
 
     pub fn indent(&mut self, indentation: usize) {
-        let indentation_span = Span{ text: " ".repeat(indentation), style: Style::default() };
+        let indentation_span = Span::spaces(indentation, Style::default());
         self.0.insert(0, indentation_span);
     }
 
     pub fn pad_with_spaces(&mut self, target_length: usize) {
-        let padding_size = target_length - self.len();
-        let padding = " ".repeat(padding_size);
-        let padding_span = Span{ text: padding, style: Style::default() };
-        self.0.push(padding_span);
+        if self.len() < target_length {
+            let padding_size = target_length - self.len();
+            let padding_span = Span::spaces(padding_size, Style::default());
+            self.0.push(padding_span);
+        }
     }
 }

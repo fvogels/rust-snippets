@@ -201,7 +201,7 @@ impl<'a> DocumentRenderer<'a> {
         let indentation_style = document::Style::default();
         let caption_style = document::Style::default().background(document::Color::gray(128));
         let margin_size = 2;
-        let left_margin_span = translate_span(&document::Span { text: " ".repeat(margin_size), style: indentation_style }, &indentation_style);
+        let left_margin_span = translate_span(&document::Span::spaces(margin_size, Style::default()), &indentation_style);
         let code_block_width = self.line_width - 2 * margin_size;
 
         // Add line for code block caption
@@ -237,8 +237,7 @@ impl<'a> DocumentRenderer<'a> {
             // Add padding if necessary
             if accumulated_length < code_block_width {
                 let padding_length = code_block_width - accumulated_length;
-                let padding_string = " ".repeat(padding_length);
-                let padding_span = document::Span { text: padding_string, style: style_base };
+                let padding_span = document::Span::spaces(padding_length, Style::default());
                 translated_spans.push(translate_span(&padding_span, &style_base));
             }
 

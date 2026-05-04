@@ -60,7 +60,7 @@ impl SyntaxHighlighter {
         let mut spans = Vec::new();
 
         if indentation > 0 {
-            let indentation_span = Span { text: " ".repeat(indentation), style: Style::default() };
+            let indentation_span = Span::spaces(indentation, Style::default());
             spans.push(indentation_span);
         }
 
