@@ -200,12 +200,13 @@ impl<'a> DocumentRenderer<'a> {
         let style_base = document::Style::default().background(document::Color::gray(32));
         let indentation_style = document::Style::default();
         let caption_style = document::Style::default().background(document::Color::gray(128));
-        let indentation_span = translate_span(&document::Span { text: "  ".to_owned(), style: indentation_style }, &indentation_style);
-        let code_block_width = code_lines.get(0).map(|line| line.len()).unwrap_or(0);
+        let margin_size = 2;
+        let left_margin_span = translate_span(&document::Span { text: " ".repeat(margin_size), style: indentation_style }, &indentation_style);
+        let code_block_width = self.line_width - 2 * margin_size;
 
         // Add line for code block caption
         let code_block_caption = {
-            let mut spans = vec![ indentation_span.clone() ];
+            let mut spans = vec![ left_margin_span.clone() ];
 
             let caption =
                 if let Some(language) = language {
@@ -224,12 +225,22 @@ impl<'a> DocumentRenderer<'a> {
 
         // Add code block lines
         for line in code_lines {
-            let mut translated_spans = vec![ indentation_span.clone() ];
+            let mut translated_spans = vec![ left_margin_span.clone() ];
+            let mut accumulated_length = 0;
 
             line.spans().iter().for_each(|span| {
+                accumulated_length += span.len();
                 let translated_span = translate_span(span, &style_base);
                 translated_spans.push(translated_span);
             });
+
+            // Add padding if necessary
+            if accumulated_length < code_block_width {
+                let padding_length = code_block_width - accumulated_length;
+                let padding_string = " ".repeat(padding_length);
+                let padding_span = document::Span { text: padding_string, style: style_base };
+                translated_spans.push(translate_span(&padding_span, &style_base));
+            }
 
             self.lines.push(Line::default().spans(translated_spans));
         }

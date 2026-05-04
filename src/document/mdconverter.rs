@@ -124,21 +124,12 @@ impl<'a, 'b> Converter<'a, 'b> {
         let indentation = 0;
         let mut highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), lines, indentation).collect::<Vec<_>>();
         let longest_line_length = highlighted_lines.iter().map(|line| line.len()).max().unwrap_or(0);
-        let target_line_length = longest_line_length + 2;
 
         // Indent and pad lines
         for highlighted_line in &mut highlighted_lines {
             highlighted_line.indent(1);
-            highlighted_line.pad_with_spaces(target_line_length);
+            // highlighted_line.pad_with_spaces(target_line_length);
         }
-
-        // Add top and bottom empty line
-        let empty_line = {
-            let span = Span { text: " ".repeat(target_line_length), style: Style::default() };
-            Line(vec![span])
-        };
-        highlighted_lines.insert(0, empty_line.clone());
-        highlighted_lines.push(empty_line);
 
         let fragment = Fragment::Code { language, original: code.value, highlighted_lines };
 
