@@ -211,6 +211,13 @@ impl<'a> DocumentRenderer<'a> {
             }
         };
 
+        // Empty line to surround snippet with
+        let separator_line = {
+            let empty_span = document::Span::spaces(code_block_width, document::Style::default());
+            let spans = vec![ left_margin_span.clone(), translate_span(&empty_span, &style_base) ];
+            Line::default().spans(spans)
+        };
+
         // Add line for code block caption
         let code_block_caption = {
             let mut spans = vec![ left_margin_span.clone() ];
@@ -229,6 +236,8 @@ impl<'a> DocumentRenderer<'a> {
             Line::default().spans(spans)
         };
         self.lines.push(code_block_caption);
+
+        self.lines.push(separator_line.clone());
 
         // Add code block lines
         for line in code_lines {
@@ -250,6 +259,8 @@ impl<'a> DocumentRenderer<'a> {
 
             self.lines.push(Line::default().spans(translated_spans));
         }
+
+        self.lines.push(separator_line);
 
         self.add_empty_line();
         self.code_block_index += 1;
