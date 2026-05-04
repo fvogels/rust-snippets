@@ -123,12 +123,10 @@ impl<'a, 'b> Converter<'a, 'b> {
         let lines = code.value.lines();
         let indentation = 0;
         let mut highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), lines, indentation).collect::<Vec<_>>();
-        let longest_line_length = highlighted_lines.iter().map(|line| line.len()).max().unwrap_or(0);
 
         // Indent and pad lines
         for highlighted_line in &mut highlighted_lines {
             highlighted_line.indent(1);
-            // highlighted_line.pad_with_spaces(target_line_length);
         }
 
         let fragment = Fragment::Code { language, original: code.value, highlighted_lines };
