@@ -26,4 +26,10 @@ impl Line {
             self.0.push(padding_span);
         }
     }
+
+    pub fn padded_with_spaces(&self, target_length: usize) -> Self {
+        let mut result = self.clone();
+        result.pad_with_spaces(target_length);
+        result
+    }
 }

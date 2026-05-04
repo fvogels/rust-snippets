@@ -241,18 +241,11 @@ impl<'a> DocumentRenderer<'a> {
             let mut translated_spans = vec![ left_margin_span.clone() ];
             let mut accumulated_length = 0;
 
-            line.spans().iter().for_each(|span| {
+            line.padded_with_spaces(code_block_width).spans().iter().for_each(|span| {
                 accumulated_length += span.len();
                 let translated_span = translate_span(span, &style_base);
                 translated_spans.push(translated_span);
             });
-
-            // Add padding if necessary
-            if accumulated_length < code_block_width {
-                let padding_length = code_block_width - accumulated_length;
-                let padding_span = document::Span::spaces(padding_length, Style::default());
-                translated_spans.push(translate_span(&padding_span, &style_base));
-            }
 
             self.lines.push(Line::default().spans(translated_spans));
         }
