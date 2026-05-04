@@ -4,7 +4,15 @@ mod theme;
 mod syntax;
 mod mdconverter;
 
-use rkyv::{Archive, Deserialize, Serialize};
+mod span;
+mod word;
+mod line;
+mod fragment;
+
+pub use span::Span;
+pub use word::Word;
+pub use line::Line;
+pub use fragment::Fragment;
 pub use style::Style;
 pub use color::Color;
 pub use theme::Theme;
@@ -13,66 +21,9 @@ pub use mdconverter::{parse};
 
 pub type Document = Vec<Fragment>;
 
-#[derive(Debug, Archive, Serialize, Deserialize)]
-pub enum Fragment {
-    Heading { words: Vec<Word>, depth: usize, style: Style },
-    Wrapping { words: Vec<Word>, style: Style },
-    Code { language: Option<String>, original: String, highlighted_lines: Vec<Line> },
-    Verbatim { lines: Vec<Line> },
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-pub struct Line(Vec<Span>);
-
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-pub struct TableRow(Vec<Span>);
-
-impl Line {
-    pub fn spans(&self) -> &Vec<Span> {
-        &self.0
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.iter().map(|span| span.len()).sum()
-    }
-
-    fn indent(&mut self, indentation: usize) {
-        let indentation_span = Span{ text: " ".repeat(indentation), style: Style::default() };
-        self.0.insert(0, indentation_span);
-    }
-
-    fn pad_with_spaces(&mut self, target_length: usize) {
-        let padding_size = target_length - self.len();
-        let padding = " ".repeat(padding_size);
-        let padding_span = Span{ text: padding, style: Style::default() };
-        self.0.push(padding_span);
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-pub struct Word(Vec<Span>);
-
-impl Word {
-    pub fn len(&self) -> usize {
-        self.0.iter().map(Span::len).sum()
-    }
-
-    pub fn spans(&self) -> impl Iterator<Item=&Span> {
-        self.0.iter()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-pub struct Span {
-    pub text: String,
-    pub style: Style,
-}
-
-impl Span {
-    pub fn len(&self) -> usize {
-        self.text.len()
-    }
-}
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub struct TableRow(Vec<Span>);
 
 #[cfg(test)]
 mod test {
@@ -145,7 +96,7 @@ mod test {
             assert_eq!(&expected, text);
         }
         else {
-            assert!(false, "fragment should be a paragraph");
+            assert!(false, "fragment should be a Fragment::Wrapping");
         }
     }
 
