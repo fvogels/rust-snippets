@@ -202,7 +202,14 @@ impl<'a> DocumentRenderer<'a> {
         let caption_style = document::Style::default().background(document::Color::gray(128));
         let margin_size = 2;
         let left_margin_span = translate_span(&document::Span::spaces(margin_size, Style::default()), &indentation_style);
-        let code_block_width = self.line_width - 2 * margin_size;
+        let code_block_width = {
+            if self.line_width > 2 * margin_size {
+                self.line_width - 2 * margin_size
+            }
+            else {
+                10
+            }
+        };
 
         // Add line for code block caption
         let code_block_caption = {
