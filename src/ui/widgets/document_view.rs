@@ -199,14 +199,8 @@ impl<'a> DocumentRenderer<'a> {
                 &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
                     self.render_code_fragment(language, code_lines);
                 },
-                document::Fragment::Verbatim { lines: verbatim_lines} => {
-                    let style_base = document::Style::default();
-
-                    for verbatim_line in verbatim_lines {
-                        let translated_spans = verbatim_line.spans().iter().map(|span| translate_span(span, &style_base));
-                        let translated_line = ratatui::text::Line::default().spans(translated_spans);
-                        self.lines.push(translated_line);
-                    }
+                document::Fragment::Verbatim { lines } => {
+                    self.render_verbatim_fragment(lines);
                 }
             }
         }
@@ -218,6 +212,16 @@ impl<'a> DocumentRenderer<'a> {
         self.add_separating_line();
         self.render_wrapped(words, style);
         self.add_separating_line();
+    }
+
+    fn render_verbatim_fragment(&mut self, lines: &Vec<document::Line>) {
+        let style_base = document::Style::default();
+
+        for verbatim_line in lines {
+            let translated_spans = verbatim_line.spans().iter().map(|span| translate_span(span, &style_base));
+            let translated_line = ratatui::text::Line::default().spans(translated_spans);
+            self.lines.push(translated_line);
+        }
     }
 }
 
