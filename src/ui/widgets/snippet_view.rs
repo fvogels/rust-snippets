@@ -1,4 +1,4 @@
-use ratatui::{buffer::Buffer, layout::Rect, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, style::Stylize, text::{Line, Span}, widgets::{Block, Borders, List, Paragraph, StatefulWidget, Widget}};
 
 use crate::{document::{self, Document, Style}, snippets::snippets::{Part, Snippet}, ui::widgets::document_view};
 
@@ -78,10 +78,22 @@ impl<'a> StatefulWidget for SnippetView<'a> {
         };
         let snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
         let block_inner_area = snippet_caption_block.inner(area);
+        let [document_viewer_area, tag_list_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(block_inner_area);
+        let tag_list_block = Block::new().borders(Borders::ALL).title(" Tags ").bg(ratatui::style::Color::Rgb(32, 32, 64));
+        let tag_list_block_inner_area = tag_list_block.inner(tag_list_area);
 
         let document_viewer = document_view::Widget::new(selected_part.document());
 
+        let tag_list = {
+            let mut sorted_tags = self.snippet.tags.iter().map(String::as_str).collect::<Vec<_>>();
+            sorted_tags.sort();
+
+            List::default().items(sorted_tags).style(ratatui::style::Style::new())
+        };
+
         snippet_caption_block.render(area, buffer);
-        document_viewer.render(block_inner_area, buffer);
+        document_viewer.render(document_viewer_area, buffer);
+        tag_list_block.render(tag_list_area, buffer);
+        ratatui::widgets::Widget::render(tag_list, tag_list_block_inner_area, buffer);
     }
 }
