@@ -71,11 +71,9 @@ impl<'a, 'b> Converter<'a, 'b> {
             }).max().unwrap() + 2
         }).collect::<Vec<_>>();
 
-        let empty_line = Line(Vec::new());
         let lines = {
             let mut lines = Vec::new();
 
-            lines.push(empty_line.clone());
             rows.into_iter().enumerate().map(|(row_index, row)| {
                 let style = {
                     if row_index == 0 {
@@ -108,7 +106,6 @@ impl<'a, 'b> Converter<'a, 'b> {
 
                 Line(spans)
             }).for_each(|line| lines.push(line));
-            lines.push(empty_line);
 
             lines
         };
