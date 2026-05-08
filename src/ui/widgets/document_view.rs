@@ -217,11 +217,15 @@ impl<'a> DocumentRenderer<'a> {
     fn render_verbatim_fragment(&mut self, lines: &Vec<document::Line>) {
         let style_base = document::Style::default();
 
+        self.add_separating_line();
+
         for verbatim_line in lines {
             let translated_spans = verbatim_line.spans().iter().map(|span| translate_span(span, &style_base));
             let translated_line = ratatui::text::Line::default().spans(translated_spans);
             self.lines.push(translated_line);
         }
+
+        self.add_separating_line();
     }
 }
 
