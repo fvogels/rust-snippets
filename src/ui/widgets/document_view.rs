@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::document::{self};
+use crate::document;
 
 
 pub struct Widget<'a> {
@@ -94,7 +94,7 @@ impl<'a> DocumentRenderer<'a> {
         self.lines.push(empty_line);
     }
 
-    fn add_wrapped(&mut self, words: &Vec<document::Word>, style: &document::Style) {
+    fn render_wrapped(&mut self, words: &Vec<document::Word>, style: &document::Style) {
         let mut spans = Vec::new();
         let mut acc = 0;
 
@@ -191,12 +191,10 @@ impl<'a> DocumentRenderer<'a> {
         for fragment in document {
             match fragment {
                 document::Fragment::Wrapping{words, style} => {
-                    self.add_wrapped(words, style);
+                    self.render_wrapped(words, style);
                 },
-                document::Fragment::Heading{words, style, depth: _} => {
-                    self.add_separating_line();
-                    self.add_wrapped(words, style);
-                    self.add_separating_line();
+                document::Fragment::Heading{words, style, depth} => {
+                    self.render_heading_fragment(words, style, *depth);
                 },
                 &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
                     self.render_code_fragment(language, code_lines);
@@ -214,6 +212,12 @@ impl<'a> DocumentRenderer<'a> {
         }
 
         ratatui::widgets::Paragraph::new(self.lines)
+    }
+
+    fn render_heading_fragment(&mut self, words: &Vec<document::Word>, style: &document::Style, depth: usize) {
+        self.add_separating_line();
+        self.render_wrapped(words, style);
+        self.add_separating_line();
     }
 }
 
