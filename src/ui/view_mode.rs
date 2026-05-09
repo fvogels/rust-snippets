@@ -39,10 +39,7 @@ impl ViewMode {
             KeyCode::PageDown => self.select_page_down(),
             KeyCode::Home => self.select_first_snippet(),
             KeyCode::End => self.select_last_snippet(),
-            KeyCode::Tab => {
-                self.snippet_view_state.select_next();
-                self.remain_in_view_mode()
-            },
+            KeyCode::Tab => self.select_next_snippet_part(),
             KeyCode::BackTab => {
                 self.snippet_view_state.select_previous();
                 self.remain_in_view_mode()
@@ -250,6 +247,11 @@ impl ViewMode {
             self.snippet_view_state.select_first();
         }
 
+        self.remain_in_view_mode()
+    }
+
+    fn select_next_snippet_part(mut self) -> Mode {
+        self.snippet_view_state.select_next();
         self.remain_in_view_mode()
     }
 }
