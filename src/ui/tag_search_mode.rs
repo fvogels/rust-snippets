@@ -29,6 +29,10 @@ impl TagSearchMode {
                     self.state.select_tag(selected_tag.clone());
                     self.state.refresh();
                 }
+                else {
+                    self.state.tag_input = None;
+                    self.state.refresh();
+                }
 
                 Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
             },
