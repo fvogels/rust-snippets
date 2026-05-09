@@ -12,11 +12,13 @@ impl TagSearchMode {
         match key_event.code {
             KeyCode::Up => {
                 self.tags_view_state.select_previous();
-                Mode::TagSearch(self)
+
+                self.remain_in_tag_search_mode()
             },
             KeyCode::Down => {
                 self.tags_view_state.select_next();
-                Mode::TagSearch(self)
+
+                self.remain_in_tag_search_mode()
             },
             KeyCode::Esc => {
                 self.state.tag_input = None;
@@ -43,7 +45,7 @@ impl TagSearchMode {
                     self.state.refresh();
                 }
 
-                Mode::TagSearch(self)
+                self.remain_in_tag_search_mode()
             },
             KeyCode::Backspace => {
                 if let Some(mut s) = self.state.tag_input {
@@ -59,7 +61,7 @@ impl TagSearchMode {
                     self.tags_view_state.ensure_selection();
                 }
 
-                Mode::TagSearch(self)
+                self.remain_in_tag_search_mode()
             },
             KeyCode::Char(mut char) if valid_filter_character(char) => {
                 char = char.to_ascii_lowercase();
@@ -76,10 +78,14 @@ impl TagSearchMode {
 
                 self.state.refresh();
 
-                Mode::TagSearch(self)
+                self.remain_in_tag_search_mode()
             },
-            _ => Mode::TagSearch(self)
+            _ => self.remain_in_tag_search_mode()
         }
+    }
+
+    fn remain_in_tag_search_mode(self) -> Mode {
+        Mode::TagSearch(self)
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
