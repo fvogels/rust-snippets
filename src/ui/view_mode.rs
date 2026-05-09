@@ -30,9 +30,7 @@ impl ViewMode {
 
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
-            KeyCode::Char('q') => {
-                Mode::Terminated
-            },
+            KeyCode::Char('q') => self.quit(),
             KeyCode::Char('/') => {
                 Mode::Search(SearchMode { state: self.state, description_list_state: self.description_list_state, snippet_view_state: self.snippet_view_state })
             },
@@ -229,6 +227,10 @@ impl ViewMode {
         self.state.snippet_layout.toggle_maximize_snippet();
 
         self.remain_in_view_mode()
+    }
+
+    fn quit(self) -> Mode {
+        Mode::Terminated
     }
 }
 
