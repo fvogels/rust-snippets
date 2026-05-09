@@ -25,6 +25,14 @@ impl TagsViewState {
         self.available_tag_list_state.select_previous();
     }
 
+    pub fn select_first(&mut self) {
+        self.available_tag_list_state.select_first();
+    }
+
+    pub fn select_last(&mut self) {
+        self.available_tag_list_state.select_last();
+    }
+
     pub fn ensure_selection(&mut self) {
         if self.available_tag_list_state.selected().is_none() {
             self.available_tag_list_state = self.available_tag_list_state.with_selected(Some(0));

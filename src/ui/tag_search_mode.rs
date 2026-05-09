@@ -12,12 +12,18 @@ impl TagSearchMode {
         match key_event.code {
             KeyCode::Up => {
                 self.tags_view_state.select_previous();
-
                 self.remain_in_tag_search_mode()
             },
             KeyCode::Down => {
                 self.tags_view_state.select_next();
-
+                self.remain_in_tag_search_mode()
+            },
+            KeyCode::Home => {
+                self.tags_view_state.select_first();
+                self.remain_in_tag_search_mode()
+            },
+            KeyCode::End => {
+                self.tags_view_state.select_last();
                 self.remain_in_tag_search_mode()
             },
             KeyCode::Esc => {
