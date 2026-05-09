@@ -34,15 +34,7 @@ impl ViewMode {
             KeyCode::Char('/') => self.switch_to_search_mode(),
             KeyCode::Char('#') => self.switch_to_tag_search_mode(),
             KeyCode::Up => self.select_previous_snippet(),
-            KeyCode::Down => {
-                let previously_selected = self.description_list_state.selected();
-                self.description_list_state.select_next();
-                if self.description_list_state.selected() != previously_selected {
-                    self.snippet_view_state.select_first();
-                }
-
-                self.remain_in_view_mode()
-            },
+            KeyCode::Down => self.select_next_snippet(),
             KeyCode::PageUp => {
                 let previously_selected = self.description_list_state.selected();
                 self.description_list_state.scroll_up_by(self.description_list_page_size);
@@ -233,9 +225,19 @@ impl ViewMode {
         })
     }
 
-    fn select_previous_snippet(self) -> Mode {
+    fn select_previous_snippet(mut self) -> Mode {
         let previously_selected = self.description_list_state.selected();
         self.description_list_state.select_previous();
+        if self.description_list_state.selected() != previously_selected {
+            self.snippet_view_state.select_first();
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn select_next_snippet(mut self) -> Mode {
+        let previously_selected = self.description_list_state.selected();
+        self.description_list_state.select_next();
         if self.description_list_state.selected() != previously_selected {
             self.snippet_view_state.select_first();
         }
