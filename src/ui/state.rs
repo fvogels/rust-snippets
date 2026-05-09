@@ -64,6 +64,20 @@ pub struct State {
 
     // Width of the tag pane
     pub tag_view_width: u16,
+
+    // Determines the relative sizes of the snippet list view and the snippet view
+    pub snippet_layout: SnippetLayout,
+}
+
+pub enum SnippetLayout {
+    // Only show list
+    OnlyList,
+
+    // Show only snippet
+    OnlySnippet,
+
+    // Share vertical space between list and snippet view. The parameter is the size of the list.
+    Share(u16),
 }
 
 impl State {
@@ -79,6 +93,7 @@ impl State {
             keywords: Vec::new(),
             tag_input: None,
             tag_view_width,
+            snippet_layout: SnippetLayout::Share(20),
         }
     }
 

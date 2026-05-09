@@ -140,13 +140,17 @@ impl TagSearchMode {
 
 impl Widget for &mut TagSearchMode {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let [upper_area, input_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
-        let [tag_list_area, right_area] = Layout::horizontal([Constraint::Length(self.state.tag_view_width), Constraint::Fill(1)]).areas(upper_area);
-        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
+        let (tag_list_area, snippet_list_area, snippet_area, bottom_line_area) = {
+            let [upper_area, bottom_line_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+            let [tag_list_area, right_area] = Layout::horizontal([Constraint::Length(self.state.tag_view_width), Constraint::Fill(1)]).areas(upper_area);
+            let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
+
+            (tag_list_area, snippet_list_area, snippet_area, bottom_line_area)
+        };
 
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_selected_snippet(snippet_area, buffer);
-        self.render_input_field(input_area, buffer);
+        self.render_input_field(bottom_line_area, buffer);
         self.render_tag_list(tag_list_area, buffer);
     }
 }
