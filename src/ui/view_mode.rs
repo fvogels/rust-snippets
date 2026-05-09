@@ -28,7 +28,7 @@ impl ViewMode {
         }
     }
 
-    fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
+    fn handle_key_event(self, key_event: KeyEvent) -> Mode {
         match key_event.code {
             KeyCode::Char('q') => self.quit(),
             KeyCode::Char('/') => self.switch_to_search_mode(),
@@ -47,23 +47,7 @@ impl ViewMode {
             KeyCode::Char('-') => self.decrease_snippet_list_size(),
             KeyCode::Char('*') => self.toggle_maximize_snippet_list(),
             KeyCode::Char('.') => self.toggle_maximize_snippet_view(),
-            KeyCode::Char(digit) if digit.is_ascii_digit() => {
-                if let Some(index) = self.description_list_state.selected() {
-                    let snippet_id = &self.state.visible_snippets[index];
-                    let snippet = self.state.library.snippet(*snippet_id);
-                    if let Some(one_based_index) = digit.to_digit(10) {
-                        let index = one_based_index - 1;
-                        if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
-                            if let Some(source_code) = part.find_code_block_with_index(index as usize) {
-                                if let Err(error) = cli_clipboard::set_contents(source_code.to_owned()) {
-                                    panic!("failed to copy snippet to clipboard: {}", error)
-                                }
-                            }
-                        }
-                    }
-                }
-                self.remain_in_view_mode()
-            },
+            KeyCode::Char(digit) if digit.is_ascii_digit() => self.copy_to_clipboard(digit),
             _ => self.remain_in_view_mode()
         }
     }
@@ -258,6 +242,24 @@ impl ViewMode {
     fn pop_tag(mut self) -> Mode {
         self.state.pop_selected_tag();
         self.state.refresh();
+        self.remain_in_view_mode()
+    }
+
+    fn copy_to_clipboard(self, digit: char) -> Mode {
+        if let Some(index) = self.description_list_state.selected() {
+            let snippet_id = &self.state.visible_snippets[index];
+            let snippet = self.state.library.snippet(*snippet_id);
+            if let Some(one_based_index) = digit.to_digit(10) {
+                let index = one_based_index - 1;
+                if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
+                    if let Some(source_code) = part.find_code_block_with_index(index as usize) {
+                        if let Err(error) = cli_clipboard::set_contents(source_code.to_owned()) {
+                            panic!("failed to copy snippet to clipboard: {}", error)
+                        }
+                    }
+                }
+            }
+        }
         self.remain_in_view_mode()
     }
 }
