@@ -117,6 +117,8 @@ impl ViewMode {
             },
             KeyCode::Char('+') => self.increase_snippet_list_size(),
             KeyCode::Char('-') => self.decrease_snippet_list_size(),
+            KeyCode::Char('*') => self.toggle_maximize_snippet_list(),
+            KeyCode::Char('.') => self.toggle_maximize_snippet_view(),
             KeyCode::Char(digit) if digit.is_ascii_digit() => {
                 if let Some(index) = self.description_list_state.selected() {
                     let snippet_id = &self.state.visible_snippets[index];
@@ -212,6 +214,18 @@ impl ViewMode {
 
     fn decrease_snippet_list_size(mut self) -> Mode {
         self.state.snippet_layout.decrease_list_height();
+
+        self.remain_in_view_mode()
+    }
+
+    fn toggle_maximize_snippet_list(mut self) -> Mode {
+        self.state.snippet_layout.toggle_maximize_list();
+
+        self.remain_in_view_mode()
+    }
+
+    fn toggle_maximize_snippet_view(mut self) -> Mode {
+        self.state.snippet_layout.toggle_maximize_snippet();
 
         self.remain_in_view_mode()
     }

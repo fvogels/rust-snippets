@@ -83,7 +83,9 @@ pub enum SnippetLayout {
 impl SnippetLayout {
     pub fn increase_list_height(&mut self) {
         match self {
-            Self::OnlyList => { },
+            Self::OnlyList => {
+                *self = SnippetLayout::Share(15);
+            },
             Self::OnlySnippet => {
                 *self = SnippetLayout::Share(15);
             },
@@ -95,7 +97,9 @@ impl SnippetLayout {
 
     pub fn decrease_list_height(&mut self) {
         match self {
-            Self::OnlyList => { },
+            Self::OnlyList => {
+                *self = SnippetLayout::Share(15);
+            },
             Self::OnlySnippet => {
                 *self = SnippetLayout::Share(15);
             },
@@ -103,6 +107,34 @@ impl SnippetLayout {
                 if *height > 2 {
                     *height = *height - 1;
                 }
+            }
+        }
+    }
+
+    pub fn toggle_maximize_list(&mut self) {
+        match self {
+            Self::OnlyList => {
+                *self = SnippetLayout::Share(15);
+            },
+            Self::OnlySnippet => {
+                *self = SnippetLayout::OnlyList;
+            },
+            Self::Share(height) => {
+                *self = SnippetLayout::OnlyList;
+            }
+        }
+    }
+
+    pub fn toggle_maximize_snippet(&mut self) {
+        match self {
+            Self::OnlyList => {
+                *self = SnippetLayout::OnlySnippet;
+            },
+            Self::OnlySnippet => {
+                *self = SnippetLayout::Share(15);
+            },
+            Self::Share(height) => {
+                *self = SnippetLayout::OnlySnippet;
             }
         }
     }
