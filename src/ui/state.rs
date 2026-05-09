@@ -119,7 +119,7 @@ impl SnippetLayout {
             Self::OnlySnippet => {
                 *self = SnippetLayout::OnlyList;
             },
-            Self::Share(height) => {
+            Self::Share(_) => {
                 *self = SnippetLayout::OnlyList;
             }
         }
@@ -133,7 +133,7 @@ impl SnippetLayout {
             Self::OnlySnippet => {
                 *self = SnippetLayout::Share(15);
             },
-            Self::Share(height) => {
+            Self::Share(_) => {
                 *self = SnippetLayout::OnlySnippet;
             }
         }

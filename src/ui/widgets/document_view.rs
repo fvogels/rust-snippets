@@ -208,7 +208,7 @@ impl<'a> DocumentRenderer<'a> {
         ratatui::widgets::Paragraph::new(self.lines)
     }
 
-    fn render_heading_fragment(&mut self, words: &Vec<document::Word>, style: &document::Style, depth: usize) {
+    fn render_heading_fragment(&mut self, words: &Vec<document::Word>, style: &document::Style, _depth: usize) {
         self.add_separating_line();
         self.render_wrapped(words, style);
         self.add_separating_line();

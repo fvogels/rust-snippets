@@ -1,6 +1,6 @@
-use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, style::Stylize, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, Paragraph, StatefulWidget, Widget}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, StatefulWidget, Widget}};
 
-use crate::{document::{self, Document, Style}, snippets::snippets::{Part, Snippet}, ui::widgets::{document_view, metadata_view}};
+use crate::{snippets::snippets::{Part, Snippet}, ui::widgets::{document_view, metadata_view}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,

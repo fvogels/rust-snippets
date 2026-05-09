@@ -167,10 +167,6 @@ impl Part {
         Part{ attributes, source, syntax_highlighter, contents: OnceCell::new() }
     }
 
-    pub fn language(&self) -> Option<&str> {
-        self.attributes.get("language").map(String::as_str)
-    }
-
     pub fn caption(&self) -> Option<&str> {
         self.attributes.get("caption").map(String::as_str)
     }
