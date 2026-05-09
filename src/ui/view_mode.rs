@@ -32,13 +32,7 @@ impl ViewMode {
         match key_event.code {
             KeyCode::Char('q') => self.quit(),
             KeyCode::Char('/') => self.switch_to_search_mode(),
-            KeyCode::Char('#') => {
-                Mode::TagSearch(TagSearchMode {
-                    state: self.state,
-                    tags_view_state: TagsViewState::new(),
-                    tag_page_size: None,
-                })
-            },
+            KeyCode::Char('#') => self.switch_to_tag_search_mode(),
             KeyCode::Up => {
                 let previously_selected = self.description_list_state.selected();
                 self.description_list_state.select_previous();
@@ -236,6 +230,14 @@ impl ViewMode {
             state: self.state,
             description_list_state: self.description_list_state,
             snippet_view_state: self.snippet_view_state
+        })
+    }
+
+    fn switch_to_tag_search_mode(self) -> Mode {
+        Mode::TagSearch(TagSearchMode {
+            state: self.state,
+            tags_view_state: TagsViewState::new(),
+            tag_page_size: None,
         })
     }
 }
