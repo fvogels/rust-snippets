@@ -61,10 +61,16 @@ pub struct State {
 
     // Partially inputted tag
     pub tag_input: Option<String>,
+
+    // Width of the tag pane
+    pub tag_view_width: u16,
 }
 
 impl State {
     pub fn new(library: Library) -> State {
+        // Compute length of longest tag, add 2 for border, add 1 for breathing space
+        let tag_view_width = library.tags().iter().map(|tag| tag.len() as u16).max().unwrap_or(0) + 3;
+
         State {
             visible_snippets: library.snippets().collect(),
             visible_tags: library.tags().clone(),
@@ -72,6 +78,7 @@ impl State {
             selected_tags: Vec::new(),
             keywords: Vec::new(),
             tag_input: None,
+            tag_view_width,
         }
     }
 
