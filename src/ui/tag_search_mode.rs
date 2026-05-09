@@ -19,6 +19,8 @@ impl TagSearchMode {
                 Mode::TagSearch(self)
             },
             KeyCode::Esc => {
+                self.state.tag_input = None;
+                self.state.refresh();
                 Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
             },
             KeyCode::Enter => {
