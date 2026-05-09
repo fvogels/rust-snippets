@@ -1,6 +1,6 @@
-use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, style::Stylize, text::{Line, Span}, widgets::{Block, Borders, List, Paragraph, StatefulWidget, Widget}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, style::Stylize, text::{Line, Span}, widgets::{Block, Borders, List, ListItem, Paragraph, StatefulWidget, Widget}};
 
-use crate::{document::{self, Document, Style}, snippets::snippets::{Part, Snippet}, ui::widgets::document_view};
+use crate::{document::{self, Document, Style}, snippets::snippets::{Part, Snippet}, ui::widgets::{document_view, metadata_view}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
@@ -65,35 +65,46 @@ impl<'a> StatefulWidget for SnippetView<'a> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let (selected_part_index, selected_part) = self.selected_snippet_part(state);
 
-        let bottom_title = {
-            let one_based_index = selected_part_index + 1;
-            let part_count = self.snippet.parts.len();
+        let snippet_caption_block = {
+            let bottom_title = {
+                let one_based_index = selected_part_index + 1;
+                let part_count = self.snippet.parts.len();
 
-            let caption = match selected_part.caption() {
-                Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
-                None => format!(" {}/{} ", one_based_index, part_count),
+                let caption = match selected_part.caption() {
+                    Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
+                    None => format!(" {}/{} ", one_based_index, part_count),
+                };
+
+                Line::raw(caption)
             };
 
-            Line::raw(caption)
+            Block::new().title_bottom(bottom_title).borders(Borders::ALL)
         };
-        let snippet_caption_block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
-        let block_inner_area = snippet_caption_block.inner(area);
-        let [document_viewer_area, tag_list_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(block_inner_area);
-        let tag_list_block = Block::new().borders(Borders::ALL).title(" Tags ").bg(ratatui::style::Color::Rgb(32, 32, 64));
-        let tag_list_block_inner_area = tag_list_block.inner(tag_list_area);
+        let (document_viewer_area, metadata_area) = {
+            let block_inner_area = snippet_caption_block.inner(area);
+            let [document_viewer_area, metadata_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(block_inner_area);
+            (document_viewer_area, metadata_area)
+        };
 
         let document_viewer = document_view::Widget::new(selected_part.document());
+        let metadata_viewer = {
+            let tag_category = {
+                let sorted_tags = {
+                    let mut tags = self.snippet.tags.iter().cloned().collect::<Vec<_>>();
+                    tags.sort();
+                    tags
+                };
 
-        let tag_list = {
-            let mut sorted_tags = self.snippet.tags.iter().map(String::as_str).collect::<Vec<_>>();
-            sorted_tags.sort();
+                metadata_view::Category { caption: "Tags".to_owned(), entries: sorted_tags }
+            };
 
-            List::default().items(sorted_tags).style(ratatui::style::Style::new())
+            let categories = vec![tag_category];
+
+            metadata_view::Widget::new(categories)
         };
 
         snippet_caption_block.render(area, buffer);
         document_viewer.render(document_viewer_area, buffer);
-        tag_list_block.render(tag_list_area, buffer);
-        ratatui::widgets::Widget::render(tag_list, tag_list_block_inner_area, buffer);
+        metadata_viewer.render(metadata_area, buffer);
     }
 }
