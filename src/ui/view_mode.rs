@@ -6,7 +6,7 @@ pub(super) struct ViewMode {
     pub state: State,
     pub(super) description_list_state: description_list::State,
     pub(super) snippet_view_state: SnippetViewState,
-    description_list_page_size: u16,
+    description_list_page_size: u16, // Amount to jump when pressing page up/page down
 }
 
 impl ViewMode {
