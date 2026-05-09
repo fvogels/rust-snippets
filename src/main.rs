@@ -6,6 +6,7 @@ mod util;
 mod cli;
 mod ui;
 mod document;
+mod timing;
 
 
 fn main() {
