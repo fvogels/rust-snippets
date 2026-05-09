@@ -44,39 +44,39 @@ impl Mode {
 }
 
 pub struct State {
-    // Entire library of snippets
+    /// Entire library of snippets
     pub library: Library,
 
-    // Tags selected by the user
+    /// Tags selected by the user
     pub selected_tags: Vec<String>,
 
-    // Keywords used to filter snippets
+    /// Keywords used to filter snippets
     pub keywords: Vec<String>,
 
-    // Snippets that have the selected tags associated with them and satisfy the keywords filter
+    /// Snippets that have the selected tags associated with them and satisfy the keywords filter
     pub visible_snippets: Vec<usize>,
 
-    // Tags that can be used to discriminate between snippets. These appear in the tag selection pane.
+    /// Tags that can be used to discriminate between snippets. These appear in the tag selection pane.
     pub visible_tags: Vec<String>,
 
-    // Partially inputted tag
+    /// Partially inputted tag
     pub tag_input: Option<String>,
 
-    // Width of the tag pane
+    /// Width of the tag pane
     pub tag_view_width: u16,
 
-    // Determines the relative sizes of the snippet list view and the snippet view
+    /// Determines the relative sizes of the snippet list view and the snippet view
     pub snippet_layout: SnippetLayout,
 }
 
 pub enum SnippetLayout {
-    // Only show list
+    /// Only show list
     OnlyList,
 
-    // Show only snippet
+    /// Show only snippet
     OnlySnippet,
 
-    // Share vertical space between list and snippet view. The parameter is the size of the list.
+    /// Share vertical space between list and snippet view. The parameter is the size of the list.
     Share(u16),
 }
 
