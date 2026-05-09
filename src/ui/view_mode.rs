@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, widgets::{Block, Borders, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, SnippetLayout, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -115,6 +115,8 @@ impl ViewMode {
                 self.state.refresh();
                 self.remain_in_view_mode()
             },
+            KeyCode::Char('+') => self.increase_snippet_list_size(),
+            KeyCode::Char('-') => self.decrease_snippet_list_size(),
             KeyCode::Char(digit) if digit.is_ascii_digit() => {
                 if let Some(index) = self.description_list_state.selected() {
                     let snippet_id = &self.state.visible_snippets[index];
@@ -201,6 +203,18 @@ impl ViewMode {
     fn remain_in_view_mode(self) -> Mode {
         Mode::View(self)
     }
+
+    fn increase_snippet_list_size(mut self) -> Mode {
+        self.state.snippet_layout.increase_list_height();
+
+        self.remain_in_view_mode()
+    }
+
+    fn decrease_snippet_list_size(mut self) -> Mode {
+        self.state.snippet_layout.decrease_list_height();
+
+        self.remain_in_view_mode()
+    }
 }
 
 impl Widget for &mut ViewMode {
@@ -208,13 +222,33 @@ impl Widget for &mut ViewMode {
         let (tag_list_area, snippet_list_area, snippet_area, bottom_line_area) = {
             let [upper_area, bottom_line_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
             let [tag_list_area, right_area] = Layout::horizontal([Constraint::Length(self.state.tag_view_width), Constraint::Fill(1)]).areas(upper_area);
-            let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
+
+            let (snippet_list_area, snippet_area) = {
+                match self.state.snippet_layout {
+                    SnippetLayout::OnlyList => {
+                        (Some(right_area), None)
+                    },
+                    SnippetLayout::OnlySnippet => {
+                        (None, Some(right_area))
+                    },
+                    SnippetLayout::Share(list_height) => {
+                        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(list_height), Constraint::Fill(1)]).areas(right_area);
+                        (Some(snippet_list_area), Some(snippet_area))
+                    }
+                }
+            };
 
             (tag_list_area, snippet_list_area, snippet_area, bottom_line_area)
         };
 
-        self.render_snippet_list(snippet_list_area, buffer);
-        self.render_selected_snippet(snippet_area, buffer);
+        if let Some(snippet_list_area) = snippet_list_area {
+            self.render_snippet_list(snippet_list_area, buffer);
+        }
+
+        if let Some(snippet_area) = snippet_area {
+            self.render_selected_snippet(snippet_area, buffer);
+        }
+
         self.render_keybindings(bottom_line_area, buffer);
         self.render_tag_list(tag_list_area, buffer);
     }

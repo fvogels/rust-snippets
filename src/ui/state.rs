@@ -80,6 +80,34 @@ pub enum SnippetLayout {
     Share(u16),
 }
 
+impl SnippetLayout {
+    pub fn increase_list_height(&mut self) {
+        match self {
+            Self::OnlyList => { },
+            Self::OnlySnippet => {
+                *self = SnippetLayout::Share(15);
+            },
+            Self::Share(height) => {
+                *height = *height + 1;
+            }
+        }
+    }
+
+    pub fn decrease_list_height(&mut self) {
+        match self {
+            Self::OnlyList => { },
+            Self::OnlySnippet => {
+                *self = SnippetLayout::Share(15);
+            },
+            Self::Share(height) => {
+                if *height > 2 {
+                    *height = *height - 1;
+                }
+            }
+        }
+    }
+}
+
 impl State {
     pub fn new(library: Library) -> State {
         // Compute length of longest tag, add 2 for border, add 1 for breathing space
