@@ -44,11 +44,22 @@ impl Mode {
 }
 
 pub struct State {
+    // Entire library of snippets
     pub library: Library,
+
+    // Tags selected by the user
     pub selected_tags: Vec<String>,
+
+    // Keywords used to filter snippets
     pub keywords: Vec<String>,
+
+    // Snippets that have the selected tags associated with them and satisfy the keywords filter
     pub visible_snippets: Vec<usize>,
+
+    // Tags that can be used to discriminate between snippets. These appear in the tag selection pane.
     pub visible_tags: Vec<String>,
+
+    // Partially inputted tag
     pub tag_input: Option<String>,
 }
 
