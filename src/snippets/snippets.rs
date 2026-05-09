@@ -38,7 +38,7 @@ pub mod raw {
     #[derive(Debug, serde::Deserialize)]
     struct Metadata {
         description: String,
-        tags: Vec<String>,
+        tags: Option<Vec<String>>,
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
@@ -88,7 +88,7 @@ pub mod raw {
                 return Err(SnippetError::MissingSnippetSegments);
             }
 
-            let mut tags = metadata.tags;
+            let mut tags = metadata.tags.unwrap_or_default();
             for path_component in path.iter() {
                 tags.push(path_component.clone());
             }
