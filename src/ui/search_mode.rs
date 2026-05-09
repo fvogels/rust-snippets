@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Color, Stylize}, text::{Line, Span}, widgets::{Block, Borders, Paragraph, StatefulWidget, Widget}};
-use crate::ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{description_list, snippet_view::{SnippetView, SnippetViewState}, tags_view::TagsView}};
+use crate::ui::{state::{Mode, SnippetLayout, State}, view_mode::ViewMode, widgets::{description_list, snippet_view::{SnippetView, SnippetViewState}, tags_view::TagsView}};
 
 
 pub(super) struct SearchMode {
@@ -172,13 +172,33 @@ impl Widget for &mut SearchMode {
         let (tag_list_area, snippet_list_area, snippet_area, bottom_line_area) = {
             let [upper_area, bottom_line_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
             let [tag_list_area, right_area] = Layout::horizontal([Constraint::Length(self.state.tag_view_width), Constraint::Fill(1)]).areas(upper_area);
-            let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(15), Constraint::Fill(1)]).areas(right_area);
+
+            let (snippet_list_area, snippet_area) = {
+                match self.state.snippet_layout {
+                    SnippetLayout::OnlyList => {
+                        (Some(right_area), None)
+                    },
+                    SnippetLayout::OnlySnippet => {
+                        (None, Some(right_area))
+                    },
+                    SnippetLayout::Share(list_height) => {
+                        let [snippet_list_area, snippet_area] = Layout::vertical([Constraint::Length(list_height), Constraint::Fill(1)]).areas(right_area);
+                        (Some(snippet_list_area), Some(snippet_area))
+                    }
+                }
+            };
 
             (tag_list_area, snippet_list_area, snippet_area, bottom_line_area)
         };
 
-        self.render_snippet_list(snippet_list_area, buffer);
-        self.render_selected_snippet(snippet_area, buffer);
+        if let Some(snippet_list_area) = snippet_list_area {
+            self.render_snippet_list(snippet_list_area, buffer);
+        }
+
+        if let Some(snippet_area) = snippet_area {
+            self.render_selected_snippet(snippet_area, buffer);
+        }
+
         self.render_input_field(bottom_line_area, buffer);
         self.render_tag_list(tag_list_area, buffer);
     }
