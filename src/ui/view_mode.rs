@@ -49,7 +49,7 @@ impl ViewMode {
                     self.snippet_view_state.select_first();
                 }
 
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::Down => {
                 let previously_selected = self.description_list_state.selected();
@@ -58,7 +58,7 @@ impl ViewMode {
                     self.snippet_view_state.select_first();
                 }
 
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::PageUp => {
                 let previously_selected = self.description_list_state.selected();
@@ -67,7 +67,7 @@ impl ViewMode {
                     self.snippet_view_state.select_first();
                 }
 
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::PageDown => {
                 let previously_selected = self.description_list_state.selected();
@@ -76,7 +76,7 @@ impl ViewMode {
                     self.snippet_view_state.select_first();
                 }
 
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::Home => {
                 let previously_selected = self.description_list_state.selected();
@@ -85,7 +85,7 @@ impl ViewMode {
                     self.snippet_view_state.select_first();
                 }
 
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::End => {
                 let previously_selected = self.description_list_state.selected();
@@ -94,25 +94,25 @@ impl ViewMode {
                     self.snippet_view_state.select_first();
                 }
 
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::Tab => {
                 self.snippet_view_state.select_next();
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::BackTab => {
                 self.snippet_view_state.select_previous();
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::Char('?') => {
                 self.state.clear_keywords();
                 self.state.refresh();
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::Delete => {
                 self.state.pop_selected_tag();
                 self.state.refresh();
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
             KeyCode::Char(digit) if digit.is_ascii_digit() => {
                 if let Some(index) = self.description_list_state.selected() {
@@ -129,9 +129,9 @@ impl ViewMode {
                         }
                     }
                 }
-                Mode::View(self)
+                self.remain_in_view_mode()
             },
-            _ => Mode::View(self)
+            _ => self.remain_in_view_mode()
         }
     }
 
@@ -195,6 +195,10 @@ impl ViewMode {
             },
             _ => Mode::View(self),
         }
+    }
+
+    fn remain_in_view_mode(self) -> Mode {
+        Mode::View(self)
     }
 }
 
