@@ -2,7 +2,7 @@ use std::{io, mem};
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event};
 
-use crate::{snippets::Library, ui::Mode};
+use crate::{snippets::Library, timing, ui::Mode};
 
 pub struct Application {
     mode: Mode,
@@ -25,7 +25,8 @@ impl Application {
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        self.mode.draw(frame)
+        let (_, duration) = timing::measure(|| self.mode.draw(frame));
+        log::info!("Rendering frame took {}ms", duration.as_millis());
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
