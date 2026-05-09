@@ -109,18 +109,6 @@ impl TagSearchMode {
         Widget::render(description_list_view, area, buffer);
     }
 
-    fn render_selected_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
-        let snippet_id = self.state.visible_snippets.get(0);
-
-        if let Some(snippet_id) = snippet_id {
-            let snippet = self.state.library.snippet(*snippet_id);
-            let snippet_view = SnippetView::new(snippet);
-
-            let mut snippet_view_state = SnippetViewState::new();
-            snippet_view.render(area, buffer, &mut snippet_view_state);
-        }
-    }
-
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let selected_tags = self.state.selected_tags.iter().map(String::as_str);
         let available_tags = self.state.visible_tags.iter().map(String::as_str);
