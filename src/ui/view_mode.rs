@@ -42,11 +42,7 @@ impl ViewMode {
             KeyCode::Tab => self.select_next_snippet_part(),
             KeyCode::BackTab => self.select_previous_snippet_part(),
             KeyCode::Char('?') => self.clear_search(),
-            KeyCode::Delete => {
-                self.state.pop_selected_tag();
-                self.state.refresh();
-                self.remain_in_view_mode()
-            },
+            KeyCode::Delete => self.pop_tag(),
             KeyCode::Char('+') => self.increase_snippet_list_size(),
             KeyCode::Char('-') => self.decrease_snippet_list_size(),
             KeyCode::Char('*') => self.toggle_maximize_snippet_list(),
@@ -255,6 +251,12 @@ impl ViewMode {
     fn clear_search(mut self) -> Mode {
         self.state.clear_keywords();
         self.description_list_state.select_first();
+        self.state.refresh();
+        self.remain_in_view_mode()
+    }
+
+    fn pop_tag(mut self) -> Mode {
+        self.state.pop_selected_tag();
         self.state.refresh();
         self.remain_in_view_mode()
     }
