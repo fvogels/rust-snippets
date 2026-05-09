@@ -106,6 +106,7 @@ impl ViewMode {
             },
             KeyCode::Char('?') => {
                 self.state.clear_keywords();
+                self.description_list_state.select_first();
                 self.state.refresh();
                 self.remain_in_view_mode()
             },
