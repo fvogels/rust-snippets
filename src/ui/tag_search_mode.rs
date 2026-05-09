@@ -5,6 +5,7 @@ use crate::ui::{state::{Mode, State}, view_mode::ViewMode, widgets::{description
 pub(super) struct TagSearchMode {
     pub state: State,
     pub(super) tags_view_state: TagsViewState,
+    pub(super) tag_page_size: Option<usize>,
 }
 
 impl TagSearchMode {
@@ -24,6 +25,14 @@ impl TagSearchMode {
             },
             KeyCode::End => {
                 self.tags_view_state.select_last();
+                self.remain_in_tag_search_mode()
+            },
+            KeyCode::PageDown => {
+                self.tags_view_state.select_page_down(self.tag_page_size.unwrap_or(10));
+                self.remain_in_tag_search_mode()
+            },
+            KeyCode::PageUp => {
+                self.tags_view_state.select_page_up(self.tag_page_size.unwrap_or(10));
                 self.remain_in_tag_search_mode()
             },
             KeyCode::Esc => {
@@ -152,6 +161,8 @@ impl Widget for &mut TagSearchMode {
 
             (tag_list_area, snippet_list_area, bottom_line_area)
         };
+
+        self.tag_page_size = Some((tag_list_area.height - 2) as usize);
 
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_input_field(bottom_line_area, buffer);

@@ -40,6 +40,7 @@ impl ViewMode {
                 Mode::TagSearch(TagSearchMode {
                     state: self.state,
                     tags_view_state: TagsViewState::new(),
+                    tag_page_size: None,
                 })
             },
             KeyCode::Up => {
