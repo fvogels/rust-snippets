@@ -40,10 +40,7 @@ impl ViewMode {
             KeyCode::Home => self.select_first_snippet(),
             KeyCode::End => self.select_last_snippet(),
             KeyCode::Tab => self.select_next_snippet_part(),
-            KeyCode::BackTab => {
-                self.snippet_view_state.select_previous();
-                self.remain_in_view_mode()
-            },
+            KeyCode::BackTab => self.select_previous_snippet_part(),
             KeyCode::Char('?') => {
                 self.state.clear_keywords();
                 self.description_list_state.select_first();
@@ -252,6 +249,11 @@ impl ViewMode {
 
     fn select_next_snippet_part(mut self) -> Mode {
         self.snippet_view_state.select_next();
+        self.remain_in_view_mode()
+    }
+
+    fn select_previous_snippet_part(mut self) -> Mode {
+        self.snippet_view_state.select_previous();
         self.remain_in_view_mode()
     }
 }
