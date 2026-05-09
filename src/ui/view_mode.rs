@@ -33,15 +33,7 @@ impl ViewMode {
             KeyCode::Char('q') => self.quit(),
             KeyCode::Char('/') => self.switch_to_search_mode(),
             KeyCode::Char('#') => self.switch_to_tag_search_mode(),
-            KeyCode::Up => {
-                let previously_selected = self.description_list_state.selected();
-                self.description_list_state.select_previous();
-                if self.description_list_state.selected() != previously_selected {
-                    self.snippet_view_state.select_first();
-                }
-
-                self.remain_in_view_mode()
-            },
+            KeyCode::Up => self.select_previous_snippet(),
             KeyCode::Down => {
                 let previously_selected = self.description_list_state.selected();
                 self.description_list_state.select_next();
@@ -239,6 +231,16 @@ impl ViewMode {
             tags_view_state: TagsViewState::new(),
             tag_page_size: None,
         })
+    }
+
+    fn select_previous_snippet(self) -> Mode {
+        let previously_selected = self.description_list_state.selected();
+        self.description_list_state.select_previous();
+        if self.description_list_state.selected() != previously_selected {
+            self.snippet_view_state.select_first();
+        }
+
+        self.remain_in_view_mode()
     }
 }
 
