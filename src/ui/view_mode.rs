@@ -35,24 +35,8 @@ impl ViewMode {
             KeyCode::Char('#') => self.switch_to_tag_search_mode(),
             KeyCode::Up => self.select_previous_snippet(),
             KeyCode::Down => self.select_next_snippet(),
-            KeyCode::PageUp => {
-                let previously_selected = self.description_list_state.selected();
-                self.description_list_state.scroll_up_by(self.description_list_page_size);
-                if self.description_list_state.selected() != previously_selected {
-                    self.snippet_view_state.select_first();
-                }
-
-                self.remain_in_view_mode()
-            },
-            KeyCode::PageDown => {
-                let previously_selected = self.description_list_state.selected();
-                self.description_list_state.scroll_down_by(self.description_list_page_size);
-                if self.description_list_state.selected() != previously_selected {
-                    self.snippet_view_state.select_first();
-                }
-
-                self.remain_in_view_mode()
-            },
+            KeyCode::PageUp => self.select_page_up(),
+            KeyCode::PageDown => self.select_page_down(),
             KeyCode::Home => {
                 let previously_selected = self.description_list_state.selected();
                 self.description_list_state.select_first();
@@ -238,6 +222,26 @@ impl ViewMode {
     fn select_next_snippet(mut self) -> Mode {
         let previously_selected = self.description_list_state.selected();
         self.description_list_state.select_next();
+        if self.description_list_state.selected() != previously_selected {
+            self.snippet_view_state.select_first();
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn select_page_up(mut self) -> Mode {
+        let previously_selected = self.description_list_state.selected();
+        self.description_list_state.scroll_up_by(self.description_list_page_size);
+        if self.description_list_state.selected() != previously_selected {
+            self.snippet_view_state.select_first();
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn select_page_down(mut self) -> Mode {
+        let previously_selected = self.description_list_state.selected();
+        self.description_list_state.scroll_down_by(self.description_list_page_size);
         if self.description_list_state.selected() != previously_selected {
             self.snippet_view_state.select_first();
         }
