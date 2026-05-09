@@ -3,7 +3,7 @@ use std::rc::Rc;
 use log;
 use clap::{Parser, Subcommand};
 
-use crate::{document, snippets::{self, Library}, ui};
+use crate::{document, snippets::{self, Library}, timing, ui};
 
 
 #[derive(Parser, Debug)]
@@ -107,9 +107,7 @@ fn load_library() -> Library {
 
 fn start_ui() {
     let library = {
-        let before = std::time::Instant::now();
-        let library = load_library();
-        let duration = before.elapsed();
+        let (library, duration) = timing::measure(|| load_library());
         log::info!("Library loaded in {}ms", duration.as_millis());
         library
     };
