@@ -11,12 +11,12 @@ pub(super) struct TagSearchMode {
 impl TagSearchMode {
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
-            KeyCode::Up => self.select_previous_tag(),
-            KeyCode::Down => self.select_next_tag(),
-            KeyCode::Home => self.select_first_tag(),
-            KeyCode::End => self.select_last_tag(),
-            KeyCode::PageDown => self.select_page_down(),
-            KeyCode::PageUp => self.select_page_up(),
+            KeyCode::Up => self.highlight_previous_tag(),
+            KeyCode::Down => self.highlight_next_tag(),
+            KeyCode::Home => self.highlight_first_tag(),
+            KeyCode::End => self.highlight_last_tag(),
+            KeyCode::PageDown => self.highlight_page_down(),
+            KeyCode::PageUp => self.highlight_page_up(),
             KeyCode::Esc => self.cancel_tag_search(),
             KeyCode::Enter => {
                 if let Some(index) = self.tags_view_state.selected() {
@@ -118,32 +118,32 @@ impl TagSearchMode {
         }
     }
 
-    fn select_previous_tag(mut self) -> Mode {
+    fn highlight_previous_tag(mut self) -> Mode {
         self.tags_view_state.select_previous();
         self.remain_in_tag_search_mode()
     }
 
-    fn select_next_tag(mut self) -> Mode {
+    fn highlight_next_tag(mut self) -> Mode {
         self.tags_view_state.select_next();
         self.remain_in_tag_search_mode()
     }
 
-    fn select_first_tag(mut self) -> Mode {
+    fn highlight_first_tag(mut self) -> Mode {
         self.tags_view_state.select_first();
         self.remain_in_tag_search_mode()
     }
 
-    fn select_last_tag(mut self) -> Mode {
+    fn highlight_last_tag(mut self) -> Mode {
         self.tags_view_state.select_last();
         self.remain_in_tag_search_mode()
     }
 
-    fn select_page_down(mut self) -> Mode {
+    fn highlight_page_down(mut self) -> Mode {
         self.tags_view_state.select_page_down(self.tag_page_size.unwrap_or(10));
         self.remain_in_tag_search_mode()
     }
 
-    fn select_page_up(mut self) -> Mode {
+    fn highlight_page_up(mut self) -> Mode {
         self.tags_view_state.select_page_up(self.tag_page_size.unwrap_or(10));
         self.remain_in_tag_search_mode()
     }
