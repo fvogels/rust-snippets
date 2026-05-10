@@ -18,19 +18,7 @@ impl TagSearchMode {
             KeyCode::PageDown => self.highlight_page_down(),
             KeyCode::PageUp => self.highlight_page_up(),
             KeyCode::Esc => self.cancel_tag_search(),
-            KeyCode::Enter => {
-                if let Some(index) = self.tags_view_state.selected() {
-                    let selected_tag = &self.state.visible_tags[index];
-                    self.state.select_tag(selected_tag.clone());
-                    self.state.refresh();
-                }
-                else {
-                    self.state.tag_input = None;
-                    self.state.refresh();
-                }
-
-                Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
-            },
+            KeyCode::Enter => self.select_tag(),
             KeyCode::Char(' ') => {
                 if let Some(index) = self.tags_view_state.selected() {
                     let selected_tag = &self.state.visible_tags[index];
@@ -151,6 +139,20 @@ impl TagSearchMode {
     fn cancel_tag_search(mut self) -> Mode {
         self.state.tag_input = None;
         self.state.refresh();
+        Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
+    }
+
+    fn select_tag(mut self) -> Mode {
+        if let Some(index) = self.tags_view_state.selected() {
+            let selected_tag = &self.state.visible_tags[index];
+            self.state.select_tag(selected_tag.clone());
+            self.state.refresh();
+        }
+        else {
+            self.state.tag_input = None;
+            self.state.refresh();
+        }
+
         Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
     }
 }
