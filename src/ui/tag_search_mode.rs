@@ -15,10 +15,7 @@ impl TagSearchMode {
             KeyCode::Down => self.select_next_tag(),
             KeyCode::Home => self.select_first_tag(),
             KeyCode::End => self.select_last_tag(),
-            KeyCode::PageDown => {
-                self.tags_view_state.select_page_down(self.tag_page_size.unwrap_or(10));
-                self.remain_in_tag_search_mode()
-            },
+            KeyCode::PageDown => self.select_page_down(),
             KeyCode::PageUp => {
                 self.tags_view_state.select_page_up(self.tag_page_size.unwrap_or(10));
                 self.remain_in_tag_search_mode()
@@ -145,6 +142,11 @@ impl TagSearchMode {
 
     fn select_last_tag(mut self) -> Mode {
         self.tags_view_state.select_last();
+        self.remain_in_tag_search_mode()
+    }
+
+    fn select_page_down(mut self) -> Mode {
+        self.tags_view_state.select_page_down(self.tag_page_size.unwrap_or(10));
         self.remain_in_tag_search_mode()
     }
 }
