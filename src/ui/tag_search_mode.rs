@@ -9,7 +9,7 @@ pub(super) struct TagSearchMode {
 }
 
 impl TagSearchMode {
-    fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
+    fn handle_key_event(self, key_event: KeyEvent) -> Mode {
         match key_event.code {
             KeyCode::Up => self.highlight_previous_tag(),
             KeyCode::Down => self.highlight_next_tag(),
