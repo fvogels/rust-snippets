@@ -13,10 +13,7 @@ impl TagSearchMode {
         match key_event.code {
             KeyCode::Up => self.select_previous_tag(),
             KeyCode::Down => self.select_next_tag(),
-            KeyCode::Home => {
-                self.tags_view_state.select_first();
-                self.remain_in_tag_search_mode()
-            },
+            KeyCode::Home => self.select_first_tag(),
             KeyCode::End => {
                 self.tags_view_state.select_last();
                 self.remain_in_tag_search_mode()
@@ -141,6 +138,11 @@ impl TagSearchMode {
 
     fn select_next_tag(mut self) -> Mode {
         self.tags_view_state.select_next();
+        self.remain_in_tag_search_mode()
+    }
+
+    fn select_first_tag(mut self) -> Mode {
+        self.tags_view_state.select_first();
         self.remain_in_tag_search_mode()
     }
 }
