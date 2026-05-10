@@ -11,10 +11,7 @@ pub(super) struct TagSearchMode {
 impl TagSearchMode {
     fn handle_key_event(mut self, key_event: KeyEvent) -> Mode {
         match key_event.code {
-            KeyCode::Up => {
-                self.tags_view_state.select_previous();
-                self.remain_in_tag_search_mode()
-            },
+            KeyCode::Up => self.select_previous_tag(),
             KeyCode::Down => {
                 self.tags_view_state.select_next();
                 self.remain_in_tag_search_mode()
@@ -138,6 +135,11 @@ impl TagSearchMode {
             Event::Key(key_event) if key_event.is_press() => self.handle_key_event(key_event),
             _ => Mode::TagSearch(self),
         }
+    }
+
+    fn select_previous_tag(mut self) -> Mode {
+        self.tags_view_state.select_previous();
+        self.remain_in_tag_search_mode()
     }
 }
 
