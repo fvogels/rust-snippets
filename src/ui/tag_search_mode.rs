@@ -19,15 +19,7 @@ impl TagSearchMode {
             KeyCode::PageUp => self.highlight_page_up(),
             KeyCode::Esc => self.cancel_tag_search(),
             KeyCode::Enter => self.select_tag(),
-            KeyCode::Char(' ') => {
-                if let Some(index) = self.tags_view_state.selected() {
-                    let selected_tag = &self.state.visible_tags[index];
-                    self.state.select_tag(selected_tag.clone());
-                    self.state.refresh();
-                }
-
-                self.remain_in_tag_search_mode()
-            },
+            KeyCode::Char(' ') => self.start_new_tag(),
             KeyCode::Backspace => {
                 if let Some(mut s) = self.state.tag_input {
                     if s.len() > 1 {
@@ -154,6 +146,17 @@ impl TagSearchMode {
         }
 
         Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
+    }
+
+    fn start_new_tag(mut self) -> Mode {
+        if let Some(index) = self.tags_view_state.selected() {
+            let selected_tag = &self.state.visible_tags[index];
+            self.state.select_tag(selected_tag.clone());
+            self.state.refresh();
+        }
+
+        self.remain_in_tag_search_mode()
+
     }
 }
 
