@@ -17,11 +17,7 @@ impl TagSearchMode {
             KeyCode::End => self.select_last_tag(),
             KeyCode::PageDown => self.select_page_down(),
             KeyCode::PageUp => self.select_page_up(),
-            KeyCode::Esc => {
-                self.state.tag_input = None;
-                self.state.refresh();
-                Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
-            },
+            KeyCode::Esc => self.cancel_tag_search(),
             KeyCode::Enter => {
                 if let Some(index) = self.tags_view_state.selected() {
                     let selected_tag = &self.state.visible_tags[index];
@@ -150,6 +146,12 @@ impl TagSearchMode {
     fn select_page_up(mut self) -> Mode {
         self.tags_view_state.select_page_up(self.tag_page_size.unwrap_or(10));
         self.remain_in_tag_search_mode()
+    }
+
+    fn cancel_tag_search(mut self) -> Mode {
+        self.state.tag_input = None;
+        self.state.refresh();
+        Mode::View(ViewMode::init(self.state, description_list::State::default(), SnippetViewState::new()))
     }
 }
 
