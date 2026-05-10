@@ -94,8 +94,14 @@ fn list_snippets() {
 fn create_archive() {
     let root = "../data/snippets";
     let archive_path = "./archive.bin";
-    let archive = snippets::Archive::load_snippet_files(&root).unwrap();
-    archive.write(&archive_path).unwrap();
+
+    let (archive, duration) = timing::measure(|| {
+        let archive = snippets::Archive::load_snippet_files(&root).unwrap();
+        archive.write(&archive_path).unwrap();
+        archive
+    });
+
+    println!("Generated archive: {} snippets in {}ms", archive.raw_snippets.len(), duration.as_millis());
 }
 
 fn load_library() -> Library {
