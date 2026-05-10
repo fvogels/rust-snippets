@@ -20,22 +20,7 @@ impl TagSearchMode {
             KeyCode::Esc => self.cancel_tag_search(),
             KeyCode::Enter => self.select_tag(),
             KeyCode::Char(' ') => self.start_new_tag(),
-            KeyCode::Backspace => {
-                if let Some(mut s) = self.state.tag_input {
-                    if s.len() > 1 {
-                        s.truncate(s.len() - 1);
-                        self.state.tag_input = Some(s);
-                    }
-                    else {
-                        self.state.tag_input = None;
-                    }
-
-                    self.state.refresh();
-                    self.tags_view_state.ensure_selection();
-                }
-
-                self.remain_in_tag_search_mode()
-            },
+            KeyCode::Backspace => self.remove_last_letter_or_tag(),
             KeyCode::Char(mut char) if valid_filter_character(char) => {
                 char = char.to_ascii_lowercase();
 
@@ -157,6 +142,23 @@ impl TagSearchMode {
 
         self.remain_in_tag_search_mode()
 
+    }
+
+    fn remove_last_letter_or_tag(mut self) -> Mode {
+        if let Some(mut s) = self.state.tag_input {
+            if s.len() > 1 {
+                s.truncate(s.len() - 1);
+                self.state.tag_input = Some(s);
+            }
+            else {
+                self.state.tag_input = None;
+            }
+
+            self.state.refresh();
+            self.tags_view_state.ensure_selection();
+        }
+
+        self.remain_in_tag_search_mode()
     }
 }
 
