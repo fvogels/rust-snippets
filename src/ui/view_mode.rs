@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, widgets::{Block, Borders, StatefulWidget, Widget}};
-use crate::{external, snippets::Library, ui::{search_mode::SearchMode, state::{Mode, SnippetLayout, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
+use crate::{external, snippets::{Library, snippets::{Part, Snippet}}, ui::{search_mode::SearchMode, state::{Mode, SnippetLayout, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -48,6 +48,7 @@ impl ViewMode {
             KeyCode::Char('*') => self.toggle_maximize_snippet_list(),
             KeyCode::Char('.') => self.toggle_maximize_snippet_view(),
             KeyCode::Char('c') => self.copy_to_clipboard('1'),
+            KeyCode::Char('o') => self.open_url(),
             KeyCode::Char(digit) if digit.is_ascii_digit() => self.copy_to_clipboard(digit),
             _ => self.remain_in_view_mode()
         }
@@ -249,20 +250,50 @@ impl ViewMode {
     }
 
     fn copy_to_clipboard(self, digit: char) -> Mode {
-        if let Some(index) = self.description_list_state.selected() {
-            let snippet_id = &self.state.visible_snippets[index];
-            let snippet = self.state.library.snippet(*snippet_id);
-            if let Some(one_based_index) = digit.to_digit(10) {
-                let index = one_based_index - 1;
-                if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
-                    if let Some(source_code) = part.find_code_block_with_index(index as usize) {
-                        if let Err(error) = external::clipboard::copy_to_clipboard(source_code) {
-                            panic!("failed to copy snippet to clipboard: {}", error)
-                        }
+        if let Some(one_based_index) = digit.to_digit(10) {
+            let index = one_based_index - 1;
+
+            if let Some(selected_snippet_part) = self.selected_snippet_part() {
+                if let Some(source_code) = selected_snippet_part.find_code_block_with_index(index as usize) {
+                    if let Err(error) = external::clipboard::copy_to_clipboard(source_code) {
+                        panic!("failed to copy snippet to clipboard: {}", error)
                     }
                 }
             }
         }
+
+        self.remain_in_view_mode()
+    }
+
+    fn selected_snippet(&self) -> Option<&Snippet> {
+        if let Some(index) = self.description_list_state.selected() {
+            let snippet_id = &self.state.visible_snippets[index];
+            let snippet = self.state.library.snippet(*snippet_id);
+
+            Some(snippet)
+        }
+        else {
+            None
+        }
+    }
+
+    fn selected_snippet_part(&self) -> Option<&Part> {
+        if let Some(snippet) = self.selected_snippet() {
+            let selected_index = self.snippet_view_state.selected();
+            snippet.parts.get(selected_index)
+        }
+        else {
+            None
+        }
+    }
+
+    fn open_url(self) -> Mode {
+        if let Some(selected_snippet_part) = self.selected_snippet_part() {
+            if let Some(url) = &selected_snippet_part.url {
+                external::browser::open(url.as_str()).unwrap();
+            }
+        }
+
         self.remain_in_view_mode()
     }
 }
