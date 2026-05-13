@@ -94,7 +94,7 @@ impl<'a> DocumentRenderer<'a> {
         self.lines.push(empty_line);
     }
 
-    fn render_wrapped(&mut self, words: &Vec<document::Word>, style: &document::Style) {
+    fn render_paragraph(&mut self, words: &Vec<document::Word>, style: &document::Style) {
         let mut spans = Vec::new();
         let mut acc = 0;
 
@@ -190,8 +190,8 @@ impl<'a> DocumentRenderer<'a> {
     fn render(mut self, document: &document::Document) -> ratatui::widgets::Paragraph<'a> {
         for fragment in document {
             match fragment {
-                document::Fragment::Wrapping{words, style} => {
-                    self.render_wrapped(words, style);
+                document::Fragment::Paragraph{words, style} => {
+                    self.render_paragraph(words, style);
                 },
                 document::Fragment::Heading{words, style, depth} => {
                     self.render_heading_fragment(words, style, *depth);
@@ -210,7 +210,7 @@ impl<'a> DocumentRenderer<'a> {
 
     fn render_heading_fragment(&mut self, words: &Vec<document::Word>, style: &document::Style, _depth: usize) {
         self.add_separating_line();
-        self.render_wrapped(words, style);
+        self.render_paragraph(words, style);
         self.add_separating_line();
     }
 

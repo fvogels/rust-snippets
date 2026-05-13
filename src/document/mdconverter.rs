@@ -195,7 +195,7 @@ impl<'a, 'b> Converter<'a, 'b> {
             words.push(Word(spans))
         }
 
-        self.fragments.push(Fragment::Wrapping { words, style: self.theme.default })
+        self.fragments.push(Fragment::Paragraph { words, style: self.theme.default })
     }
 }
 

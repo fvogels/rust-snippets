@@ -50,7 +50,7 @@ mod test {
         let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping{ words: ws, style: _ }  = &document[0] {
+        if let Fragment::Paragraph{ words: ws, style: _ }  = &document[0] {
             let expected = words(["line", "of", "text"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, ws);
         }
@@ -71,7 +71,7 @@ mod test {
         let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
+        if let Fragment::Paragraph{ words: text, style: _ } = &document[0] {
             let expected = words(["line", "of", "text", "second", "line"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
@@ -91,7 +91,7 @@ mod test {
         let document = parse(markdown, &syntax_highlighter, &theme);
 
         assert_eq!(1, document.len());
-        if let Fragment::Wrapping{ words: text, style: _ } = &document[0] {
+        if let Fragment::Paragraph{ words: text, style: _ } = &document[0] {
             let expected = vec![word("some", &theme.default), word("highlighted", &theme.inline_code), word("word", &theme.default)];
             assert_eq!(&expected, text);
         }

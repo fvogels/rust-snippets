@@ -39,6 +39,7 @@ pub mod raw {
     struct Metadata {
         description: String,
         tags: Option<Vec<String>>,
+        keywords: Option<Vec<String>>,
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
@@ -47,6 +48,7 @@ pub mod raw {
         pub description: String,
         pub parts: Vec<Part>,
         pub tags: Vec<String>,
+        pub keywords: Vec<String>,
         pub path: Vec<String>,
     }
 
@@ -93,11 +95,14 @@ pub mod raw {
                 tags.push(path_component.clone());
             }
 
+            let keywords = metadata.keywords.unwrap_or_default();
+
             let snippet = Snippet{
                 description: metadata.description,
-                parts: parts,
-                tags: tags,
-                path: path,
+                parts,
+                tags,
+                keywords,
+                path,
             };
 
             Ok(snippet)
@@ -120,6 +125,7 @@ pub struct Snippet {
     pub description: String,
     pub parts: Vec<Part>,
     pub tags: HashSet<String>,
+    extra_keywords: Vec<String>,
     pub path: Vec<String>,
 }
 
@@ -136,17 +142,19 @@ impl Snippet {
         let tags = raw_snippet.tags.into_iter().collect();
         let path = raw_snippet.path;
         let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter.clone())).collect();
+        let extra_keywords = raw_snippet.keywords;
 
         Snippet {
             description,
             parts,
             tags,
-            path
+            path,
+            extra_keywords,
         }
     }
 
     pub fn keywords(&self) -> Vec<String> {
-        let mut keywords = Vec::new();
+        let mut keywords = self.extra_keywords.clone();
 
         self.description.split(" ").for_each(|s| keywords.push(s.to_lowercase()));
         self.tags.iter().for_each(|tag| keywords.push(tag.to_lowercase()));
