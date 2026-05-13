@@ -15,7 +15,7 @@ impl Theme {
             default: Style::default(),
             inline_code: Style::default().background(Color::gray(128)),
             headings: [
-                Style::default().background(Color { r: 192, g: 192, b: 192 }).bold(true),
+                Style::default().bold(true).underline(true),
                 Style::default().background(Color::blue(128)).bold(true),
                 Style::default().background(Color::blue(192)).bold(true),
             ],
