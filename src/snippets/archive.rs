@@ -16,7 +16,7 @@ impl Archive {
 
     pub fn load_snippet_files<P>(root: &P) -> Result<Self, SnippetError> where P: AsRef<Path> {
         let absolute_root = root.as_ref().canonicalize().map_err(|_| SnippetError::PathError)?;
-        let raw_snippets: Result<Vec<raw::Snippet>, SnippetError> = discover_files(root)?.into_iter().map(|file_path| {
+        let raw_snippets: Result<Vec<raw::Snippet>, SnippetError> = discover_files(root)?.into_iter().filter(|file_path| file_path.extension().map(|p| p.to_str().unwrap()) == Some("snippet")).map(|file_path| {
             let path = derive_path(&absolute_root, &file_path)?;
             raw::Snippet::load(file_path, path)
         }).collect();
