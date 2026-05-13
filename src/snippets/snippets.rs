@@ -56,6 +56,8 @@ pub mod raw {
     pub struct Part {
         pub attributes: Vec<(String, String)>,
         pub source: Vec<String>,
+        pub url: Option<String>,
+        pub caption: Option<String>,
     }
 
     impl Snippet {
@@ -80,7 +82,10 @@ pub mod raw {
                         }
                     }?;
 
-                    let part = Part{ attributes, source: segment.lines };
+                    let caption = attributes.iter().find(|pair| pair.0 == "caption").map(|p| p.1.clone());
+                    let url = attributes.iter().find(|pair| pair.0 == "url").map(|p| p.1.clone());
+
+                    let part = Part{ attributes, source: segment.lines, caption, url };
 
                     Ok(part)
                 }).collect();
@@ -125,13 +130,15 @@ pub struct Snippet {
     pub description: String,
     pub parts: Vec<Part>,
     pub tags: HashSet<String>,
-    extra_keywords: Vec<String>,
+    pub extra_keywords: Vec<String>,
     pub path: Vec<String>,
 }
 
 pub struct Part {
     pub attributes: HashMap<String, String>,
     pub syntax_highlighter: Rc<SyntaxHighlighter>,
+    pub caption: Option<String>,
+    pub url: Option<String>,
     pub source: Vec<String>,
     pub contents: OnceCell<Document>,
 }
@@ -169,14 +176,10 @@ impl Snippet {
 
 impl Part {
     pub fn from_raw(raw_part: raw::Part, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
-        let raw::Part { attributes, source } = raw_part;
+        let raw::Part { attributes, source, caption, url } = raw_part;
         let attributes = attributes.into_iter().collect();
 
-        Part{ attributes, source, syntax_highlighter, contents: OnceCell::new() }
-    }
-
-    pub fn caption(&self) -> Option<&str> {
-        self.attributes.get("caption").map(String::as_str)
+        Part{ attributes, source, syntax_highlighter, contents: OnceCell::new(), caption, url }
     }
 
     pub fn document(&self) -> &document::Document {

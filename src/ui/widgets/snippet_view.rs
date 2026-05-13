@@ -70,7 +70,7 @@ impl<'a> StatefulWidget for SnippetView<'a> {
                 let one_based_index = selected_part_index + 1;
                 let part_count = self.snippet.parts.len();
 
-                let caption = match selected_part.caption() {
+                let caption = match &selected_part.caption {
                     Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
                     None => format!(" {}/{} ", one_based_index, part_count),
                 };
