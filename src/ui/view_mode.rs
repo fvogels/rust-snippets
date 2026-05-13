@@ -1,5 +1,5 @@
 use ratatui::{Frame, buffer::Buffer, crossterm::event::{Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, widgets::{Block, Borders, StatefulWidget, Widget}};
-use crate::{snippets::Library, ui::{search_mode::SearchMode, state::{Mode, SnippetLayout, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
+use crate::{external, snippets::Library, ui::{search_mode::SearchMode, state::{Mode, SnippetLayout, State}, tag_search_mode::TagSearchMode, widgets::{description_list, keybindings_view::{Binding, KeybindingsView}, snippet_view::{SnippetView, SnippetViewState}, tags_view::{TagsView, TagsViewState}}}};
 
 
 pub(super) struct ViewMode {
@@ -253,7 +253,7 @@ impl ViewMode {
                 let index = one_based_index - 1;
                 if let Some(part) = snippet.parts.get(self.snippet_view_state.selected()) {
                     if let Some(source_code) = part.find_code_block_with_index(index as usize) {
-                        if let Err(error) = cli_clipboard::set_contents(source_code.to_owned()) {
+                        if let Err(error) = external::clipboard::copy_to_clipboard(source_code) {
                             panic!("failed to copy snippet to clipboard: {}", error)
                         }
                     }
