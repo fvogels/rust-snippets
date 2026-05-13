@@ -16,8 +16,8 @@ impl Theme {
             inline_code: Style::default().background(Color::gray(128)),
             headings: [
                 Style::default().bold(true).underline(true),
-                Style::default().background(Color::blue(128)).bold(true),
-                Style::default().background(Color::blue(192)).bold(true),
+                Style::default().bold(true),
+                Style::default(),
             ],
             table_heading: Style::default().background(Color::blue(128)).underline(true),
             table_even_row: Style::default().background(Color::gray(128)),
