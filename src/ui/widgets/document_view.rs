@@ -74,6 +74,30 @@ fn translate_span<'a>(span: &document::Span, style_base: &document::Style) -> ra
     ratatui::text::Span::default().content(Cow::from(span.text.clone())).style(translate_style(&combined_style))
 }
 
+fn break_into_lines(words: &Vec<document::Word>, line_width: usize) -> Vec<Vec<&document::Word>> {
+    let mut result = vec![Vec::new()];
+    let mut acc_size = 0;
+
+    for word in words {
+        let last = result.last_mut().unwrap();
+
+        if last.is_empty() {
+            last.push(word);
+            acc_size += word.len();
+        }
+        else if acc_size + 1 + word.len() <= line_width {
+            last.push(word);
+            acc_size += word.len() + 1;
+        }
+        else {
+            result.push(vec![word]);
+            acc_size = word.len();
+        }
+    }
+
+    result
+}
+
 struct DocumentRenderer<'a> {
     line_width: usize,
     lines: Vec<ratatui::text::Line<'a>>,
@@ -95,34 +119,24 @@ impl<'a> DocumentRenderer<'a> {
     }
 
     fn render_paragraph(&mut self, words: &Vec<document::Word>, style: &document::Style) {
-        let mut spans = Vec::new();
-        let mut acc = 0;
+        let document_lines = break_into_lines(words, self.line_width);
+        let space_span = ratatui::text::Span::default().content(" ").style(translate_style(style));
 
-        for word in words {
-            let is_fresh_line = acc == 0;
-            let separator_size = if is_fresh_line { 0 } else { 1 };
-            if acc + word.len() + separator_size > self.line_width && acc > 0 {
-                // New line has to be started
-                let line = ratatui::text::Line::default().spans(spans);
-                self.lines.push(line);
-                spans = Vec::new();
-            }
-            else {
-                // Word fits on current line
-                if !is_fresh_line {
-                    // Add separating space between words
-                    spans.push(ratatui::text::Span::default().content(" ").style(translate_style(style)))
-                }
-                for span in word.spans() {
-                    spans.push(translate_span(span, &style));
-                }
-                acc += word.len();
-            }
-        }
+        for line in document_lines {
+            let mut spans = Vec::new();
 
-        if !spans.is_empty() {
-            let line = ratatui::text::Line::default().spans(spans);
-            self.lines.push(line);
+            for word in line {
+                if !spans.is_empty() {
+                    spans.push(space_span.clone());
+                }
+
+                for s in word.spans() {
+                    spans.push(translate_span(s, style));
+                }
+            }
+
+            let translated_line = ratatui::text::Line::default().spans(spans);
+            self.lines.push(translated_line);
         }
     }
 
