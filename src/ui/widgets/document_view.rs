@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
-use crate::document;
+use ratatui::text::Line;
+
+use crate::document::{self, Style};
 
 
 pub struct Widget<'a> {
@@ -210,16 +212,49 @@ impl<'a> DocumentRenderer<'a> {
                 document::Fragment::Heading{words, style, depth} => {
                     self.render_heading_fragment(words, style, *depth);
                 },
-                &document::Fragment::Code { ref language, highlighted_lines: ref code_lines, original: _ } => {
+                document::Fragment::Code { language, highlighted_lines: code_lines, original: _ } => {
                     self.render_code_fragment(language, code_lines);
                 },
                 document::Fragment::Verbatim { lines } => {
                     self.render_verbatim_fragment(lines);
-                }
+                },
+                document::Fragment::List { items } => {
+                    self.render_list(items)
+                },
             }
         }
 
         ratatui::widgets::Paragraph::new(self.lines)
+    }
+
+    fn render_list(&mut self, items: &Vec<Vec<document::Word>>) {
+        let list_item_max_width = self.line_width - 2;
+        let bullet_point = ratatui::text::Span::default().content("*");
+        let space = ratatui::text::Span::default().content(" ");
+        let base_style = Style::default();
+
+        self.add_separating_line();
+
+        for item in items {
+            let lines = break_into_lines(item, list_item_max_width);
+
+            for (line_index, line) in lines.iter().enumerate() {
+                let mut spans = vec![if line_index == 0 { bullet_point.clone() } else { space.clone() }];
+
+                for word in line {
+                    spans.push(space.clone());
+
+                    for span in word.spans() {
+                        spans.push(translate_span(span, &base_style));
+                    }
+                }
+
+                let translated_line = ratatui::text::Line::default().spans(spans);
+                self.lines.push(translated_line);
+            }
+        }
+
+        self.add_separating_line();
     }
 
     fn render_heading_fragment(&mut self, words: &Vec<document::Word>, style: &document::Style, _depth: usize) {

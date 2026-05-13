@@ -8,4 +8,5 @@ pub enum Fragment {
     Paragraph { words: Vec<Word>, style: Style },
     Code { language: Option<String>, original: String, highlighted_lines: Vec<Line> },
     Verbatim { lines: Vec<Line> },
+    List { items: Vec<Vec<Word>> },
 }

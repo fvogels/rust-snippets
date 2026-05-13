@@ -1,4 +1,4 @@
-use markdown::{ParseOptions, mdast::{AlignKind, Code, Heading, Node, Paragraph, Root, Table}, to_mdast};
+use markdown::{ParseOptions, mdast::{AlignKind, Code, Heading, List, Node, Paragraph, Root, Table}, to_mdast};
 
 use crate::document::{Document, Fragment, Line, Span, Style, SyntaxHighlighter, Theme, Word};
 
@@ -30,8 +30,35 @@ impl<'a, 'b> Converter<'a, 'b> {
             Node::Heading(heading) => self.convert_heading(heading),
             Node::Code(code) => self.convert_code(code),
             Node::Table(table) => self.convert_table(table),
+            Node::List(list) => self.convert_list(list),
             _ => { panic!("unsupported node: {:?}", node); }
         }
+    }
+
+    fn convert_list(&mut self, list: List) {
+        let mut converted_list_items = Vec::new();
+
+        for list_child in list.children {
+            match list_child {
+                Node::ListItem(list_item) => {
+                    assert_eq!(list_item.children.len(), 1);
+
+                    match list_item.children.first().unwrap() {
+                        Node::Paragraph(paragraph) => {
+                            let converted_children = convert_text_nodes(&paragraph.children, self.theme);
+                            converted_list_items.push(converted_children);
+                        },
+                        _ => panic!("expected paragraph; found {:?}", list_item)
+                    }
+                },
+                _ => {
+                    panic!("expected list item; found {:?}", list_child);
+                }
+            }
+        }
+
+        let fragment = Fragment::List { items: converted_list_items };
+        self.fragments.push(fragment);
     }
 
     fn convert_table(&mut self, table: Table) {
@@ -153,50 +180,56 @@ impl<'a, 'b> Converter<'a, 'b> {
     }
 
     fn convert_paragraph(&mut self, paragraph: Paragraph) {
-        let mut words = Vec::new();
-        let mut spans = Vec::new();
-
-        for child in paragraph.children {
-            match child {
-                Node::Text(text) => {
-                    let mut span: String = String::new();
-
-                    for char in text.value.chars() {
-                        if char.is_whitespace() {
-                            if !span.is_empty() {
-                                spans.push(Span{text: span, style: self.theme.default});
-                                span = String::new();
-                            }
-
-                            if !spans.is_empty() {
-                                words.push(Word(spans));
-                                spans = Vec::new();
-                            }
-                        }
-                        else {
-                            span.push(char);
-                        }
-                    }
-
-                    if !span.is_empty() {
-                        spans.push(Span{text: span, style: self.theme.default})
-                    }
-                },
-                Node::InlineCode(inline_code) => {
-                    let string = inline_code.value;
-                    let span = Span{text: string, style: self.theme.inline_code};
-                    spans.push(span);
-                }
-                _ => { panic!("unsupported node: {:?}", child); }
-            }
-        }
-
-        if !spans.is_empty() {
-            words.push(Word(spans))
-        }
+        let words = convert_text_nodes(&paragraph.children, self.theme);
 
         self.fragments.push(Fragment::Paragraph { words, style: self.theme.default })
     }
+}
+
+fn convert_text_nodes(nodes: &Vec<Node>, theme: &Theme) -> Vec<Word> {
+    let mut words = Vec::new();
+    let mut spans = Vec::new();
+
+    for node in nodes {
+        match node {
+            Node::Text(text) => {
+                let mut span: String = String::new();
+
+                for char in text.value.chars() {
+                    if char.is_whitespace() {
+                        if !span.is_empty() {
+                            spans.push(Span{text: span, style: theme.default});
+                            span = String::new();
+                        }
+
+                        if !spans.is_empty() {
+                            words.push(Word(spans));
+                            spans = Vec::new();
+                        }
+                    }
+                    else {
+                        span.push(char);
+                    }
+                }
+
+                if !span.is_empty() {
+                    spans.push(Span{text: span, style: theme.default})
+                }
+            },
+            Node::InlineCode(inline_code) => {
+                let string = inline_code.value.clone();
+                let span = Span{text: string, style: theme.inline_code};
+                spans.push(span);
+            }
+            _ => { panic!("unsupported node: {:?}", node); }
+        }
+    }
+
+    if !spans.is_empty() {
+        words.push(Word(spans))
+    }
+
+    words
 }
 
 pub fn parse(markdown: &str, syntax_highlighter: &SyntaxHighlighter, theme: &Theme) -> Document {
