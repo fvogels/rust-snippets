@@ -47,6 +47,7 @@ impl ViewMode {
             KeyCode::Char('-') => self.decrease_snippet_list_size(),
             KeyCode::Char('*') => self.toggle_maximize_snippet_list(),
             KeyCode::Char('.') => self.toggle_maximize_snippet_view(),
+            KeyCode::Char('c') => self.copy_to_clipboard('1'),
             KeyCode::Char(digit) if digit.is_ascii_digit() => self.copy_to_clipboard(digit),
             _ => self.remain_in_view_mode()
         }
