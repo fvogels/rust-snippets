@@ -20,7 +20,7 @@ impl ratatui::widgets::Widget for Widget {
         let mut list_items = Vec::new();
 
         for category in self.categories {
-            let caption_item = ListItem::new(category.caption).on_blue();
+            let caption_item = ListItem::new(category.caption).underlined();
             list_items.push(caption_item);
 
             for entry in category.entries {
@@ -29,7 +29,7 @@ impl ratatui::widgets::Widget for Widget {
             }
         }
 
-        let list = List::new(list_items).bg(ratatui::style::Color::Rgb(0, 0, 32));
+        let list = List::new(list_items).bg(ratatui::style::Color::Rgb(16, 16, 16));
         list.render(area, buffer);
     }
 }
