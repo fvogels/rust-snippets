@@ -95,6 +95,8 @@ impl ViewMode {
             Binding::new("del", "pop tag"),
             Binding::new("/", "search"),
             Binding::new("?", "reset search"),
+            Binding::new("*", "max list"),
+            Binding::new(".", "max snippet"),
         ];
         let keybindings_view = KeybindingsView::new(bindings);
 
