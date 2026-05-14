@@ -193,7 +193,7 @@ impl State {
 
             for snippet_tag in snippet_tags.iter() {
                 if let Some(prefix) = &self.tag_input {
-                    if snippet_tag.name.starts_with(prefix.as_str()) {
+                    if snippet_tag.name.to_lowercase().starts_with(prefix.as_str()) {
                         tags.insert(&snippet_tag.name);
                     }
                 }

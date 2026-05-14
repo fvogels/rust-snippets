@@ -90,7 +90,7 @@ fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<Tag> {
     }
 
     let mut tags = tag_set.into_iter().collect::<Vec<_>>();
-    tags.sort_by(|tag1, tag2| tag1.name.cmp(&tag2.name));
+    tags.sort_by(|tag1, tag2| tag1.name.to_lowercase().cmp(&tag2.name.to_lowercase()));
 
     tags
 }

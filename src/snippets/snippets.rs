@@ -145,7 +145,7 @@ impl Snippet {
     pub fn from_raw(raw_snippet: raw::Snippet, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
         let description = raw_snippet.description;
         let tags = raw_snippet.tags.into_iter().map(Tag::from_raw).collect::<Vec<_>>();
-        let tag_set = tags.iter().map(|tag| tag.name.clone()).collect();
+        let tag_set = tags.iter().map(|tag| tag.name.to_lowercase()).collect();
         let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter.clone())).collect();
         let extra_keywords = raw_snippet.keywords;
 
