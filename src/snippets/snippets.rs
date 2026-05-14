@@ -36,7 +36,7 @@ pub enum SnippetError {
 }
 
 pub mod raw {
-    use std::{collections::HashMap, fs, path::{Path, PathBuf}};
+    use std::{collections::HashMap, fs, path::Path};
 
     use rkyv::{Archive, Deserialize, Serialize};
     use crate::{snippets::snippets::{SnippetError}, util::{attstring, segment_file}};
