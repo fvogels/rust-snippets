@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::HashMap, fs, hash::Hash, path::Path};
 
 use rkyv::{from_bytes, to_bytes, rancor::Error};
 use serde::Deserialize;
@@ -41,12 +41,46 @@ impl Archive {
 
     pub fn load_snippet_files<P: AsRef<Path>>(root: &P) -> Result<Self, SnippetError> {
         let mut raw_snippets = Vec::new();
-
         Archive::load_snippet_files_rec(root, &mut |raw_snippet| raw_snippets.push(raw_snippet))?;
 
-        let archive = Archive { raw_snippets };
+        Archive::verify_tags(&raw_snippets)?;
 
+        let archive = Archive { raw_snippets };
         Ok(archive)
+    }
+
+    fn verify_tags(snippets: &Vec<raw::Snippet>) -> Result<(), SnippetError> {
+        let mut category_table: HashMap<String, String> = HashMap::new();
+        let mut snippet_table: HashMap<String, Vec<&raw::Snippet>> = HashMap::new();
+
+        for snippet in snippets {
+            for tag in &snippet.tags {
+                if let Some(category) = category_table.get(&tag.name) {
+                    if *category != tag.category {
+                        let contradicting_snippets = &snippet_table[&tag.name];
+
+                        log::error!("Inconsistent tag category: tag {} has categories {} and {}", tag.name, category, tag.category);
+
+                        for snippet in contradicting_snippets {
+                            log::error!("Snippet {} categorizes it as {}", snippet.path, category);
+                        }
+                        log::error!("Snippet {} categorized it as {}", snippet.path, tag.category);
+
+                        return Err(SnippetError::InconsistentTagCategory {
+                            name: tag.name.clone(),
+                            category1: category.clone(),
+                            category2: tag.category.clone(),
+                        })
+                    }
+                }
+                else {
+                    category_table.insert(tag.name.clone(), tag.category.clone());
+                    snippet_table.entry(tag.name.clone()).or_default().push(&snippet);
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn load_snippet_files_rec<P: AsRef<Path>>(directory: &P, receiver: &mut dyn FnMut(raw::Snippet)) -> Result<(), SnippetError> {

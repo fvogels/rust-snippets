@@ -30,10 +30,13 @@ pub enum SnippetError {
 
     #[error("Missing snippets.yaml")]
     MissingSnippetsYaml,
+
+    #[error("Inconsistent categories for tag named {}: it has categories {} and {}", name, category1, category2)]
+    InconsistentTagCategory { name: String, category1: String, category2: String },
 }
 
 pub mod raw {
-    use std::{collections::HashMap, fs, path::Path};
+    use std::{collections::HashMap, fs, path::{Path, PathBuf}};
 
     use rkyv::{Archive, Deserialize, Serialize};
     use crate::{snippets::snippets::{SnippetError}, util::{attstring, segment_file}};
@@ -52,6 +55,7 @@ pub mod raw {
         pub parts: Vec<Part>,
         pub tags: Vec<Tag>,
         pub keywords: Vec<String>,
+        pub path: String,
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
@@ -69,7 +73,7 @@ pub mod raw {
     }
 
     impl Snippet {
-        pub fn parse(source: &str) -> Result<Self, SnippetError> {
+        pub fn parse(path: String, source: &str) -> Result<Self, SnippetError> {
             let segments = segment_file::parse(source.lines(), |line| {
                 line.strip_prefix("===").map(|x| x.trim())
             });
@@ -116,9 +120,6 @@ pub mod raw {
 
                 result
             };
-            // for path_component in path.iter() {
-            //     tags.push(path_component.clone());
-            // }
 
             let keywords = metadata.keywords.unwrap_or_default();
 
@@ -127,6 +128,7 @@ pub mod raw {
                 parts,
                 tags,
                 keywords,
+                path,
             };
 
             Ok(snippet)
@@ -137,7 +139,7 @@ pub mod raw {
             let source = fs::read_to_string(file_path).map_err(SnippetError::IoError)?;
 
             log::info!("Reading {}", file_path.display());
-            Snippet::parse(source.as_str())
+            Snippet::parse(file_path.to_str().unwrap().to_owned(), source.as_str())
         }
     }
 
