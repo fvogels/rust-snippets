@@ -104,29 +104,3 @@ impl Archive {
         Ok(())
     }
 }
-
-// fn discover_files<P>(root: &P) -> Result<Vec<PathBuf>, SnippetError>
-// where P: AsRef<Path> {
-//     WalkDir::new(root)
-//             .into_iter()
-//             .filter_map(|e| e.ok())
-//             .filter(|e| e.metadata().unwrap().is_file())
-//             .map(|e| e.path().canonicalize().map_err(SnippetError::IoError).map(|p| p.to_owned()))
-//             .collect()
-// }
-
-// fn derive_path<P, Q>(root: &P, file: &Q) -> Result<Vec<String>, SnippetError> where P: AsRef<Path>, Q: AsRef<Path> {
-//     debug_assert!(root.as_ref().is_absolute(), "{} must be absolute", root.as_ref().as_os_str().display());
-//     debug_assert!(file.as_ref().is_absolute(), "{} must be absolute", file.as_ref().as_os_str().display());
-
-//     let parent_path = file.as_ref().parent().ok_or(SnippetError::PathError)?;
-
-//     let path =
-//         parent_path.strip_prefix(root)
-//                    .map_err(|_| SnippetError::PathError)?
-//                    .components()
-//                    .map(|component| component.as_os_str().to_str().unwrap().to_owned())
-//                    .collect::<Vec<String>>();
-
-//     Ok(path)
-// }
