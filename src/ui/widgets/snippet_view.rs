@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, StatefulWidget, Widget}};
 
-use crate::{snippets::snippets::{Part, Snippet}, ui::widgets::{document_view, metadata_view}};
+use crate::{snippets::snippets::{Part, Snippet}, ui::widgets::{document_view, metadata_view::{self, Category}}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
@@ -88,17 +90,19 @@ impl<'a> StatefulWidget for SnippetView<'a> {
 
         let document_viewer = document_view::Widget::new(selected_part.document());
         let metadata_viewer = {
-            let tag_category = {
-                let sorted_tags = {
-                    let mut tags = self.snippet.tags.iter().cloned().collect::<Vec<_>>();
-                    tags.sort();
-                    tags
-                };
+            let mut category_table = HashMap::new();
 
-                metadata_view::Category { caption: "Tags".to_owned(), entries: sorted_tags }
-            };
+            for tag in &self.snippet.tags {
+                let category = category_table.entry(tag.category.clone()).or_insert_with(|| metadata_view::Category { caption: tag.category.clone(), entries: Vec::new()  });
+                category.entries.push(tag.name.clone());
+            }
 
-            let categories = vec![tag_category];
+            let mut categories = category_table.into_values().collect::<Vec<_>>();
+            categories.sort_by(|c1, c2| c1.caption.cmp(&c2.caption));
+
+            for category in &mut categories {
+                category.entries.sort();
+            }
 
             metadata_view::Widget::new(categories)
         };

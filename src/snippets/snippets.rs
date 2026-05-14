@@ -27,18 +27,21 @@ pub enum SnippetError {
 
     #[error("Attribute error: {0}")]
     AttributeError(#[from] attstring::Error),
+
+    #[error("Missing snippets.yaml")]
+    MissingSnippetsYaml,
 }
 
 pub mod raw {
-    use std::{fs, path::Path};
+    use std::{collections::HashMap, fs, path::Path};
 
     use rkyv::{Archive, Deserialize, Serialize};
-    use crate::{snippets::snippets::SnippetError, util::{attstring, segment_file}};
+    use crate::{snippets::snippets::{SnippetError}, util::{attstring, segment_file}};
 
     #[derive(Debug, serde::Deserialize)]
     struct Metadata {
         description: String,
-        tags: Option<Vec<String>>,
+        tags: Option<HashMap<String, Vec<String>>>,
         keywords: Option<Vec<String>>,
     }
 
@@ -47,9 +50,14 @@ pub mod raw {
     pub struct Snippet {
         pub description: String,
         pub parts: Vec<Part>,
-        pub tags: Vec<String>,
+        pub tags: Vec<Tag>,
         pub keywords: Vec<String>,
-        pub path: Vec<String>,
+    }
+
+    #[derive(Debug, Archive, Serialize, Deserialize)]
+    pub struct Tag {
+        pub category: String,
+        pub name: String,
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
@@ -61,7 +69,7 @@ pub mod raw {
     }
 
     impl Snippet {
-        pub fn parse(source: &str, path: Vec<String>) -> Result<Self, SnippetError> {
+        pub fn parse(source: &str) -> Result<Self, SnippetError> {
             let segments = segment_file::parse(source.lines(), |line| {
                 line.strip_prefix("===").map(|x| x.trim())
             });
@@ -95,10 +103,22 @@ pub mod raw {
                 return Err(SnippetError::MissingSnippetSegments);
             }
 
-            let mut tags = metadata.tags.unwrap_or_default();
-            for path_component in path.iter() {
-                tags.push(path_component.clone());
-            }
+            let tags = {
+                let mut result = Vec::new();
+                let tag_map = metadata.tags.unwrap_or_default();
+
+                for (category, names) in tag_map.into_iter() {
+                    for name in names {
+                        let tag = Tag{ category: category.clone(), name };
+                        result.push(tag);
+                    }
+                }
+
+                result
+            };
+            // for path_component in path.iter() {
+            //     tags.push(path_component.clone());
+            // }
 
             let keywords = metadata.keywords.unwrap_or_default();
 
@@ -107,16 +127,17 @@ pub mod raw {
                 parts,
                 tags,
                 keywords,
-                path,
             };
 
             Ok(snippet)
         }
 
-        pub fn load<P>(file_path: P, path: Vec<String>) -> Result<Self, SnippetError> where P: AsRef<Path> {
+        pub fn load<P: AsRef<Path>>(file_path: P) -> Result<Self, SnippetError> {
+            let file_path = file_path.as_ref();
             let source = fs::read_to_string(file_path).map_err(SnippetError::IoError)?;
 
-            Snippet::parse(source.as_str(), path)
+            log::info!("Reading {}", file_path.display());
+            Snippet::parse(source.as_str())
         }
     }
 
@@ -129,9 +150,15 @@ pub mod raw {
 pub struct Snippet {
     pub description: String,
     pub parts: Vec<Part>,
-    pub tags: HashSet<String>,
+    pub tags: Vec<Tag>,
+    pub tag_set: HashSet<String>,
     pub extra_keywords: Vec<String>,
-    pub path: Vec<String>,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct Tag {
+    pub category: String,
+    pub name: String,
 }
 
 pub struct Part {
@@ -146,8 +173,8 @@ pub struct Part {
 impl Snippet {
     pub fn from_raw(raw_snippet: raw::Snippet, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
         let description = raw_snippet.description;
-        let tags = raw_snippet.tags.into_iter().collect();
-        let path = raw_snippet.path;
+        let tags = raw_snippet.tags.into_iter().map(Tag::from_raw).collect::<Vec<_>>();
+        let tag_set = tags.iter().map(|tag| tag.name.clone()).collect();
         let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter.clone())).collect();
         let extra_keywords = raw_snippet.keywords;
 
@@ -155,7 +182,7 @@ impl Snippet {
             description,
             parts,
             tags,
-            path,
+            tag_set,
             extra_keywords,
         }
     }
@@ -164,13 +191,22 @@ impl Snippet {
         let mut keywords = self.extra_keywords.clone();
 
         self.description.split(" ").for_each(|s| keywords.push(s.to_lowercase()));
-        self.tags.iter().for_each(|tag| keywords.push(tag.to_lowercase()));
+        self.tags.iter().for_each(|tag| keywords.push(tag.name.to_lowercase()));
 
         keywords
     }
 
     pub fn has_tags<'a>(&self, tags: impl Iterator<Item=&'a str>) -> bool {
-        tags.into_iter().all(|tag| self.tags.contains(tag))
+        tags.into_iter().all(|tag| self.tag_set.contains(tag))
+    }
+}
+
+impl Tag {
+    pub fn from_raw(raw_tag: raw::Tag) -> Self {
+        Tag {
+            category: raw_tag.category,
+            name: raw_tag.name,
+        }
     }
 }
 

@@ -2,7 +2,7 @@ use std::{collections::HashSet};
 
 use ratatui::{Frame, crossterm::event::{Event}};
 
-use crate::{snippets::Library, ui::{search_mode::SearchMode, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
+use crate::{snippets::{Library, snippets::Tag}, ui::{search_mode::SearchMode, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
 
 
 pub(super) enum Mode {
@@ -143,11 +143,11 @@ impl SnippetLayout {
 impl State {
     pub fn new(library: Library) -> State {
         // Compute length of longest tag, add 2 for border, add 1 for breathing space
-        let tag_view_width = library.tags().iter().map(|tag| tag.len() as u16).max().unwrap_or(0) + 3;
+        let tag_view_width = library.tags().iter().map(|tag| tag.name.len() as u16).max().unwrap_or(0) + 3;
 
         State {
             visible_snippets: library.snippets().collect(),
-            visible_tags: library.tags().clone(),
+            visible_tags: library.tags().iter().map(|tag| tag.name.clone()).collect(),
             library: library,
             selected_tags: Vec::new(),
             keywords: Vec::new(),
@@ -193,12 +193,12 @@ impl State {
 
             for snippet_tag in snippet_tags.iter() {
                 if let Some(prefix) = &self.tag_input {
-                    if snippet_tag.starts_with(prefix.as_str()) {
-                        tags.insert(snippet_tag.as_str());
+                    if snippet_tag.name.starts_with(prefix.as_str()) {
+                        tags.insert(&snippet_tag.name);
                     }
                 }
                 else {
-                    tags.insert(snippet_tag.as_str());
+                    tags.insert(&snippet_tag.name);
                 }
             }
         }

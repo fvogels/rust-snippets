@@ -1,11 +1,11 @@
 use std::{collections::HashSet, rc::Rc};
 
-use crate::{document, snippets::{archive::Archive, snippets::{Snippet}}, util::trie};
+use crate::{document, snippets::{archive::Archive, snippets::{Snippet, Tag}}, util::trie};
 
 pub struct Library {
     snippets: Vec<Snippet>,
     trie: trie::Trie<usize>,
-    tags: Vec<String>,
+    tags: Vec<Tag>,
 }
 
 impl Library {
@@ -75,12 +75,12 @@ impl Library {
         &self.snippets[index]
     }
 
-    pub fn tags<'a>(&'a self) -> &'a Vec<String> {
+    pub fn tags<'a>(&'a self) -> &'a Vec<Tag> {
         &self.tags
     }
 }
 
-fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<String> {
+fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<Tag> {
     let mut tag_set = HashSet::new();
 
     for snippet in snippets {
@@ -90,7 +90,7 @@ fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<String> {
     }
 
     let mut tags = tag_set.into_iter().collect::<Vec<_>>();
-    tags.sort();
+    tags.sort_by(|tag1, tag2| tag1.name.cmp(&tag2.name));
 
     tags
 }
@@ -99,7 +99,11 @@ fn collect_tags<'a>(snippets: impl Iterator<Item=&'a Snippet>) -> Vec<String> {
 mod test {
     use std::collections::HashSet;
 
-    use crate::snippets::{Library, snippets::Snippet};
+    use crate::snippets::{Library, snippets::{Snippet, Tag}};
+
+    fn create_feature_tag(name: &str) -> Tag {
+        Tag { category: "feature".to_owned(), name: name.to_owned() }
+    }
 
     #[test]
     fn search_with_tags() {
@@ -107,8 +111,8 @@ mod test {
             description: String::from("a"),
             extra_keywords: vec![],
             parts: Vec::new(),
-            path: Vec::new(),
-            tags: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
+            tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
+            tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
         };
 
         let library = Library::new(vec![snippet1].into_iter());
@@ -124,8 +128,8 @@ mod test {
             description: String::from("a"),
             extra_keywords: vec![],
             parts: Vec::new(),
-            path: Vec::new(),
-            tags: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
+            tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
+            tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
         };
 
         let library = Library::new(vec![snippet1].into_iter());

@@ -85,9 +85,8 @@ fn list_snippets() {
 
     for snippet_id in snippet_ids {
         let snippet = library.snippet(snippet_id);
-        let path = snippet.path.join("/");
 
-        println!("Description: {}\nPath: {}\n", snippet.description, path)
+        println!("Description: {}\n", snippet.description)
     }
 }
 

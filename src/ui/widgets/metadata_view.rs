@@ -1,4 +1,4 @@
-use ratatui::{style::Stylize, widgets::{List, ListItem}};
+use ratatui::{style::{Color, Stylize}, widgets::{List, ListItem}};
 
 pub struct Widget {
     categories: Vec<Category>,
@@ -20,7 +20,11 @@ impl ratatui::widgets::Widget for Widget {
         let mut list_items = Vec::new();
 
         for category in self.categories {
-            let caption_item = ListItem::new(category.caption).underlined();
+            if !list_items.is_empty() {
+                list_items.push(ListItem::new(""));
+            }
+
+            let caption_item = ListItem::new(category.caption).underlined().bg(Color::Rgb(96, 96, 255));
             list_items.push(caption_item);
 
             for entry in category.entries {
