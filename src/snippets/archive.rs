@@ -39,7 +39,7 @@ impl Archive {
         Archive { raw_snippets }
     }
 
-    pub fn load_snippet_files<P: AsRef<Path>>(root: &P) -> Result<Self, SnippetError> {
+    pub fn load_snippet_files<P: AsRef<Path>>(root: &P) -> anyhow::Result<Self> {
         let mut raw_snippets = Vec::new();
         Archive::load_snippet_files_rec(root, &mut |raw_snippet| raw_snippets.push(raw_snippet))?;
 
