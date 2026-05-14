@@ -10,7 +10,7 @@ mod timing;
 mod external;
 
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     setup_logger().unwrap();
 
     cli::start()

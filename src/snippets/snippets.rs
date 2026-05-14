@@ -1,45 +1,14 @@
 use std::{cell::{OnceCell}, collections::{HashMap, HashSet}, rc::Rc};
 
-use crate::{document::{self, Document, Fragment, SyntaxHighlighter, Theme}, util::attstring::{self}};
-use thiserror::Error;
-use std::io;
+use crate::{document::{self, Document, Fragment, SyntaxHighlighter, Theme}};
 
-
-#[derive(Debug, Error)]
-pub enum SnippetError {
-    #[error("IO error: {0}")]
-    IoError(#[from] io::Error),
-
-    #[error("Missing metadata segment")]
-    MissingMetadataSegment,
-
-    #[error("Missing snippet segments")]
-    MissingSnippetSegments,
-
-    #[error("Path error")]
-    PathError,
-
-    #[error("Serialization error")]
-    SerializationError,
-
-    #[error("YAML error: {0}")]
-    MalformedMetadata(#[from] serde_yaml::Error),
-
-    #[error("Attribute error: {0}")]
-    AttributeError(#[from] attstring::Error),
-
-    #[error("Missing snippets.yaml")]
-    MissingSnippetsYaml,
-
-    #[error("Inconsistent categories for tag named {}: it has categories {} and {}", name, category1, category2)]
-    InconsistentTagCategory { name: String, category1: String, category2: String },
-}
 
 pub mod raw {
     use std::{collections::HashMap, fs, path::Path};
 
-    use rkyv::{Archive, Deserialize, Serialize};
-    use crate::{snippets::snippets::{SnippetError}, util::{attstring, segment_file}};
+    use anyhow::Context;
+use rkyv::{Archive, Deserialize, Serialize};
+    use crate::{util::{attstring, segment_file}};
 
     #[derive(Debug, serde::Deserialize)]
     struct Metadata {
@@ -73,26 +42,26 @@ pub mod raw {
     }
 
     impl Snippet {
-        pub fn parse(path: String, source: &str) -> Result<Self, SnippetError> {
+        pub fn parse(path: String, source: &str) -> anyhow::Result<Self> {
             let segments = segment_file::parse(source.lines(), |line| {
                 line.strip_prefix("===").map(|x| x.trim())
             });
 
             let mut segment_iterator = segments.into_iter();
-            let metadata_segment = segment_iterator.next().ok_or(SnippetError::MissingMetadataSegment)?;
+            let metadata_segment = segment_iterator.next().context("Missing metadata segment")?;
 
             let metadata_string = metadata_segment.lines.join("\n");
             let metadata = parse_metadata(&metadata_string)?;
 
-            let parts: Result<Vec<Part>, SnippetError> =  segment_iterator.map(|segment| {
+            let parts: anyhow::Result<Vec<Part>> =  segment_iterator.map(|segment| {
                     let attributes = match segment.caption {
                         Some(caption) => {
-                            attstring::parse(caption.as_str()).map_err(SnippetError::AttributeError).map(|attrs| attrs)
+                            attstring::parse(caption.as_str())
                         },
                         None => {
                             Ok(Vec::new())
                         }
-                    }?;
+                    }.context("Parsing attributes of snippet part")?;
 
                     let caption = attributes.iter().find(|pair| pair.0 == "caption").map(|p| p.1.clone());
                     let url = attributes.iter().find(|pair| pair.0 == "url").map(|p| p.1.clone());
@@ -104,7 +73,7 @@ pub mod raw {
             let parts = parts?;
 
             if parts.len() == 0 {
-                return Err(SnippetError::MissingSnippetSegments);
+                anyhow::bail!("Missing snippet segments");
             }
 
             let tags = {
@@ -134,17 +103,17 @@ pub mod raw {
             Ok(snippet)
         }
 
-        pub fn load<P: AsRef<Path>>(file_path: P) -> Result<Self, SnippetError> {
+        pub fn load<P: AsRef<Path>>(file_path: P) -> anyhow::Result<Self> {
             let file_path = file_path.as_ref();
-            let source = fs::read_to_string(file_path).map_err(SnippetError::IoError)?;
+            let source = fs::read_to_string(file_path).with_context(|| format!("Reading snippet file {}", file_path.display()))?;
 
             log::info!("Reading {}", file_path.display());
             Snippet::parse(file_path.to_str().unwrap().to_owned(), source.as_str())
         }
     }
 
-    fn parse_metadata(source: &str) -> Result<Metadata, SnippetError> {
-        serde_yaml::from_str::<Metadata>(source).map_err(|e| SnippetError::MalformedMetadata(e))
+    fn parse_metadata(source: &str) -> anyhow::Result<Metadata> {
+        serde_yaml::from_str::<Metadata>(source).context("Parsing metadata")
     }
 }
 

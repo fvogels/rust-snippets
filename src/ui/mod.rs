@@ -10,13 +10,6 @@ use application::Application;
 
 use crate::{snippets::Library};
 
-pub fn start_ui(library: Library) {
-    match ratatui::run(|terminal| Application::new(library).run(terminal)) {
-        Ok(()) => {
-            println!("TUI successfully terminated")
-        },
-        Err(err) => {
-            println!("An error occurred: {}", err)
-        }
-    }
+pub fn start_ui(library: Library) -> anyhow::Result<()> {
+    ratatui::run(|terminal| Application::new(library).run(terminal))
 }

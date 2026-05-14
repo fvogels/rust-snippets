@@ -15,7 +15,7 @@ impl Application {
         }
     }
 
-    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> anyhow::Result<()> {
         while self.mode.is_running() {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?

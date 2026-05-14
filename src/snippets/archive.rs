@@ -1,9 +1,11 @@
-use std::{collections::HashMap, fs, hash::Hash, path::Path};
+use std::{collections::HashMap, fs, path::Path};
 
+use anyhow::Context;
 use rkyv::{from_bytes, to_bytes, rancor::Error};
 use serde::Deserialize;
+use anyhow;
 
-use crate::snippets::snippets::{SnippetError, raw};
+use crate::snippets::snippets::raw;
 
 pub struct Archive {
     pub raw_snippets: Vec<raw::Snippet>,
@@ -40,16 +42,17 @@ impl Archive {
     }
 
     pub fn load_snippet_files<P: AsRef<Path>>(root: &P) -> anyhow::Result<Self> {
+        let root = root.as_ref();
         let mut raw_snippets = Vec::new();
-        Archive::load_snippet_files_rec(root, &mut |raw_snippet| raw_snippets.push(raw_snippet))?;
+        Archive::load_snippet_files_rec(&root, &mut |raw_snippet| raw_snippets.push(raw_snippet)).with_context(|| format!("Loading all snippet files recursively, starting in {}", root.display()))?;
 
-        Archive::verify_tags(&raw_snippets)?;
+        Archive::verify_tag_categorization(&raw_snippets).context("Verifying tag categorization")?;
 
         let archive = Archive { raw_snippets };
         Ok(archive)
     }
 
-    fn verify_tags(snippets: &Vec<raw::Snippet>) -> Result<(), SnippetError> {
+    fn verify_tag_categorization(snippets: &Vec<raw::Snippet>) -> anyhow::Result<()> {
         let mut category_table: HashMap<String, String> = HashMap::new();
         let mut snippet_table: HashMap<String, Vec<&raw::Snippet>> = HashMap::new();
 
@@ -66,11 +69,7 @@ impl Archive {
                         }
                         log::error!("Snippet {} categorized it as {}", snippet.path, tag.category);
 
-                        return Err(SnippetError::InconsistentTagCategory {
-                            name: tag.name.clone(),
-                            category1: category.clone(),
-                            category2: tag.category.clone(),
-                        })
+                        anyhow::bail!("Inconsistent tag categories; see log for details");
                     }
                 }
                 else {
@@ -83,20 +82,21 @@ impl Archive {
         Ok(())
     }
 
-    fn load_snippet_files_rec<P: AsRef<Path>>(directory: &P, receiver: &mut dyn FnMut(raw::Snippet)) -> Result<(), SnippetError> {
+    fn load_snippet_files_rec<P: AsRef<Path>>(directory: &P, receiver: &mut dyn FnMut(raw::Snippet)) -> anyhow::Result<()> {
         let directory = directory.as_ref();
+        let metadata_filename = "_metadata.yaml";
 
-        let metadata_file_path = directory.join("_metadata.yaml");
+        let metadata_file_path = directory.join(metadata_filename);
         if !metadata_file_path.exists() {
-            return Err(SnippetError::MissingSnippetsYaml)
+            anyhow::bail!("Could not find {} in directory {}", metadata_filename, directory.display());
         }
 
         let metadata = fs::read_to_string(metadata_file_path)?;
         let metadata = serde_yaml::from_str::<Metadata>(&metadata).unwrap();
 
-        for entry in directory.read_dir().map_err(SnippetError::IoError)? {
-            let entry = entry.map_err(SnippetError::IoError)?;
-            let is_directory = entry.file_type().map_err(SnippetError::IoError)?.is_dir();
+        for entry in directory.read_dir()? {
+            let entry = entry?;
+            let is_directory = entry.file_type()?.is_dir();
 
             if is_directory {
                 Archive::load_snippet_files_rec(&entry.path(), &mut |mut raw_snippet| {
@@ -121,19 +121,21 @@ impl Archive {
         Ok(())
     }
 
-    pub fn load<P>(archive_path: &P) -> Result<Self, SnippetError> where P: AsRef<Path> {
-        let data = fs::read(archive_path).map_err(SnippetError::IoError)?;
+    pub fn load<P: AsRef<Path>>(archive_path: &P) -> anyhow::Result<Self> {
+        let archive_path = archive_path.as_ref();
+        let data = fs::read(archive_path).with_context(|| format!("Loading binary archive {}", archive_path.display()))?;
         let bytes = &data[..];
 
-        let snippets = from_bytes::<Vec<raw::Snippet>, Error>(bytes).map_err(|_| SnippetError::SerializationError)?;
+        let snippets = from_bytes::<Vec<raw::Snippet>, Error>(bytes).context("Deserializing archive")?;
         Ok(Self::new(snippets))
     }
 
-    pub fn write<P>(&self, archive_path: &P) -> Result<(), SnippetError> where P: AsRef<Path> {
+    pub fn write<P: AsRef<Path>>(&self, archive_path: &P) -> anyhow::Result<()> {
+        let archive_path = archive_path.as_ref();
         let snippets = &self.raw_snippets;
-        let bytes = to_bytes::<rkyv::rancor::Error>(snippets).map_err(|_| SnippetError::SerializationError)?;
+        let bytes = to_bytes::<rkyv::rancor::Error>(snippets).context("Serializing archive")?;
 
-        fs::write(archive_path, bytes).map_err(SnippetError::IoError)?;
+        fs::write(archive_path, bytes).with_context(|| format!("writing archive to {}", archive_path.display()))?;
 
         Ok(())
     }

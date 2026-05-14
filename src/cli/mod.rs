@@ -3,7 +3,7 @@ use std::rc::Rc;
 use log;
 use clap::{Parser, Subcommand};
 
-use crate::{document, snippets::{self, Library}, timing, ui};
+use crate::{document, snippets::{self, Archive, Library}, timing, ui};
 
 
 #[derive(Parser, Debug)]
@@ -36,7 +36,7 @@ enum HighlightSubcommand {
 }
 
 impl Commands {
-    fn handle(&self) {
+    fn handle(&self) -> anyhow::Result<()> {
         match self {
             Self::List => list_snippets(),
             Self::Search { keywords } => search(keywords),
@@ -52,11 +52,11 @@ impl Commands {
     }
 }
 
-pub fn start() {
-    CommandLineInterface::parse().command.handle();
+pub fn start() -> anyhow::Result<()> {
+    CommandLineInterface::parse().command.handle()
 }
 
-fn search<'a>(keywords: &Vec<String>) {
+fn search<'a>(keywords: &Vec<String>) -> anyhow::Result<()> {
     let library = load_library();
     let tags: Vec<&str> = Vec::new();
     let snippets = library.search(keywords.iter().map(std::ops::Deref::deref), tags.into_iter());
@@ -65,21 +65,27 @@ fn search<'a>(keywords: &Vec<String>) {
         println!("{}", library.snippet(snippet).description)
     );
 
-    println!("{} snippets found", snippets.len())
+    println!("{} snippets found", snippets.len());
+
+    Ok(())
 }
 
-fn list_syntax_highlighting_languages() {
+fn list_syntax_highlighting_languages() -> anyhow::Result<()> {
     let syntax_set = syntect::parsing::SyntaxSet::load_defaults_newlines();
     syntax_set.syntaxes().iter().for_each(|s| println!("{}", s.name));
+
+    Ok(())
 }
 
-fn list_syntax_highlighting_themes() {
+fn list_syntax_highlighting_themes() -> anyhow::Result<()> {
     syntect::highlighting::ThemeSet::load_defaults().themes.into_keys().for_each(|theme| {
         println!("{}", theme);
     });
+
+    Ok(())
 }
 
-fn list_snippets() {
+fn list_snippets() -> anyhow::Result<()> {
     let library = load_library();
     let snippet_ids = library.snippets();
 
@@ -88,19 +94,29 @@ fn list_snippets() {
 
         println!("Description: {}\n", snippet.description)
     }
+
+    Ok(())
 }
 
-fn create_archive() {
+fn create_archive() -> anyhow::Result<()> {
     let root = "../data/snippets";
     let archive_path = "./archive.bin";
 
-    let (archive, duration) = timing::measure(|| {
-        let archive = snippets::Archive::load_snippet_files(&root).unwrap();
-        archive.write(&archive_path).unwrap();
-        archive
+    let (archive, duration) = timing::measure(|| -> anyhow::Result<Archive> {
+        let archive = snippets::Archive::load_snippet_files(&root)?;
+        archive.write(&archive_path)?;
+        Ok(archive)
     });
 
-    println!("Generated archive: {} snippets in {}ms", archive.raw_snippets.len(), duration.as_millis());
+    match archive {
+        Ok(archive) => {
+            println!("Generated archive: {} snippets in {}ms", archive.raw_snippets.len(), duration.as_millis());
+            Ok(())
+        },
+        Err(error) => {
+            Err(error)
+        }
+    }
 }
 
 fn load_library() -> Library {
@@ -110,14 +126,14 @@ fn load_library() -> Library {
     Library::from_archive(archive, syntax_highlighter)
 }
 
-fn start_ui() {
+fn start_ui() -> anyhow::Result<()> {
     let library = {
         let (library, duration) = timing::measure(|| load_library());
         log::info!("Library loaded in {}ms", duration.as_millis());
         library
     };
 
-    ui::start_ui(library);
+    ui::start_ui(library)
 }
 
 fn create_syntax_highlighter() -> document::SyntaxHighlighter {
