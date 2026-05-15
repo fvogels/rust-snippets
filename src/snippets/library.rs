@@ -1,4 +1,4 @@
-use std::{collections::HashSet, rc::Rc};
+use std::{collections::{HashMap, HashSet}, rc::Rc};
 
 use crate::{document, snippets::{archive::Archive, snippets::{Snippet, Tag}}, util::trie};
 
@@ -10,9 +10,7 @@ pub struct Library {
 
 impl Library {
     pub fn new(snippets: impl Iterator<Item=Snippet>) -> Self {
-        let mut snippets = snippets.collect::<Vec<_>>();
-        snippets.sort_by(|x, y| x.description.cmp(&y.description));
-
+        let snippets = snippets.collect::<Vec<_>>();
         let mut trie_builder = trie::Builder::new();
 
         for snippet_index in 0..snippets.len() {
@@ -32,7 +30,20 @@ impl Library {
     }
 
     pub fn from_archive(archive: Archive, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
-        let snippets = archive.raw_snippets.into_iter().map(|raw_snippet| Snippet::from_raw(raw_snippet, syntax_highlighter.clone()));
+        let raw_snippets = {
+            let mut snippets = archive.raw_snippets;
+            snippets.sort_by(|x, y| x.description.cmp(&y.description));
+            snippets
+        };
+        let mut snippet_table = HashMap::new();
+
+        for (index, raw_snippet) in raw_snippets.iter().enumerate() {
+            if let Some(id) = &raw_snippet.identifier {
+                snippet_table.insert(id.clone(), index);
+            }
+        }
+
+        let snippets = raw_snippets.into_iter().map(|raw_snippet| Snippet::from_raw(raw_snippet, &snippet_table, syntax_highlighter.clone()));
         Library::new(snippets)
     }
 
@@ -111,6 +122,7 @@ mod test {
             description: String::from("a"),
             extra_keywords: vec![],
             parts: Vec::new(),
+            links: Vec::new(),
             tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
             tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
         };
@@ -128,6 +140,7 @@ mod test {
             description: String::from("a"),
             extra_keywords: vec![],
             parts: Vec::new(),
+            links: Vec::new(),
             tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
             tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
         };

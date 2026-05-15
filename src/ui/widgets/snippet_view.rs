@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
-use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, StatefulWidget, Widget}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List, StatefulWidget, Widget}};
 
-use crate::{snippets::snippets::{Part, Snippet}, ui::widgets::{document_view, metadata_view::{self, Category}}};
+use crate::{document::Document, snippets::{Library, snippets::{Part, Snippet}}, ui::widgets::{document_view, metadata_view::{self, Category}}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
+    library: &'a Library,
 }
 
 pub struct SnippetViewState {
@@ -45,9 +46,10 @@ impl SnippetViewState {
 }
 
 impl<'a> SnippetView<'a> {
-    pub fn new(snippet: &'a Snippet) -> Self {
+    pub fn new(snippet: &'a Snippet, library: &'a Library) -> Self {
         SnippetView{
             snippet,
+            library,
         }
     }
 
@@ -59,36 +61,34 @@ impl<'a> SnippetView<'a> {
 
         (selected_part_index, &snippet.parts[selected_part_index])
     }
-}
 
-impl<'a> StatefulWidget for SnippetView<'a> {
-    type State = SnippetViewState;
+    fn render_border(&self, area: Rect, buffer: &mut Buffer, selected_part_index: usize, selected_part: &Part) -> Rect {
+        let bottom_title = {
+            let one_based_index = selected_part_index + 1;
+            let part_count = self.snippet.parts.len();
 
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let (selected_part_index, selected_part) = self.selected_snippet_part(state);
-
-        let snippet_caption_block = {
-            let bottom_title = {
-                let one_based_index = selected_part_index + 1;
-                let part_count = self.snippet.parts.len();
-
-                let caption = match &selected_part.caption {
-                    Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
-                    None => format!(" {}/{} ", one_based_index, part_count),
-                };
-
-                Line::raw(caption)
+            let caption = match &selected_part.caption {
+                Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
+                None => format!(" {}/{} ", one_based_index, part_count),
             };
 
-            Block::new().title_bottom(bottom_title).borders(Borders::ALL)
-        };
-        let (document_viewer_area, metadata_area) = {
-            let block_inner_area = snippet_caption_block.inner(area);
-            let [document_viewer_area, metadata_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(block_inner_area);
-            (document_viewer_area, metadata_area)
+            Line::raw(caption)
         };
 
-        let document_viewer = document_view::Widget::new(selected_part.document());
+        let block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        let inner_area = block.inner(area);
+
+        block.render(area, buffer);
+
+        inner_area
+    }
+
+    fn render_document_viewer(&self, area: Rect, buffer: &mut Buffer, document: &Document) {
+        let document_viewer = document_view::Widget::new(document);
+        document_viewer.render(area, buffer);
+    }
+
+    fn render_metadata_viewer(&self, area: Rect, buffer: &mut Buffer) {
         let metadata_viewer = {
             let mut category_table = HashMap::new();
 
@@ -106,9 +106,51 @@ impl<'a> StatefulWidget for SnippetView<'a> {
 
             metadata_view::Widget::new(categories)
         };
+        metadata_viewer.render(area, buffer);
+    }
 
-        snippet_caption_block.render(area, buffer);
-        document_viewer.render(document_viewer_area, buffer);
-        metadata_viewer.render(metadata_area, buffer);
+    fn render_links(&self, area: Rect, buffer: &mut Buffer) {
+        let block = Block::new().borders(Borders::TOP).title("See also");
+        let block_inner_area = block.inner(area);
+        let linked_nodes = self.snippet.links.iter().map(|linked_id|
+            self.library.snippet(*linked_id).description.as_str()
+        ).collect::<Vec<_>>();
+        let links_list = List::new(linked_nodes);
+
+        block.render(area, buffer);
+        ratatui::widgets::Widget::render(links_list, block_inner_area, buffer);
+    }
+}
+
+impl<'a> StatefulWidget for SnippetView<'a> {
+    type State = SnippetViewState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let (selected_part_index, selected_part) = self.selected_snippet_part(state);
+        let link_count = self.snippet.links.len();
+
+        let area = self.render_border(area, buffer, selected_part_index, selected_part);
+
+        // Compute layout
+        let (document_viewer_area, metadata_area, links_area) = {
+            let [left_area, right_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(area);
+            let metadata_area = right_area;
+
+            if link_count > 0 {
+                let [document_viewer_area, links_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length((link_count + 1) as u16)]).areas(left_area);
+                (document_viewer_area, metadata_area, Some(links_area))
+            }
+            else {
+                let document_viewer_area = left_area;
+                (document_viewer_area, metadata_area, None)
+            }
+        };
+
+        self.render_document_viewer(document_viewer_area, buffer, selected_part.document());
+        self.render_metadata_viewer(metadata_area, buffer);
+
+        if let Some(links_area) = links_area {
+            self.render_links(links_area, buffer);
+        }
     }
 }

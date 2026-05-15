@@ -125,7 +125,7 @@ impl SearchMode {
             None => {},
             Some(selected_snippet_index) => {
                 let snippet = self.state.library.snippet(self.state.visible_snippets[selected_snippet_index]);
-                let snippet_view = SnippetView::new(snippet);
+                let snippet_view = SnippetView::new(snippet, &self.state.library);
                 snippet_view.render(area, buffer, &mut self.snippet_view_state);
             }
         }

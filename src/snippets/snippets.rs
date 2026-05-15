@@ -13,6 +13,8 @@ use rkyv::{Archive, Deserialize, Serialize};
     #[derive(Debug, serde::Deserialize)]
     struct Metadata {
         description: String,
+        identifier: Option<String>,
+        links: Option<Vec<String>>,
         tags: Option<HashMap<String, Vec<String>>>,
         keywords: Option<Vec<String>>,
     }
@@ -20,6 +22,8 @@ use rkyv::{Archive, Deserialize, Serialize};
     #[derive(Debug, Archive, Serialize, Deserialize)]
 
     pub struct Snippet {
+        pub identifier: Option<String>,
+        pub links: Vec<String>,
         pub description: String,
         pub parts: Vec<Part>,
         pub tags: Vec<Tag>,
@@ -94,6 +98,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 
             let snippet = Snippet{
                 description: metadata.description,
+                identifier: metadata.identifier,
+                links: metadata.links.unwrap_or(Vec::new()),
                 parts,
                 tags,
                 keywords,
@@ -120,6 +126,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 pub struct Snippet {
     pub description: String,
+    pub links: Vec<usize>,
     pub parts: Vec<Part>,
     pub tags: Vec<Tag>,
     pub tag_set: HashSet<String>,
@@ -142,15 +149,17 @@ pub struct Part {
 }
 
 impl Snippet {
-    pub fn from_raw(raw_snippet: raw::Snippet, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
+    pub fn from_raw(raw_snippet: raw::Snippet, snippet_table: &HashMap<String, usize>, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
         let description = raw_snippet.description;
         let tags = raw_snippet.tags.into_iter().map(Tag::from_raw).collect::<Vec<_>>();
         let tag_set = tags.iter().map(|tag| tag.name.clone()).collect();
         let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter.clone())).collect();
         let extra_keywords = raw_snippet.keywords;
+        let links = raw_snippet.links.iter().map(|id| snippet_table[id.as_str()]).collect();
 
         Snippet {
             description,
+            links,
             parts,
             tags,
             tag_set,

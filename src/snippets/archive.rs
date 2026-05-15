@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::{HashMap, HashSet}, fs, path::Path};
 
 use anyhow::Context;
 use rkyv::{from_bytes, to_bytes, rancor::Error};
@@ -46,10 +46,47 @@ impl Archive {
         let mut raw_snippets = Vec::new();
         Archive::load_snippet_files_rec(&root, &mut |raw_snippet| raw_snippets.push(raw_snippet)).with_context(|| format!("Loading all snippet files recursively, starting in {}", root.display()))?;
 
-        Archive::verify_tag_categorization(&raw_snippets).context("Verifying tag categorization")?;
+        Archive::verify(&raw_snippets)?;
 
         let archive = Archive { raw_snippets };
         Ok(archive)
+    }
+
+    fn verify(raw_snippets: &Vec<raw::Snippet>) -> anyhow::Result<()> {
+        Archive::verify_tag_categorization(raw_snippets)?;
+
+        let snippet_identifiers = Archive::collect_identifiers(raw_snippets)?;
+        Archive::verify_link_existence(&snippet_identifiers, raw_snippets)?;
+
+        Ok(())
+    }
+
+    fn collect_identifiers(snippets: &Vec<raw::Snippet>) -> anyhow::Result<HashSet<String>> {
+        let mut identifiers = HashMap::new();
+
+        for snippet in snippets {
+            if let Some(identifier) = &snippet.identifier {
+                if let Some(path) = identifiers.get(identifier) {
+                    anyhow::bail!("{} and {} have the same identifier", path, snippet.path);
+                }
+
+                identifiers.insert(identifier.clone(), snippet.path.clone());
+            }
+        }
+
+        Ok(identifiers.into_keys().collect::<HashSet<_>>())
+    }
+
+    fn verify_link_existence(valid_identifiers: &HashSet<String>, snippets: &Vec<raw::Snippet>) -> anyhow::Result<()> {
+        for snippet in snippets {
+            for link in &snippet.links {
+                if !valid_identifiers.contains(link) {
+                    anyhow::bail!("Snippet {} links to invalid identifier {}", snippet.path, link);
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn verify_tag_categorization(snippets: &Vec<raw::Snippet>) -> anyhow::Result<()> {
