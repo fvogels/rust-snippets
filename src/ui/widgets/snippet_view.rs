@@ -110,7 +110,7 @@ impl<'a> SnippetView<'a> {
     }
 
     fn render_links(&self, area: Rect, buffer: &mut Buffer) {
-        let block = Block::new().borders(Borders::TOP).title("See also");
+        let block = Block::new().borders(Borders::TOP).title_top(" See also ").title_alignment(ratatui::layout::HorizontalAlignment::Center);
         let block_inner_area = block.inner(area);
         let linked_nodes = self.snippet.links.iter().map(|linked_id|
             self.library.snippet(*linked_id).description.as_str()
