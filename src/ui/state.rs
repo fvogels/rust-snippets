@@ -2,7 +2,7 @@ use std::{collections::HashSet};
 
 use ratatui::{Frame, crossterm::event::{Event}};
 
-use crate::{snippets::{Library, snippets::Tag}, ui::{search_mode::SearchMode, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
+use crate::{snippets::Library, ui::{search_mode::SearchMode, tag_search_mode::TagSearchMode, view_mode::ViewMode}};
 
 
 pub(super) enum Mode {

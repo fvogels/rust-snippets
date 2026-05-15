@@ -1,7 +1,5 @@
 use std::borrow::Cow;
 
-use ratatui::text::Line;
-
 use crate::document::{self, Style};
 
 

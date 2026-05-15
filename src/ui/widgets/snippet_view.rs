@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List, StatefulWidget, Widget}};
 
-use crate::{document::Document, snippets::{Library, snippets::{Part, Snippet}}, ui::widgets::{document_view, metadata_view::{self, Category}}};
+use crate::{document::Document, snippets::{Library, snippets::{Part, Snippet}}, ui::widgets::{document_view, metadata_view}};
 
 pub struct SnippetView<'a> {
     snippet: &'a Snippet,
