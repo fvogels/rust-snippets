@@ -109,7 +109,7 @@ fn list_snippets() -> anyhow::Result<()> {
 fn list_tags() -> anyhow::Result<()> {
     let library = load_library();
     let snippet_ids = library.snippets();
-    let mut tags = {
+    let tags = {
         let mut set = HashSet::new();
 
         for snippet_id in snippet_ids {
