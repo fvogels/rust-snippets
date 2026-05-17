@@ -44,6 +44,10 @@ impl State {
     pub fn selected(&self) -> Option<usize> {
         self.list_state.selected()
     }
+
+    pub fn select(&mut self, index: usize) {
+        self.list_state.select(Some(index));
+    }
 }
 
 impl<'a> Widget<'a> {
