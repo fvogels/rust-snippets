@@ -1,4 +1,4 @@
-use std::{io, mem};
+use std::{collections::HashSet, io, mem};
 
 use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget}};
 
@@ -68,8 +68,8 @@ impl AppStateMode {
 struct AppState<Mode: mode::Mode> {
     library: Library,
     mode: Mode,
-    tag_based_filter: Vec<Tag>,
-    keyword_based_filter: Vec<String>,
+    filtering_tags: Vec<Tag>,
+    filtering_keywords: Vec<String>,
     listed_snippets: Vec<usize>,
     listed_tags: Vec<Tag>,
     shown_snippet: Cyclic,
@@ -125,6 +125,37 @@ impl<Mode: mode::Mode> AppState<Mode> {
     fn assert_invariant(&self) {
         debug_assert_eq!(self.shown_snippet.modulo() as usize, self.listed_snippets.len());
     }
+
+    fn add_tag_to_filter(&mut self, tag: Tag) {
+        self.filtering_tags.push(tag);
+        self.refresh();
+    }
+
+    /// Recomputes the list of snippets and the list of tags.
+    fn refresh(&mut self) {
+        self.listed_snippets = self.library.search(self.filtering_keywords.iter().map(String::as_str), self.filtering_tags.iter().map(|tag| tag.name.as_str()));
+
+        let mut tags: HashSet<&Tag> = HashSet::new();
+
+        // Find the union of the tags of all visible snippets
+        for snippet_id in self.listed_snippets.iter().copied() {
+            let snippet = self.library.snippet(snippet_id);
+            let snippet_tags = &snippet.tags;
+
+            for snippet_tag in snippet_tags.iter() {
+                tags.insert(&snippet_tag);
+            }
+        }
+
+        // Remove the already selected tags
+        for selected_tag in self.filtering_tags.iter() {
+            tags.remove(selected_tag);
+        }
+
+        self.listed_tags = tags.into_iter().cloned().collect();
+        self.listed_tags.sort_by(|tag1, tag2| tag1.name.cmp(&tag2.name));
+        self.shown_snippet = Cyclic::new(0, self.listed_snippets.len() as u64);
+    }
 }
 
 impl AppState<mode::View> {
@@ -136,8 +167,8 @@ impl AppState<mode::View> {
             library,
             shown_snippet: Cyclic::new(0, listed_snippets.len() as u64),
             mode: mode::View::initial(),
-            keyword_based_filter: Vec::new(),
-            tag_based_filter: Vec::new(),
+            filtering_keywords: Vec::new(),
+            filtering_tags: Vec::new(),
             listed_snippets,
             listed_tags,
         }
@@ -148,7 +179,7 @@ impl AppState<mode::View> {
         let inner_area = border.inner(area);
 
         let tag_list = {
-            let selected_tags = Vec::<&str>::new();
+            let selected_tags = self.filtering_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
             let listed_tags = &self.listed_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
 
             widgets::tags_view::TagsView::new(selected_tags.iter().copied(), listed_tags.iter().copied())
@@ -234,8 +265,8 @@ impl AppState<mode::View> {
         AppStateMode::TagSearch(AppState {
             library: self.library,
             mode: mode::TagSearch::new(self.listed_tags.clone()),
-            tag_based_filter: self.tag_based_filter,
-            keyword_based_filter: self.keyword_based_filter,
+            filtering_tags: self.filtering_tags,
+            filtering_keywords: self.filtering_keywords,
             listed_snippets: self.listed_snippets,
             listed_tags: self.listed_tags,
             shown_snippet: self.shown_snippet,
@@ -282,7 +313,7 @@ impl AppState<mode::TagSearch> {
         let inner_area = border.inner(area);
 
         let tag_list = {
-            let selected_tags = self.tag_based_filter.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
+            let selected_tags = self.filtering_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
             let listed_tags = self.mode.leftover_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
 
             widgets::tags_view::TagsView::new(selected_tags.iter().copied(), listed_tags.iter().copied())
@@ -325,6 +356,7 @@ impl AppState<mode::TagSearch> {
                 KeyCode::Up => self.highlight_previous_tag(),
                 KeyCode::Down => self.highlight_next_tag(),
                 KeyCode::Backspace => self.remove_char(),
+                KeyCode::Enter => self.select_highlighted_tag(),
                 KeyCode::Char(char) if self.is_valid_tag_character(char) => self.add_char(char),
                 _ => self.remain_in_tag_search_mode(),
             }
@@ -345,17 +377,21 @@ impl AppState<mode::TagSearch> {
     }
 
     fn cancel_tag_search(self) -> AppStateMode {
+        self.switch_to_view_mode()
+    }
+
+    fn switch_to_view_mode(self) -> AppStateMode {
         self.assert_invariant();
 
-        AppStateMode::View(AppState {
+        AppState {
             library: self.library,
             mode: mode::View::initial(),
-            tag_based_filter: self.tag_based_filter,
-            keyword_based_filter: self.keyword_based_filter,
+            filtering_tags: self.filtering_tags,
+            filtering_keywords: self.filtering_keywords,
             listed_snippets: self.listed_snippets,
             listed_tags: self.listed_tags,
             shown_snippet: self.shown_snippet,
-        })
+        }.into()
     }
 
     fn add_char(mut self, char: char) -> AppStateMode {
@@ -389,6 +425,14 @@ impl AppState<mode::TagSearch> {
 
         self.mode.leftover_tags = self.listed_tags.iter().filter(|tag| tag.name.to_lowercase().starts_with(lowercased.as_str())).cloned().collect::<Vec<_>>();
         self.mode.selected_tag_index = Cyclic::new(0, self.mode.leftover_tags.len() as u64);
+    }
+
+    fn select_highlighted_tag(mut self) -> AppStateMode {
+        let selected_index = self.mode.selected_tag_index.value() as usize;
+        let selected_tag = self.mode.leftover_tags[selected_index].clone();
+        self.add_tag_to_filter(selected_tag);
+
+        self.switch_to_view_mode()
     }
 }
 
