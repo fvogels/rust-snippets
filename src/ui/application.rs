@@ -243,6 +243,7 @@ impl AppState<mode::View> {
             match event.code {
                 KeyCode::Char('q') => self.quit(),
                 KeyCode::Char('#') => self.switch_to_tag_search_mode(),
+                KeyCode::Delete => self.drop_filtering_tag(),
                 KeyCode::Up => self.highlight_previous_snippet(),
                 KeyCode::Down => self.highlight_next_snippet(),
                 _ => self.remain_in_view_mode(),
@@ -281,6 +282,13 @@ impl AppState<mode::View> {
 
     fn highlight_next_snippet(mut self) -> AppStateMode {
         self.shown_snippet = self.shown_snippet.add(1);
+
+        self.remain_in_view_mode()
+    }
+
+    fn drop_filtering_tag(mut self) -> AppStateMode {
+        self.filtering_tags.pop();
+        self.refresh();
 
         self.remain_in_view_mode()
     }
