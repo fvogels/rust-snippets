@@ -125,7 +125,6 @@ impl TagSearchMode {
         }
 
         self.remain_in_tag_search_mode()
-
     }
 
     fn remove_last_letter_or_tag(mut self) -> Mode {

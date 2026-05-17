@@ -1,6 +1,6 @@
 use std::{io, mem};
 
-use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::Style, widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget}};
+use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget}};
 
 use crate::{snippets::{Library, snippets::Tag}, timing, ui::{Mode, widgets}, util::Cyclic};
 
@@ -28,6 +28,7 @@ impl Application {
         match &mut self.active_mode {
             AppStateMode::Quit => panic!("should not happen"),
             AppStateMode::View(state) => state.draw(frame),
+            AppStateMode::TagSearch(state) => state.draw(frame),
         }
         // let (_, duration) = timing::measure(|| self.mode.draw(frame));
         // log::info!("Rendering frame took {}ms", duration.as_millis());
@@ -39,6 +40,7 @@ impl Application {
         self.active_mode = match active_mode {
             AppStateMode::Quit => panic!("should not happen"),
             AppStateMode::View(state) => state.handle_event(event),
+            AppStateMode::TagSearch(state) => state.handle_event(event),
         };
         Ok(())
     }
@@ -47,6 +49,7 @@ impl Application {
 enum AppStateMode {
     Quit,
     View(AppState<mode::View>),
+    TagSearch(AppState<mode::TagSearch>),
 }
 
 impl AppStateMode {
@@ -62,7 +65,7 @@ impl AppStateMode {
     }
 }
 
-struct AppState<Mode> {
+struct AppState<Mode: mode::Mode> {
     library: Library,
     mode: Mode,
     tag_based_filter: Vec<Tag>,
@@ -73,7 +76,9 @@ struct AppState<Mode> {
 }
 
 mod mode {
-    use crate::ui::widgets;
+    use crate::{snippets::snippets::Tag, ui::widgets, util::Cyclic};
+
+    pub trait Mode { }
 
     pub struct View {
         pub snippet_list_state: widgets::description_list::State,
@@ -88,9 +93,31 @@ mod mode {
             }
         }
     }
+
+    impl Mode for View { }
+
+    pub struct TagSearch {
+        pub tag_list_state: widgets::tags_view::TagsViewState,
+        pub selected_tag_index: Cyclic,
+        pub tag_input: String,
+        pub leftover_tags: Vec<Tag>,
+    }
+
+    impl TagSearch {
+        pub fn new(tag_list: Vec<Tag>) -> Self {
+            TagSearch {
+                tag_list_state: widgets::tags_view::TagsViewState::new(),
+                selected_tag_index: Cyclic::new(0, tag_list.len() as u64),
+                tag_input: String::new(),
+                leftover_tags: tag_list,
+            }
+        }
+    }
+
+    impl Mode for TagSearch { }
 }
 
-impl<Mode> AppState<Mode> {
+impl<Mode: mode::Mode> AppState<Mode> {
     fn quit(self) -> AppStateMode {
         AppStateMode::Quit
     }
@@ -135,7 +162,7 @@ impl AppState<mode::View> {
         let snippet_list = {
             let items = self.listed_snippets.iter().map(|id| self.library.snippet(*id).description.as_str());
 
-            widgets::description_list::Widget::new(items, false)
+            widgets::description_list::Widget::new(items, true)
         };
         let snippet_list_state = &mut self.mode.snippet_list_state;
         snippet_list_state.select(self.shown_snippet.into());
@@ -184,6 +211,7 @@ impl AppState<mode::View> {
         if event.is_press() {
             match event.code {
                 KeyCode::Char('q') => self.quit(),
+                KeyCode::Char('#') => self.switch_to_tag_search_mode(),
                 KeyCode::Up => self.highlight_previous_snippet(),
                 KeyCode::Down => self.highlight_next_snippet(),
                 _ => self.remain_in_view_mode(),
@@ -200,6 +228,20 @@ impl AppState<mode::View> {
         self.into()
     }
 
+    fn switch_to_tag_search_mode(self) -> AppStateMode {
+        self.assert_invariant();
+
+        AppStateMode::TagSearch(AppState {
+            library: self.library,
+            mode: mode::TagSearch::new(self.listed_tags.clone()),
+            tag_based_filter: self.tag_based_filter,
+            keyword_based_filter: self.keyword_based_filter,
+            listed_snippets: self.listed_snippets,
+            listed_tags: self.listed_tags,
+            shown_snippet: self.shown_snippet,
+        })
+    }
+
     fn highlight_previous_snippet(mut self) -> AppStateMode {
         self.shown_snippet = self.shown_snippet.sub(1);
 
@@ -213,8 +255,151 @@ impl AppState<mode::View> {
     }
 }
 
+impl AppState<mode::TagSearch> {
+    pub fn draw(&mut self, frame: &mut Frame) {
+        self.assert_invariant();
+
+        let (search_bar_area, tag_list_area, snippet_list_area) = {
+            let area = frame.area();
+            let [ upper_area, search_bar_area ] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+            let [ tag_list_area, snippet_list_area ] = Layout::horizontal([ Constraint::Length(20), Constraint::Fill(1) ]).areas(upper_area);
+
+            ( search_bar_area, tag_list_area, snippet_list_area )
+        };
+
+        let buffer = frame.buffer_mut();
+        self.render_search_bar(search_bar_area, buffer);
+        self.render_tag_list(tag_list_area, buffer);
+        self.render_snippet_list(snippet_list_area, buffer);
+
+        self.assert_invariant();
+    }
+
+    fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        self.mode.tag_list_state.select(self.mode.selected_tag_index.value() as usize);
+
+        let border = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
+        let inner_area = border.inner(area);
+
+        let tag_list = {
+            let selected_tags = self.tag_based_filter.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
+            let listed_tags = self.mode.leftover_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
+
+            widgets::tags_view::TagsView::new(selected_tags.iter().copied(), listed_tags.iter().copied())
+        };
+
+        ratatui::widgets::Widget::render(border, area, buffer);
+        ratatui::widgets::StatefulWidget::render(tag_list, inner_area, buffer, &mut self.mode.tag_list_state);
+    }
+
+    fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        let snippet_list = {
+            let items = self.listed_snippets.iter().map(|id| self.library.snippet(*id).description.as_str());
+
+            widgets::description_list::Widget::new(items, false)
+        };
+
+        ratatui::widgets::Widget::render(snippet_list, area, buffer);
+    }
+
+    fn render_search_bar(&mut self, area: Rect, buffer: &mut Buffer) {
+        let prompt = format!("#{}", self.mode.tag_input);
+        let paragraph = ratatui::widgets::Paragraph::new(prompt).on_light_blue();
+
+        paragraph.render(area, buffer);
+    }
+
+    pub fn handle_event(self, event: Event) -> AppStateMode {
+        self.assert_invariant();
+
+        match event {
+            Event::Key(key_event) => self.handle_key_event(key_event),
+            _ => self.remain_in_tag_search_mode()
+        }
+    }
+
+    fn handle_key_event(self, event: KeyEvent) -> AppStateMode {
+        if event.is_press() {
+            match event.code {
+                KeyCode::Esc => self.cancel_tag_search(),
+                KeyCode::Up => self.highlight_previous_tag(),
+                KeyCode::Down => self.highlight_next_tag(),
+                KeyCode::Backspace => self.remove_char(),
+                KeyCode::Char(char) if self.is_valid_tag_character(char) => self.add_char(char),
+                _ => self.remain_in_tag_search_mode(),
+            }
+        }
+        else {
+            self.remain_in_tag_search_mode()
+        }
+    }
+
+    fn is_valid_tag_character(&self, char: char) -> bool {
+        char.is_ascii_graphic()
+    }
+
+    fn remain_in_tag_search_mode(self) -> AppStateMode {
+        self.assert_invariant();
+
+        self.into()
+    }
+
+    fn cancel_tag_search(self) -> AppStateMode {
+        self.assert_invariant();
+
+        AppStateMode::View(AppState {
+            library: self.library,
+            mode: mode::View::initial(),
+            tag_based_filter: self.tag_based_filter,
+            keyword_based_filter: self.keyword_based_filter,
+            listed_snippets: self.listed_snippets,
+            listed_tags: self.listed_tags,
+            shown_snippet: self.shown_snippet,
+        })
+    }
+
+    fn add_char(mut self, char: char) -> AppStateMode {
+        self.mode.tag_input.push(char);
+        self.refresh_tag_list();
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn remove_char(mut self) -> AppStateMode {
+        self.mode.tag_input.pop();
+        self.refresh_tag_list();
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn highlight_previous_tag(mut self) -> AppStateMode {
+        self.mode.selected_tag_index = self.mode.selected_tag_index.sub(1);
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn highlight_next_tag(mut self) -> AppStateMode {
+        self.mode.selected_tag_index = self.mode.selected_tag_index.add(1);
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn refresh_tag_list(&mut self) {
+        let lowercased = self.mode.tag_input.to_lowercase();
+
+        self.mode.leftover_tags = self.listed_tags.iter().filter(|tag| tag.name.to_lowercase().starts_with(lowercased.as_str())).cloned().collect::<Vec<_>>();
+        self.mode.selected_tag_index = Cyclic::new(0, self.mode.leftover_tags.len() as u64);
+    }
+}
+
 impl From<AppState<mode::View>> for AppStateMode {
     fn from(state: AppState<mode::View>) -> Self {
         AppStateMode::View(state)
+    }
+}
+
+impl From<AppState<mode::TagSearch>> for AppStateMode {
+    fn from(state: AppState<mode::TagSearch>) -> Self {
+        AppStateMode::TagSearch(state)
     }
 }
