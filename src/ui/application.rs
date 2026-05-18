@@ -205,6 +205,9 @@ mod mode {
 
         /// State of snippet viewer widget
         pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
+
+        /// Page size to be used when user presses pgup/pgdown
+        pub page_size: Option<usize>,
     }
 
     impl KeywordSearch {
@@ -220,6 +223,7 @@ mod mode {
                 tags,
                 active_tags,
                 snippets,
+                page_size: None,
             }
         }
     }
@@ -762,6 +766,10 @@ impl AppState<mode::KeywordSearch> {
                 KeyCode::Enter => self.switch_to_view_mode(),
                 KeyCode::Up => self.highlight_previous_snippet(),
                 KeyCode::Down => self.highlight_next_snippet(),
+                KeyCode::PageUp => self.highlight_previous_page(),
+                KeyCode::PageDown => self.highlight_next_page(),
+                KeyCode::Home => self.highlight_first_snippet(),
+                KeyCode::End => self.highlight_last_snippet(),
                 KeyCode::Char(char) if self.is_valid_keyword_character(char) => self.add_char(char),
                 KeyCode::Char(' ') => self.start_new_keyword(),
                 KeyCode::Backspace => {
@@ -870,6 +878,64 @@ impl AppState<mode::KeywordSearch> {
         self.remain_in_keyword_search_mode()
     }
 
+    fn highlight_first_snippet(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.set(0);
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn highlight_last_snippet(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.set(index.modulo() - 1);
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn highlight_previous_page(mut self) -> AppStateMode {
+        let page_size = self.mode.page_size.unwrap();
+
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = {
+                if index.value() < page_size {
+                    index.set(0)
+                }
+                else {
+                    index.sub(page_size)
+                }
+            };
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn highlight_next_page(mut self) -> AppStateMode {
+        let page_size = self.mode.page_size.unwrap();
+
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = {
+                if index.value() + page_size < index.modulo() {
+                    index.add(page_size)
+                }
+                else {
+                    index.set(index.modulo() - 1)
+                }
+            };
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_keyword_search_mode()
+    }
+
     pub fn draw(&mut self, frame: &mut Frame) {
         self.assert_invariant();
 
@@ -916,6 +982,8 @@ impl AppState<mode::KeywordSearch> {
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        self.mode.page_size = Some(area.height as usize);
+
         let snippet_list = {
             let items = self.mode.filtered_snippets.iter().map(|id| self.library.snippet(*id).description.as_str());
 
