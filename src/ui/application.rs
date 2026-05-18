@@ -501,6 +501,8 @@ impl AppState<mode::TagSearch> {
                 KeyCode::Esc => self.cancel_tag_search(),
                 KeyCode::Up => self.highlight_previous_tag(),
                 KeyCode::Down => self.highlight_next_tag(),
+                KeyCode::Home => self.highlight_first_tag(),
+                KeyCode::End => self.highlight_last_tag(),
                 KeyCode::Backspace => self.remove_char(),
                 KeyCode::Enter => self.select_highlighted_tag(),
                 KeyCode::Char(char) if self.is_valid_tag_character(char) => self.add_char(char),
@@ -551,6 +553,9 @@ impl AppState<mode::TagSearch> {
         if let Some(index) = self.mode.highlighted_tag_index {
             self.mode.highlighted_tag_index = index.sub(1).into();
         }
+        else {
+            assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
+        }
 
         self.remain_in_tag_search_mode()
     }
@@ -558,6 +563,31 @@ impl AppState<mode::TagSearch> {
     fn highlight_next_tag(mut self) -> AppStateMode {
         if let Some(index) = self.mode.highlighted_tag_index {
             self.mode.highlighted_tag_index = index.add(1).into();
+        }
+        else {
+            assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
+        }
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn highlight_first_tag(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_tag_index {
+            self.mode.highlighted_tag_index = index.set(0).into();
+        }
+        else {
+            assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
+        }
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn highlight_last_tag(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_tag_index {
+            self.mode.highlighted_tag_index = index.set(self.mode.tags.len() as u64 - 1).into();
+        }
+        else {
+            assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
         }
 
         self.remain_in_tag_search_mode()
