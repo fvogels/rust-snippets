@@ -141,6 +141,9 @@ mod mode {
 
         /// State of the tag list
         pub tag_list_state: widgets::tags_view::TagsViewState,
+
+        /// Size of a page that fits on the screen; used by the PgUp and PgDown handlers
+        pub page_size: Option<usize>,
     }
 
     impl TagSearch {
@@ -162,6 +165,7 @@ mod mode {
                 active_tags,
                 snippets,
                 original_tags: tag_list,
+                page_size: None,
             }
         }
     }
@@ -458,6 +462,8 @@ impl AppState<mode::TagSearch> {
         let border = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
         let inner_area = border.inner(area);
 
+        self.mode.page_size = Some(inner_area.height as usize);
+
         let tag_list = {
             let active_tags = self.mode.active_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
             let listed_tags = self.mode.tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
@@ -503,6 +509,8 @@ impl AppState<mode::TagSearch> {
                 KeyCode::Down => self.highlight_next_tag(),
                 KeyCode::Home => self.highlight_first_tag(),
                 KeyCode::End => self.highlight_last_tag(),
+                KeyCode::PageDown => self.highlight_page_down(),
+                KeyCode::PageUp => self.highlight_page_up(),
                 KeyCode::Backspace => self.remove_char(),
                 KeyCode::Enter => self.select_highlighted_tag(),
                 KeyCode::Char(char) if self.is_valid_tag_character(char) => self.add_char(char),
@@ -585,6 +593,42 @@ impl AppState<mode::TagSearch> {
     fn highlight_last_tag(mut self) -> AppStateMode {
         if let Some(index) = self.mode.highlighted_tag_index {
             self.mode.highlighted_tag_index = index.set(self.mode.tags.len() as u64 - 1).into();
+        }
+        else {
+            assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
+        }
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn highlight_page_up(mut self) -> AppStateMode {
+        let page_size = self.mode.page_size.unwrap() as u64;
+
+        if let Some(index) = self.mode.highlighted_tag_index {
+            if index.value() < page_size {
+                self.mode.highlighted_tag_index = index.set(0).into();
+            }
+            else {
+                self.mode.highlighted_tag_index = index.sub(self.mode.page_size.unwrap() as u64).into();
+            }
+        }
+        else {
+            assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
+        }
+
+        self.remain_in_tag_search_mode()
+    }
+
+    fn highlight_page_down(mut self) -> AppStateMode {
+        let page_size = self.mode.page_size.unwrap() as u64;
+
+        if let Some(index) = self.mode.highlighted_tag_index {
+            if index.value() + page_size >= index.modulo() {
+                self.mode.highlighted_tag_index = index.set(index.modulo() - 1).into();
+            }
+            else {
+                self.mode.highlighted_tag_index = index.add(self.mode.page_size.unwrap() as u64).into();
+            }
         }
         else {
             assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
