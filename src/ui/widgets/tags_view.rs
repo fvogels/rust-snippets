@@ -66,8 +66,8 @@ impl TagsViewState {
         self.available_tag_list_state.selected()
     }
 
-    pub fn select(&mut self, index: usize) {
-        self.available_tag_list_state.select(index.into());
+    pub fn select(&mut self, index: Option<usize>) {
+        self.available_tag_list_state.select(index);
     }
 }
 

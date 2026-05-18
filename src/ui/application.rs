@@ -137,7 +137,7 @@ mod mode {
         pub tags: Vec<Tag>,
 
         /// Index of the highlighted tag
-        pub highlighted_tag_index: Cyclic,
+        pub highlighted_tag_index: Option<Cyclic>,
 
         /// State of the tag list
         pub tag_list_state: widgets::tags_view::TagsViewState,
@@ -145,9 +145,18 @@ mod mode {
 
     impl TagSearch {
         pub fn new(snippets: Vec<usize>, tag_list: Vec<Tag>, active_tags: Vec<Tag>) -> Self {
+            let highlighted_tag_index = {
+                if tag_list.is_empty() {
+                    None
+                }
+                else {
+                    Some(Cyclic::new(0, tag_list.len() as u64))
+                }
+            };
+
             TagSearch {
                 tag_list_state: widgets::tags_view::TagsViewState::new(),
-                highlighted_tag_index: Cyclic::new(0, tag_list.len() as u64),
+                highlighted_tag_index,
                 tag_input: String::new(),
                 tags: tag_list.clone(),
                 active_tags,
@@ -436,7 +445,7 @@ impl AppState<mode::TagSearch> {
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        self.mode.tag_list_state.select(self.mode.highlighted_tag_index.value() as usize);
+        self.mode.tag_list_state.select(self.mode.highlighted_tag_index.map(|c| c.value() as usize));
 
         let border = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
         let inner_area = border.inner(area);
@@ -531,13 +540,17 @@ impl AppState<mode::TagSearch> {
     }
 
     fn highlight_previous_tag(mut self) -> AppStateMode {
-        self.mode.highlighted_tag_index = self.mode.highlighted_tag_index.sub(1);
+        if let Some(index) = self.mode.highlighted_tag_index {
+            self.mode.highlighted_tag_index = index.sub(1).into();
+        }
 
         self.remain_in_tag_search_mode()
     }
 
     fn highlight_next_tag(mut self) -> AppStateMode {
-        self.mode.highlighted_tag_index = self.mode.highlighted_tag_index.add(1);
+        if let Some(index) = self.mode.highlighted_tag_index {
+            self.mode.highlighted_tag_index = index.add(1).into();
+        }
 
         self.remain_in_tag_search_mode()
     }
@@ -546,29 +559,35 @@ impl AppState<mode::TagSearch> {
         let lowercased = self.mode.tag_input.to_lowercase();
 
         self.mode.tags = self.mode.original_tags.iter().filter(|tag| tag.name.to_lowercase().starts_with(lowercased.as_str())).cloned().collect::<Vec<_>>();
-        self.mode.highlighted_tag_index = Cyclic::new(0, self.mode.tags.len() as u64);
+        self.mode.highlighted_tag_index = if self.mode.tags.is_empty() { None } else { Cyclic::new(0, self.mode.tags.len() as u64).into() };
     }
 
     fn select_highlighted_tag(self) -> AppStateMode {
-        self.assert_invariant();
+        if let Some(highlighted_tag_index) = self.mode.highlighted_tag_index {
+            self.assert_invariant();
 
-        let updated_active_tags = {
-            let selected_index = self.mode.highlighted_tag_index.value() as usize;
-            let selected_tag = self.mode.tags[selected_index].clone();
-            let mut tags = self.mode.active_tags;
-            tags.push(selected_tag);
-            tags
-        };
+            let updated_active_tags = {
+                let selected_index = highlighted_tag_index.value() as usize;
+                let selected_tag = self.mode.tags[selected_index].clone();
+                let mut tags = self.mode.active_tags;
+                tags.push(selected_tag);
+                tags
+            };
 
-        let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), updated_active_tags.iter());
+            let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), updated_active_tags.iter());
 
-        let highlighted_snippet_index = Cyclic::new(0, snippets.len() as u64);
-        let shown_snippet = snippets[0];
+            let highlighted_snippet_index = Cyclic::new(0, snippets.len() as u64);
+            let shown_snippet = snippets[0];
 
-        AppState {
-            library: self.library,
-            mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index, shown_snippet),
-        }.into()
+            AppState {
+                library: self.library,
+                mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index, shown_snippet),
+            }.into()
+        }
+        else {
+            // User tried to select tag while none was highlighted
+            self.remain_in_tag_search_mode()
+        }
     }
 }
 
