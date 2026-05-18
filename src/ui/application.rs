@@ -86,6 +86,7 @@ mod mode {
         pub shown_snippet: usize,
         pub snippet_list_state: widgets::description_list::State,
         pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
+        pub page_size: Option<usize>,
     }
 
     impl View {
@@ -100,6 +101,7 @@ mod mode {
                 tags,
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
+                page_size: None,
             }
         }
 
@@ -114,6 +116,7 @@ mod mode {
                 tags,
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
+                page_size: None,
             }
         }
     }
@@ -300,6 +303,8 @@ impl AppState<mode::View> {
     }
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        self.mode.page_size = Some(area.height as usize);
+
         let snippet_list = {
             let items = self.mode.snippets.iter().map(|id| self.library.snippet(*id).description.as_str());
 
@@ -357,6 +362,10 @@ impl AppState<mode::View> {
                 KeyCode::Delete => self.drop_filtering_tag(),
                 KeyCode::Up => self.highlight_previous_snippet(),
                 KeyCode::Down => self.highlight_next_snippet(),
+                KeyCode::PageUp => self.highlight_previous_page(),
+                KeyCode::PageDown => self.highlight_next_page(),
+                KeyCode::Home => self.highlight_first_snippet(),
+                KeyCode::End => self.highlight_last_snippet(),
                 _ => self.remain_in_view_mode(),
             }
         }
@@ -408,6 +417,64 @@ impl AppState<mode::View> {
     fn highlight_next_snippet(mut self) -> AppStateMode {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.add(1);
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn highlight_first_snippet(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.set(0);
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn highlight_last_snippet(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.set(index.modulo() - 1);
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn highlight_previous_page(mut self) -> AppStateMode {
+        let page_size = self.mode.page_size.unwrap();
+
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = {
+                if index.value() < page_size {
+                    index.set(0)
+                }
+                else {
+                    index.sub(page_size)
+                }
+            };
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn highlight_next_page(mut self) -> AppStateMode {
+        let page_size = self.mode.page_size.unwrap();
+
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = {
+                if index.value() + page_size < index.modulo() {
+                    index.add(page_size)
+                }
+                else {
+                    index.set(index.modulo() - 1)
+                }
+            };
             self.mode.highlighted_snippet_index = updated_index.into();
             self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
         }
