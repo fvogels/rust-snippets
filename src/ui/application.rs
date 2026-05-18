@@ -259,7 +259,7 @@ fn apply_filters<'a, 'b>(library: &Library, filtering_keywords: impl Iterator<It
     }
 
     let mut tags = tags.into_iter().cloned().collect::<Vec<_>>();
-    tags.sort_by(|tag1, tag2| tag1.name.cmp(&tag2.name));
+    tags.sort_by(|tag1, tag2| tag1.name.to_lowercase().cmp(&tag2.name.to_lowercase()));
 
     (snippets, tags)
 }
