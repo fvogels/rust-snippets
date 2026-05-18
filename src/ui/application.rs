@@ -79,10 +79,10 @@ mod mode {
     pub trait Mode { }
 
     pub struct View {
-        pub filtering_tags: Vec<Tag>,
-        pub listed_snippets: Vec<usize>,
-        pub listed_tags: Vec<Tag>,
-        pub highlighted_snippet_index: Cyclic,
+        pub active_tags: Vec<Tag>,
+        pub snippets: Vec<usize>,
+        pub tags: Vec<Tag>,
+        pub highlighted_snippet_index: Option<Cyclic>,
         pub shown_snippet: usize,
         pub snippet_list_state: widgets::description_list::State,
         pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
@@ -93,25 +93,25 @@ mod mode {
             assert!(!snippets.is_empty(), "no snippets");
 
             View {
-                filtering_tags: Vec::new(),
-                highlighted_snippet_index: Cyclic::new(0, snippets.len() as u64),
+                active_tags: Vec::new(),
+                highlighted_snippet_index: Cyclic::new(0, snippets.len() as u64).into(),
                 shown_snippet: snippets[0],
-                listed_snippets: snippets,
-                listed_tags: tags,
+                snippets,
+                tags,
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
             }
         }
 
-        pub fn new(snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Cyclic, shown_snippet: usize) -> Self {
+        pub fn new(snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>, shown_snippet: usize) -> Self {
             assert!(!snippets.is_empty(), "no snippets");
 
             View {
-                filtering_tags: active_tags,
+                active_tags,
                 highlighted_snippet_index,
                 shown_snippet,
-                listed_snippets: snippets,
-                listed_tags: tags,
+                snippets,
+                tags,
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
             }
@@ -285,8 +285,8 @@ impl AppState<mode::View> {
         let inner_area = border.inner(area);
 
         let tag_list = {
-            let selected_tags = self.mode.filtering_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
-            let listed_tags = &self.mode.listed_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
+            let selected_tags = self.mode.active_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
+            let listed_tags = &self.mode.tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
 
             widgets::tags_view::TagsView::new(selected_tags.iter().copied(), listed_tags.iter().copied())
         };
@@ -297,12 +297,12 @@ impl AppState<mode::View> {
 
     fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let snippet_list = {
-            let items = self.mode.listed_snippets.iter().map(|id| self.library.snippet(*id).description.as_str());
+            let items = self.mode.snippets.iter().map(|id| self.library.snippet(*id).description.as_str());
 
             widgets::description_list::Widget::new(items, true)
         };
         let snippet_list_state = &mut self.mode.snippet_list_state;
-        snippet_list_state.select(Some(self.mode.highlighted_snippet_index.into()));
+        snippet_list_state.select(self.mode.highlighted_snippet_index.map(|c| c.value() as usize));
 
         ratatui::widgets::StatefulWidget::render(snippet_list, area, buffer, snippet_list_state);
     }
@@ -362,7 +362,9 @@ impl AppState<mode::View> {
     }
 
     fn assert_invariant(&self) {
-        debug_assert_eq!(self.mode.highlighted_snippet_index.modulo() as usize, self.mode.listed_snippets.len());
+        if let Some(highlighted_snippet_index) = self.mode.highlighted_snippet_index {
+            debug_assert_eq!(highlighted_snippet_index.modulo() as usize, self.mode.snippets.len());
+        }
     }
 
     fn remain_in_view_mode(self) -> AppStateMode {
@@ -376,7 +378,7 @@ impl AppState<mode::View> {
 
         AppStateMode::TagSearch(AppState {
             library: self.library,
-            mode: mode::TagSearch::new(self.mode.listed_snippets, self.mode.listed_tags, self.mode.filtering_tags),
+            mode: mode::TagSearch::new(self.mode.snippets, self.mode.tags, self.mode.active_tags),
         })
     }
 
@@ -385,38 +387,44 @@ impl AppState<mode::View> {
 
         AppStateMode::KeywordSearch(AppState {
             library: self.library,
-            mode: mode::KeywordSearch::new(self.mode.listed_snippets, self.mode.listed_tags, self.mode.filtering_tags, Some(self.mode.highlighted_snippet_index)),
+            mode: mode::KeywordSearch::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, self.mode.highlighted_snippet_index),
         })
     }
 
     fn highlight_previous_snippet(mut self) -> AppStateMode {
-        self.mode.highlighted_snippet_index = self.mode.highlighted_snippet_index.sub(1);
-        self.mode.shown_snippet = self.mode.listed_snippets[self.mode.highlighted_snippet_index.value() as usize];
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.sub(1);
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value() as usize];
+        }
 
         self.remain_in_view_mode()
     }
 
     fn highlight_next_snippet(mut self) -> AppStateMode {
-        self.mode.highlighted_snippet_index = self.mode.highlighted_snippet_index.add(1);
-        self.mode.shown_snippet = self.mode.listed_snippets[self.mode.highlighted_snippet_index.value() as usize];
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.add(1);
+            self.mode.highlighted_snippet_index = updated_index.into();
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value() as usize];
+        }
 
         self.remain_in_view_mode()
     }
 
     fn drop_filtering_tag(mut self) -> AppStateMode {
-        self.mode.filtering_tags.pop();
+        self.mode.active_tags.pop();
         self.refresh();
 
         self.remain_in_view_mode()
     }
 
     fn refresh(&mut self) {
-        let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), self.mode.filtering_tags.iter());
+        let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), self.mode.active_tags.iter());
 
-        self.mode.highlighted_snippet_index = Cyclic::new(0, snippets.len() as u64);
+        self.mode.highlighted_snippet_index = Cyclic::new(0, snippets.len() as u64).into();
         self.mode.shown_snippet = snippets[0];
-        self.mode.listed_snippets = snippets;
-        self.mode.listed_tags = tags;
+        self.mode.snippets = snippets;
+        self.mode.tags = tags;
     }
 }
 
@@ -521,7 +529,7 @@ impl AppState<mode::TagSearch> {
 
         AppState {
             library: self.library,
-            mode: mode::View::new(self.mode.snippets, self.mode.original_tags, self.mode.active_tags, highlighted_snippet_index, 0),
+            mode: mode::View::new(self.mode.snippets, self.mode.original_tags, self.mode.active_tags, highlighted_snippet_index.into(), 0),
         }.into()
     }
 
@@ -581,7 +589,7 @@ impl AppState<mode::TagSearch> {
 
             AppState {
                 library: self.library,
-                mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index, shown_snippet),
+                mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index.into(), shown_snippet),
             }.into()
         }
         else {
@@ -796,7 +804,7 @@ impl AppState<mode::KeywordSearch> {
 
         AppState {
             library: self.library,
-            mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, self.mode.original_highlighted_snippet_index.unwrap(), self.mode.shown_snippet),
+            mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, self.mode.original_highlighted_snippet_index, self.mode.shown_snippet),
         }.into()
     }
 
@@ -810,7 +818,7 @@ impl AppState<mode::KeywordSearch> {
 
         AppState {
             library: self.library,
-            mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, shown_snippet_index, self.mode.shown_snippet),
+            mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, shown_snippet_index.into(), self.mode.shown_snippet),
         }.into()
     }
 }
