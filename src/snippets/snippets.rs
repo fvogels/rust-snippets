@@ -206,23 +206,6 @@ impl Page {
             document::parse(markdown_source.as_str(), &*self.syntax_highlighter, &theme)
         })
     }
-
-    pub fn find_code_block_with_index(&self, index: usize) -> Option<&str> {
-        let mut counter = index;
-
-        for fragment in self.document() {
-            if let Fragment::Code { original, .. } = fragment {
-                if counter == 0 {
-                    return Some(original.as_str())
-                }
-                else {
-                    counter -= 1;
-                }
-            }
-        }
-
-        None
-    }
 }
 
 fn convert_tabs_to_spaces(s: &str) -> String {
