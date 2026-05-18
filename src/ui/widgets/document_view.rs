@@ -205,7 +205,7 @@ impl<'a> DocumentRenderer<'a> {
     }
 
     fn render(mut self, document: &document::Document) -> ratatui::widgets::Paragraph<'a> {
-        for fragment in document {
+        for fragment in &document.fragments {
             match fragment {
                 document::Fragment::Paragraph{words, style} => {
                     self.render_paragraph(words, style);
@@ -213,8 +213,8 @@ impl<'a> DocumentRenderer<'a> {
                 document::Fragment::Heading{words, style, depth} => {
                     self.render_heading_fragment(words, style, *depth);
                 },
-                document::Fragment::Code { language, highlighted_lines: code_lines, original: _, metadata } => {
-                    self.render_code_fragment(language, code_lines, metadata);
+                document::Fragment::Code(code) => {
+                    self.render_code_fragment(&code.language, &code.highlighted_lines, &code.metadata);
                 },
                 document::Fragment::Verbatim { lines } => {
                     self.render_verbatim_fragment(lines);

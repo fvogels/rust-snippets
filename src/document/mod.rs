@@ -19,11 +19,10 @@ pub use theme::Theme;
 pub use syntax::SyntaxHighlighter;
 pub use mdconverter::{parse};
 
-pub type Document = Vec<Fragment>;
-
-
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct TableRow(Vec<Span>);
+#[derive(Debug)]
+pub struct Document {
+    pub fragments: Vec<Fragment>
+}
 
 #[cfg(test)]
 mod test {
@@ -49,8 +48,8 @@ mod test {
         let theme = Theme::default();
         let document = parse(markdown, &syntax_highlighter, &theme);
 
-        assert_eq!(1, document.len());
-        if let Fragment::Paragraph{ words: ws, style: _ }  = &document[0] {
+        assert_eq!(1, document.fragments.len());
+        if let Fragment::Paragraph{ words: ws, style: _ }  = &document.fragments[0] {
             let expected = words(["line", "of", "text"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, ws);
         }
@@ -70,8 +69,8 @@ mod test {
         let theme = Theme::default();
         let document = parse(markdown, &syntax_highlighter, &theme);
 
-        assert_eq!(1, document.len());
-        if let Fragment::Paragraph{ words: text, style: _ } = &document[0] {
+        assert_eq!(1, document.fragments.len());
+        if let Fragment::Paragraph{ words: text, style: _ } = &document.fragments[0] {
             let expected = words(["line", "of", "text", "second", "line"].into_iter(), &theme.default).collect::<Vec<_>>();
             assert_eq!(&expected, text);
         }
@@ -90,8 +89,8 @@ mod test {
         let theme = Theme::default();
         let document = parse(markdown, &syntax_highlighter, &theme);
 
-        assert_eq!(1, document.len());
-        if let Fragment::Paragraph{ words: text, style: _ } = &document[0] {
+        assert_eq!(1, document.fragments.len());
+        if let Fragment::Paragraph{ words: text, style: _ } = &document.fragments[0] {
             let expected = vec![word("some", &theme.default), word("highlighted", &theme.inline_code), word("word", &theme.default)];
             assert_eq!(&expected, text);
         }
@@ -110,14 +109,14 @@ mod test {
         let theme = Theme::default();
         let document = parse(markdown, &syntax_highlighter, &theme);
 
-        assert_eq!(1, document.len());
-        if let Fragment::Heading{ words: text, style: _, depth } = &document[0] {
+        assert_eq!(1, document.fragments.len());
+        if let Fragment::Heading{ words: text, style: _, depth } = &document.fragments[0] {
             let expected = vec![word("Title", &theme.headings[0])];
             assert_eq!(&expected, text);
             assert_eq!(0, *depth);
         }
         else {
-            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document[0]);
+            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document.fragments[0]);
         }
     }
 
@@ -131,14 +130,14 @@ mod test {
         let theme = Theme::default();
         let document = parse(markdown, &syntax_highlighter, &theme);
 
-        assert_eq!(1, document.len());
-        if let Fragment::Heading{ words: text, style: _, depth } = &document[0] {
+        assert_eq!(1, document.fragments.len());
+        if let Fragment::Heading{ words: text, style: _, depth } = &document.fragments[0] {
             let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
             assert_eq!(&expected, text);
             assert_eq!(0, *depth);
         }
         else {
-            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document[0]);
+            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document.fragments[0]);
         }
     }
 
@@ -152,14 +151,14 @@ mod test {
         let theme = Theme::default();
         let document = parse(markdown, &syntax_highlighter, &theme);
 
-        assert_eq!(1, document.len());
-        if let Fragment::Heading{ words: text, style: _, depth } = &document[0] {
+        assert_eq!(1, document.fragments.len());
+        if let Fragment::Heading{ words: text, style: _, depth } = &document.fragments[0] {
             let expected = words(["Title"].into_iter(), &theme.headings[1]).collect::<Vec<_>>();
             assert_eq!(&expected, text);
             assert_eq!(1, *depth);
         }
         else {
-            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document[0]);
+            assert!(false, "fragment should be a Fragment::Wrapping, was a {:?} instead", document.fragments[0]);
         }
     }
 
@@ -175,13 +174,13 @@ mod test {
         let theme = Theme::default();
         let document = parse(markdown, &syntax_highlighter, &theme);
 
-        assert_eq!(1, document.len());
-        if let Fragment::Verbatim{ lines } = &document[0] {
+        assert_eq!(1, document.fragments.len());
+        if let Fragment::Verbatim{ lines } = &document.fragments[0] {
             // let expected = words(["This", "is", "the", "title"].into_iter(), &theme.headings[0]).collect::<Vec<_>>();
             // assert_eq!(&expected, text);
         }
         else {
-            assert!(false, "fragment should be a table but was a {:?}", document[0]);
+            assert!(false, "fragment should be a table but was a {:?}", document.fragments[0]);
         }
     }
 }

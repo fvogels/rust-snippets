@@ -5,14 +5,14 @@ use crate::document::{self, Document, Fragment, Line, Span, Style, SyntaxHighlig
 
 struct Converter<'a, 'b> {
     syntax_highlighter: &'a SyntaxHighlighter,
-    fragments: Document,
+    document: Document,
     theme: &'b Theme,
 }
 
 impl<'a, 'b> Converter<'a, 'b> {
     pub fn new(syntax_highlighter: &'a SyntaxHighlighter, theme: &'b Theme) -> Self {
         Converter{
-            fragments: Vec::new(),
+            document: Document{ fragments: Vec::new() },
             theme,
             syntax_highlighter,
         }
@@ -58,7 +58,7 @@ impl<'a, 'b> Converter<'a, 'b> {
         }
 
         let fragment = Fragment::List { items: converted_list_items };
-        self.fragments.push(fragment);
+        self.document.fragments.push(fragment);
     }
 
     fn convert_table(&mut self, table: Table) {
@@ -139,7 +139,7 @@ impl<'a, 'b> Converter<'a, 'b> {
 
         let fragment = Fragment::Verbatim { lines };
 
-        self.fragments.push(fragment);
+        self.document.fragments.push(fragment);
     }
 
     fn convert_code(&mut self, code: Code) {
@@ -156,7 +156,7 @@ impl<'a, 'b> Converter<'a, 'b> {
 
         let fragment = Fragment::Code(fragment::Code { language, original: code.value, highlighted_lines, metadata });
 
-        self.fragments.push(fragment);
+        self.document.fragments.push(fragment);
     }
 
     fn convert_heading(&mut self, heading: Heading) {
@@ -177,13 +177,13 @@ impl<'a, 'b> Converter<'a, 'b> {
             }
         }
 
-        self.fragments.push(Fragment::Heading{ words, style: self.theme.headings[level], depth: level })
+        self.document.fragments.push(Fragment::Heading{ words, style: self.theme.headings[level], depth: level })
     }
 
     fn convert_paragraph(&mut self, paragraph: Paragraph) {
         let words = convert_text_nodes(&paragraph.children, self.theme);
 
-        self.fragments.push(Fragment::Paragraph { words, style: self.theme.default })
+        self.document.fragments.push(Fragment::Paragraph { words, style: self.theme.default })
     }
 }
 
@@ -241,7 +241,7 @@ pub fn parse(markdown: &str, syntax_highlighter: &SyntaxHighlighter, theme: &The
         Node::Root(root) => {
             let mut converter = Converter::new(syntax_highlighter, theme);
             converter.convert_root(root);
-            converter.fragments
+            converter.document
         },
         _ => {
             panic!("expected root node");
