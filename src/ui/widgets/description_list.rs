@@ -45,8 +45,8 @@ impl State {
         self.list_state.selected()
     }
 
-    pub fn select(&mut self, index: usize) {
-        self.list_state.select(Some(index));
+    pub fn select(&mut self, index: Option<usize>) {
+        self.list_state.select(index);
     }
 }
 

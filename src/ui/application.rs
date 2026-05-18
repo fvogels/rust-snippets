@@ -1,8 +1,8 @@
 use std::{collections::HashSet, io, mem};
 
-use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers}, layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget}};
+use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders, Widget}};
 
-use crate::{snippets::{Library, snippets::Tag}, timing, ui::{Mode, widgets}, util::Cyclic};
+use crate::{snippets::{Library, snippets::Tag}, ui::widgets, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -124,12 +124,14 @@ mod mode {
         pub snippet_list_state: widgets::description_list::State,
         pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
         pub leftover_snippets: Vec<usize>,
+        pub highlighted_snippet_index: Option<Cyclic>,
     }
 
     impl KeywordSearch {
         pub fn new(snippets: Vec<usize>) -> Self {
             KeywordSearch {
                 filtering_keywords: vec![String::new()],
+                highlighted_snippet_index: Some(Cyclic::new(0, snippets.len() as u64)),
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
                 leftover_snippets: snippets,
@@ -219,7 +221,7 @@ impl AppState<mode::View> {
             widgets::description_list::Widget::new(items, true)
         };
         let snippet_list_state = &mut self.mode.snippet_list_state;
-        snippet_list_state.select(self.highlighted_snippet_index.into());
+        snippet_list_state.select(Some(self.highlighted_snippet_index.into()));
 
         ratatui::widgets::StatefulWidget::render(snippet_list, area, buffer, snippet_list_state);
     }
@@ -499,6 +501,8 @@ impl AppState<mode::KeywordSearch> {
             log::debug!("Key pressed: {:?}", event.code);
             match event.code {
                 KeyCode::Esc => self.cancel_keyword_search(),
+                KeyCode::Up => self.highlight_previous_snippet(),
+                KeyCode::Down => self.highlight_next_snippet(),
                 KeyCode::Char(char) if self.is_valid_keyword_character(char) => self.add_char(char),
                 KeyCode::Char(' ') => self.start_new_keyword(),
                 KeyCode::Backspace => {
@@ -577,6 +581,34 @@ impl AppState<mode::KeywordSearch> {
     fn refresh_snippet_list(&mut self) {
         let snippet_ids = self.library.search(self.mode.filtering_keywords.iter().map(String::as_str), self.filtering_tags.iter().map(|tag| tag.name.as_str()));
         self.mode.leftover_snippets = snippet_ids;
+
+        if let Some(id) = self.mode.leftover_snippets.get(0) {
+            self.mode.highlighted_snippet_index = Some(Cyclic::new(0, self.mode.leftover_snippets.len() as u64));
+            self.shown_snippet = *id;
+        }
+        else {
+            self.mode.highlighted_snippet_index = None
+        }
+    }
+
+    fn highlight_previous_snippet(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.sub(1);
+            self.mode.highlighted_snippet_index = Some(updated_index);
+            self.shown_snippet = self.listed_snippets[updated_index.value() as usize];
+        }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn highlight_next_snippet(mut self) -> AppStateMode {
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            let updated_index = index.add(1);
+            self.mode.highlighted_snippet_index = Some(updated_index);
+            self.shown_snippet = self.listed_snippets[updated_index.value() as usize];
+        }
+
+        self.remain_in_keyword_search_mode()
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
@@ -584,7 +616,7 @@ impl AppState<mode::KeywordSearch> {
 
         let (search_bar_area, tag_list_area, snippet_list_area, snippet_viewer_area) = {
             let area = frame.area();
-            let [ upper_area, search_bar_area ] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+            let [ upper_area, search_bar_area ] = Layout::vertical([ Constraint::Fill(1), Constraint::Length(1) ]).areas(area);
             let [ tag_list_area, right_area ] = Layout::horizontal([ Constraint::Length(20), Constraint::Fill(1) ]).areas(upper_area);
             let [ snippet_list_area, snippet_viewer_area ] = Layout::vertical([ Constraint::Length(15), Constraint::Fill(1) ]).areas(right_area);
 
@@ -631,7 +663,7 @@ impl AppState<mode::KeywordSearch> {
             widgets::description_list::Widget::new(items, false)
         };
         let snippet_list_state = &mut self.mode.snippet_list_state;
-        snippet_list_state.select(self.highlighted_snippet_index.into());
+        snippet_list_state.select(self.mode.highlighted_snippet_index.map(|c| c.value() as usize));
 
         ratatui::widgets::StatefulWidget::render(snippet_list, area, buffer, snippet_list_state);
     }
