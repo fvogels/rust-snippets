@@ -1,6 +1,6 @@
 use std::{collections::HashSet, io, mem};
 
-use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent}, layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget}};
+use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers}, layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget}};
 
 use crate::{snippets::{Library, snippets::Tag}, timing, ui::{Mode, widgets}, util::Cyclic};
 
@@ -489,11 +489,19 @@ impl AppState<mode::KeywordSearch> {
 
     fn handle_key_event(self, event: KeyEvent) -> AppStateMode {
         if event.is_press() {
+            log::debug!("Key pressed: {:?}", event.code);
             match event.code {
                 KeyCode::Esc => self.cancel_keyword_search(),
                 KeyCode::Char(char) if self.is_valid_keyword_character(char) => self.add_char(char),
                 KeyCode::Char(' ') => self.start_new_keyword(),
-                KeyCode::Backspace => self.drop_last_char(),
+                KeyCode::Backspace => {
+                    if event.modifiers.contains(KeyModifiers::CONTROL) {
+                        self.drop_last_keyword()
+                    }
+                    else {
+                        self.drop_last_char()
+                    }
+                },
                 _ => self.remain_in_keyword_search_mode(),
             }
         }
@@ -538,6 +546,19 @@ impl AppState<mode::KeywordSearch> {
         else {
             self.mode.filtering_keywords.last_mut().unwrap().pop();
         }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn drop_last_keyword(mut self) -> AppStateMode {
+        debug_assert!(self.mode.filtering_keywords.len() > 0, "this vec should always contain at least one element");
+
+        if self.mode.filtering_keywords.last().unwrap().is_empty() {
+            self.mode.filtering_keywords.pop();
+        }
+
+        self.mode.filtering_keywords.pop();
+        self.mode.filtering_keywords.push(String::new());
 
         self.remain_in_keyword_search_mode()
     }
