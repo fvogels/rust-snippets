@@ -602,7 +602,7 @@ impl AppState<mode::KeywordSearch> {
 
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
-        let snippet = library.snippet(self.highlighted_snippet_index.into());
+        let snippet = library.snippet(self.shown_snippet);
         let snippet_viewer = widgets::snippet_view::SnippetView::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
 
