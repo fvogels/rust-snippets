@@ -493,6 +493,7 @@ impl AppState<mode::KeywordSearch> {
                 KeyCode::Esc => self.cancel_keyword_search(),
                 KeyCode::Char(char) if self.is_valid_keyword_character(char) => self.add_char(char),
                 KeyCode::Char(' ') => self.start_new_keyword(),
+                KeyCode::Backspace => self.drop_last_char(),
                 _ => self.remain_in_keyword_search_mode(),
             }
         }
@@ -519,6 +520,23 @@ impl AppState<mode::KeywordSearch> {
 
         if !self.mode.filtering_keywords.last().unwrap().is_empty() {
             self.mode.filtering_keywords.push(String::new());
+        }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn drop_last_char(mut self) -> AppStateMode {
+        debug_assert!(self.mode.filtering_keywords.len() > 0, "this vec should always contain at least one element");
+
+        if self.mode.filtering_keywords.last().unwrap().is_empty() {
+            if self.mode.filtering_keywords.len() >= 2 {
+                self.mode.filtering_keywords.pop();
+                debug_assert!(self.mode.filtering_keywords.last().unwrap().len() > 0, "empty keywords should not have been allowed");
+                self.mode.filtering_keywords.last_mut().unwrap().pop();
+            }
+        }
+        else {
+            self.mode.filtering_keywords.last_mut().unwrap().pop();
         }
 
         self.remain_in_keyword_search_mode()
