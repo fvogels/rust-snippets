@@ -6,7 +6,15 @@ use crate::document::{Line, Style, Word};
 pub enum Fragment {
     Heading { words: Vec<Word>, depth: usize, style: Style },
     Paragraph { words: Vec<Word>, style: Style },
-    Code { language: Option<String>, original: String, highlighted_lines: Vec<Line>, metadata: Option<String> },
+    Code(Code),
     Verbatim { lines: Vec<Line> },
     List { items: Vec<Vec<Word>> },
+}
+
+#[derive(Debug, Archive, Serialize, Deserialize)]
+pub struct Code {
+    pub language: Option<String>,
+    pub original: String,
+    pub highlighted_lines: Vec<Line>,
+    pub metadata: Option<String>,
 }

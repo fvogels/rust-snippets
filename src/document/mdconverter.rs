@@ -1,6 +1,6 @@
 use markdown::{ParseOptions, mdast::{AlignKind, Code, Heading, List, Node, Paragraph, Root, Table}, to_mdast};
 
-use crate::document::{Document, Fragment, Line, Span, Style, SyntaxHighlighter, Theme, Word};
+use crate::document::{self, Document, Fragment, Line, Span, Style, SyntaxHighlighter, Theme, Word, fragment};
 
 
 struct Converter<'a, 'b> {
@@ -154,7 +154,7 @@ impl<'a, 'b> Converter<'a, 'b> {
             highlighted_line.indent(1);
         }
 
-        let fragment = Fragment::Code { language, original: code.value, highlighted_lines, metadata };
+        let fragment = Fragment::Code(fragment::Code { language, original: code.value, highlighted_lines, metadata });
 
         self.fragments.push(fragment);
     }
