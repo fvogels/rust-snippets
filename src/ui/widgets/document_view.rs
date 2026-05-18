@@ -140,7 +140,7 @@ impl<'a> DocumentRenderer<'a> {
         }
     }
 
-    fn render_code_fragment(&mut self, language: &Option<String>, code_lines: &Vec<document::Line>) {
+    fn render_code_fragment(&mut self, language: &Option<String>, code_lines: &Vec<document::Line>, metadata: &Option<String>) {
         let style_base = document::Style::default().background(document::Color::gray(32));
         let indentation_style = document::Style::default();
         let caption_style = document::Style::default().background(document::Color::gray(128));
@@ -164,13 +164,16 @@ impl<'a> DocumentRenderer<'a> {
         let code_block_caption = {
             let mut spans = vec![ left_margin_span.clone() ];
 
-            let caption =
+            let caption = {
+                let caption = metadata.as_ref().cloned().unwrap_or("Code snippet".to_owned());
+
                 if let Some(language) = language {
-                    format!(" Code snippet #{} ({})", self.code_block_index, language)
+                    format!(" [{index}] {caption} ({language})", index=self.code_block_index, language=language, caption=caption)
                 }
                 else {
-                    format!(" Code snippet #{}", self.code_block_index)
-                };
+                    format!(" [{index}] {caption}", index=self.code_block_index, caption=caption)
+                }
+            };
             let caption = format!("{caption:<width$}", caption=caption, width=code_block_width);
 
             let caption_span = translate_span(&document::Span { text: caption, style: caption_style }, &style_base);
@@ -210,8 +213,8 @@ impl<'a> DocumentRenderer<'a> {
                 document::Fragment::Heading{words, style, depth} => {
                     self.render_heading_fragment(words, style, *depth);
                 },
-                document::Fragment::Code { language, highlighted_lines: code_lines, original: _ } => {
-                    self.render_code_fragment(language, code_lines);
+                document::Fragment::Code { language, highlighted_lines: code_lines, original: _, metadata } => {
+                    self.render_code_fragment(language, code_lines, metadata);
                 },
                 document::Fragment::Verbatim { lines } => {
                     self.render_verbatim_fragment(lines);

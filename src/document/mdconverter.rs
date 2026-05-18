@@ -144,6 +144,7 @@ impl<'a, 'b> Converter<'a, 'b> {
 
     fn convert_code(&mut self, code: Code) {
         let language = code.lang;
+        let metadata = code.meta;
         let lines = code.value.lines();
         let indentation = 0;
         let mut highlighted_lines = self.syntax_highlighter.highlight_lines(language.as_deref(), lines, indentation).collect::<Vec<_>>();
@@ -153,7 +154,7 @@ impl<'a, 'b> Converter<'a, 'b> {
             highlighted_line.indent(1);
         }
 
-        let fragment = Fragment::Code { language, original: code.value, highlighted_lines };
+        let fragment = Fragment::Code { language, original: code.value, highlighted_lines, metadata };
 
         self.fragments.push(fragment);
     }
