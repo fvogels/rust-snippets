@@ -1,8 +1,8 @@
 use itertools::enumerate;
-use ratatui::{buffer::Buffer, layout::Rect, style::Stylize, text::{Line, Span}, widgets::{Paragraph, Widget}};
+use ratatui::{buffer::Buffer, layout::Rect, style::Stylize, text::{Line, Span}, widgets::Paragraph};
 
 
-pub struct KeybindingsView {
+pub struct Widget {
     bindings: Vec<Binding>,
 }
 
@@ -17,15 +17,15 @@ impl Binding {
     }
 }
 
-impl KeybindingsView {
+impl Widget {
     pub fn new(bindings: Vec<Binding>) -> Self {
-        KeybindingsView{
+        Widget{
             bindings,
         }
     }
 }
 
-impl Widget for KeybindingsView {
+impl ratatui::widgets::Widget for Widget {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         let mut spans = Vec::new();
         let separator_span = Span::default().content(" ");
