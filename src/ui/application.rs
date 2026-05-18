@@ -79,14 +79,14 @@ mod mode {
     pub trait Mode { }
 
     pub struct View {
-        pub active_tags: Vec<Tag>,
-        pub snippets: Vec<usize>,
-        pub tags: Vec<Tag>,
-        pub highlighted_snippet_index: Option<Cyclic>,
-        pub shown_snippet: usize,
-        pub snippet_list_state: widgets::description_list::State,
-        pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
-        pub page_size: Option<usize>,
+        pub(super) active_tags: Vec<Tag>,
+        pub(super) snippets: Vec<usize>,
+        pub(super) tags: Vec<Tag>,
+        pub(super) highlighted_snippet_index: Option<Cyclic>,
+        pub(super) shown_snippet: usize,
+        pub(super) snippet_list_state: widgets::description_list::State,
+        pub(super) snippet_viewer_state: widgets::snippet_view::SnippetViewState,
+        pub(super) page_size: Option<usize>,
     }
 
     impl View {
@@ -125,28 +125,28 @@ mod mode {
 
     pub struct TagSearch {
         /// List of snippets before the search started
-        pub snippets: Vec<usize>,
+        pub(super) snippets: Vec<usize>,
 
         /// Tags that were listed before the search started
-        pub original_tags: Vec<Tag>,
+        pub(super) original_tags: Vec<Tag>,
 
         /// Tags that were activated before the search started
-        pub active_tags: Vec<Tag>,
+        pub(super) active_tags: Vec<Tag>,
 
         /// Edited by user, used to filter tags
-        pub tag_input: String,
+        pub(super) tag_input: String,
 
         /// Tags from original_tags that match tag_input
-        pub tags: Vec<Tag>,
+        pub(super) tags: Vec<Tag>,
 
         /// Index of the highlighted tag
-        pub highlighted_tag_index: Option<Cyclic>,
+        pub(super) highlighted_tag_index: Option<Cyclic>,
 
         /// State of the tag list
-        pub tag_list_state: widgets::tags_view::TagsViewState,
+        pub(super) tag_list_state: widgets::tags_view::TagsViewState,
 
         /// Size of a page that fits on the screen; used by the PgUp and PgDown handlers
-        pub page_size: Option<usize>,
+        pub(super) page_size: Option<usize>,
     }
 
     impl TagSearch {
@@ -177,37 +177,37 @@ mod mode {
 
     pub struct KeywordSearch {
         /// Original list of snippets, pre-search
-        pub snippets: Vec<usize>,
+        pub(super) snippets: Vec<usize>,
 
         /// List of tags
-        pub tags: Vec<Tag>,
+        pub(super) tags: Vec<Tag>,
 
         /// List of active tags
-        pub active_tags: Vec<Tag>,
+        pub(super) active_tags: Vec<Tag>,
 
         /// Keywords used in filtering
-        pub keywords: Vec<String>,
+        pub(super) keywords: Vec<String>,
 
         /// Subset of snippets that match keywords
-        pub filtered_snippets: Vec<usize>,
+        pub(super) filtered_snippets: Vec<usize>,
 
         /// Highlighted snippet pre-search; restored if user cancels search
-        pub original_highlighted_snippet_index: Option<Cyclic>,
+        pub(super) original_highlighted_snippet_index: Option<Cyclic>,
 
         /// Index of highlighted snippet, can be moved up and down
-        pub highlighted_snippet_index: Option<Cyclic>,
+        pub(super) highlighted_snippet_index: Option<Cyclic>,
 
         /// Snippet being shown in snippet viewer
-        pub shown_snippet: usize,
+        pub(super) shown_snippet: usize,
 
         /// State of snippet list widget
-        pub snippet_list_state: widgets::description_list::State,
+        pub(super) snippet_list_state: widgets::description_list::State,
 
         /// State of snippet viewer widget
-        pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
+        pub(super) snippet_viewer_state: widgets::snippet_view::SnippetViewState,
 
         /// Page size to be used when user presses pgup/pgdown
-        pub page_size: Option<usize>,
+        pub(super) page_size: Option<usize>,
     }
 
     impl KeywordSearch {
