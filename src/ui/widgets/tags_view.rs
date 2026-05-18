@@ -17,55 +17,6 @@ impl TagsViewState {
         }
     }
 
-    pub fn select_next(&mut self) {
-        self.available_tag_list_state.select_next();
-    }
-
-    pub fn select_previous(&mut self) {
-        self.available_tag_list_state.select_previous();
-    }
-
-    pub fn select_first(&mut self) {
-        self.available_tag_list_state.select_first();
-    }
-
-    pub fn select_last(&mut self) {
-        self.available_tag_list_state.select_last();
-    }
-
-    pub fn select_page_down(&mut self, page_size: usize) {
-        match self.available_tag_list_state.selected_mut() {
-            Some(i) => {
-                *i += page_size
-            },
-            None => { }
-        }
-    }
-
-    pub fn select_page_up(&mut self, page_size: usize) {
-        match self.available_tag_list_state.selected_mut() {
-            Some(i) => {
-                if *i >= page_size {
-                    *i -= page_size
-                }
-                else {
-                    *i = 0
-                }
-            },
-            None => { }
-        }
-    }
-
-    pub fn ensure_selection(&mut self) {
-        if self.available_tag_list_state.selected().is_none() {
-            self.available_tag_list_state = self.available_tag_list_state.with_selected(Some(0));
-        }
-    }
-
-    pub fn selected(&self) -> Option<usize> {
-        self.available_tag_list_state.selected()
-    }
-
     pub fn select(&mut self, index: Option<usize>) {
         self.available_tag_list_state.select(index);
     }

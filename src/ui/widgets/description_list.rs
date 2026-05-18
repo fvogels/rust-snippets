@@ -17,34 +17,6 @@ impl State {
         }
     }
 
-    pub fn select_previous(&mut self) {
-        self.list_state.select_previous();
-    }
-
-    pub fn select_next(&mut self) {
-        self.list_state.select_next();
-    }
-
-    pub fn select_first(&mut self) {
-        self.list_state.select_first();
-    }
-
-    pub fn select_last(&mut self) {
-        self.list_state.select_last();
-    }
-
-    pub fn scroll_up_by(&mut self, amount: u16) {
-        self.list_state.scroll_up_by(amount);
-    }
-
-    pub fn scroll_down_by(&mut self, amount: u16) {
-        self.list_state.scroll_down_by(amount);
-    }
-
-    pub fn selected(&self) -> Option<usize> {
-        self.list_state.selected()
-    }
-
     pub fn select(&mut self, index: Option<usize>) {
         self.list_state.select(index);
     }
