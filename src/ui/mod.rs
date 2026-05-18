@@ -1,11 +1,6 @@
-mod state;
-mod view_mode;
-mod search_mode;
-mod tag_search_mode;
 mod widgets;
 mod application;
 
-use state::Mode;
 use application::Application;
 
 use crate::{snippets::Library};
