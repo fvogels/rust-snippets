@@ -809,17 +809,22 @@ impl AppState<mode::KeywordSearch> {
     }
 
     fn switch_to_view_mode(self) -> AppStateMode {
-        self.assert_invariant();
+        if let Some(index) = self.mode.highlighted_snippet_index {
+            self.assert_invariant();
 
-        let shown_snippet_index = match self.find_snippet_in_list(self.mode.shown_snippet, &self.mode.snippets) {
-            Some(index) => Cyclic::new(index as u64, self.mode.snippets.len() as u64),
-            None => panic!("expected to be able to find shown snippet in list of snippets"),
-        };
+            let shown_snippet_index = match self.find_snippet_in_list(self.mode.shown_snippet, &self.mode.snippets) {
+                Some(index) => Cyclic::new(index as u64, self.mode.snippets.len() as u64),
+                None => panic!("expected to be able to find shown snippet in list of snippets"),
+            };
 
-        AppState {
-            library: self.library,
-            mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, shown_snippet_index.into(), self.mode.shown_snippet),
-        }.into()
+            AppState {
+                library: self.library,
+                mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, shown_snippet_index.into(), self.mode.shown_snippet),
+            }.into()
+        }
+        else {
+            self.remain_in_keyword_search_mode()
+        }
     }
 }
 
