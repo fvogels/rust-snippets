@@ -29,6 +29,7 @@ impl Application {
             AppStateMode::Quit => panic!("should not happen"),
             AppStateMode::View(state) => state.draw(frame),
             AppStateMode::TagSearch(state) => state.draw(frame),
+            AppStateMode::KeywordSearch(state) => state.draw(frame),
         }
         // let (_, duration) = timing::measure(|| self.mode.draw(frame));
         // log::info!("Rendering frame took {}ms", duration.as_millis());
@@ -41,6 +42,7 @@ impl Application {
             AppStateMode::Quit => panic!("should not happen"),
             AppStateMode::View(state) => state.handle_event(event),
             AppStateMode::TagSearch(state) => state.handle_event(event),
+            AppStateMode::KeywordSearch(state) => state.handle_event(event),
         };
         Ok(())
     }
@@ -50,6 +52,7 @@ enum AppStateMode {
     Quit,
     View(AppState<mode::View>),
     TagSearch(AppState<mode::TagSearch>),
+    KeywordSearch(AppState<mode::KeywordSearch>),
 }
 
 impl AppStateMode {
@@ -69,7 +72,6 @@ struct AppState<Mode: mode::Mode> {
     library: Library,
     mode: Mode,
     filtering_tags: Vec<Tag>,
-    filtering_keywords: Vec<String>,
     listed_snippets: Vec<usize>,
     listed_tags: Vec<Tag>,
     shown_snippet: Cyclic,
@@ -115,6 +117,26 @@ mod mode {
     }
 
     impl Mode for TagSearch { }
+
+    pub struct KeywordSearch {
+        pub filtering_keywords: Vec<String>,
+        pub snippet_list_state: widgets::description_list::State,
+        pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
+        pub leftover_snippets: Vec<usize>,
+    }
+
+    impl KeywordSearch {
+        pub fn new(snippets: Vec<usize>) -> Self {
+            KeywordSearch {
+                filtering_keywords: vec![String::new()],
+                snippet_list_state: widgets::description_list::State::default(),
+                snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
+                leftover_snippets: snippets,
+            }
+        }
+    }
+
+    impl Mode for KeywordSearch { }
 }
 
 impl<Mode: mode::Mode> AppState<Mode> {
@@ -133,7 +155,7 @@ impl<Mode: mode::Mode> AppState<Mode> {
 
     /// Recomputes the list of snippets and the list of tags.
     fn refresh(&mut self) {
-        self.listed_snippets = self.library.search(self.filtering_keywords.iter().map(String::as_str), self.filtering_tags.iter().map(|tag| tag.name.as_str()));
+        self.listed_snippets = self.library.search(Vec::new().into_iter(), self.filtering_tags.iter().map(|tag| tag.name.as_str()));
 
         let mut tags: HashSet<&Tag> = HashSet::new();
 
@@ -167,7 +189,6 @@ impl AppState<mode::View> {
             library,
             shown_snippet: Cyclic::new(0, listed_snippets.len() as u64),
             mode: mode::View::initial(),
-            filtering_keywords: Vec::new(),
             filtering_tags: Vec::new(),
             listed_snippets,
             listed_tags,
@@ -243,6 +264,7 @@ impl AppState<mode::View> {
             match event.code {
                 KeyCode::Char('q') => self.quit(),
                 KeyCode::Char('#') => self.switch_to_tag_search_mode(),
+                KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
                 KeyCode::Delete => self.drop_filtering_tag(),
                 KeyCode::Up => self.highlight_previous_snippet(),
                 KeyCode::Down => self.highlight_next_snippet(),
@@ -267,7 +289,19 @@ impl AppState<mode::View> {
             library: self.library,
             mode: mode::TagSearch::new(self.listed_tags.clone()),
             filtering_tags: self.filtering_tags,
-            filtering_keywords: self.filtering_keywords,
+            listed_snippets: self.listed_snippets,
+            listed_tags: self.listed_tags,
+            shown_snippet: self.shown_snippet,
+        })
+    }
+
+    fn switch_to_keyword_search_mode(self) -> AppStateMode {
+        self.assert_invariant();
+
+        AppStateMode::KeywordSearch(AppState {
+            library: self.library,
+            mode: mode::KeywordSearch::new(self.listed_snippets.clone()),
+            filtering_tags: self.filtering_tags,
             listed_snippets: self.listed_snippets,
             listed_tags: self.listed_tags,
             shown_snippet: self.shown_snippet,
@@ -395,7 +429,6 @@ impl AppState<mode::TagSearch> {
             library: self.library,
             mode: mode::View::initial(),
             filtering_tags: self.filtering_tags,
-            filtering_keywords: self.filtering_keywords,
             listed_snippets: self.listed_snippets,
             listed_tags: self.listed_tags,
             shown_snippet: self.shown_snippet,
@@ -444,6 +477,146 @@ impl AppState<mode::TagSearch> {
     }
 }
 
+impl AppState<mode::KeywordSearch> {
+    pub fn handle_event(self, event: Event) -> AppStateMode {
+        self.assert_invariant();
+
+        match event {
+            Event::Key(key_event) => self.handle_key_event(key_event),
+            _ => self.remain_in_keyword_search_mode()
+        }
+    }
+
+    fn handle_key_event(self, event: KeyEvent) -> AppStateMode {
+        if event.is_press() {
+            match event.code {
+                KeyCode::Esc => self.cancel_keyword_search(),
+                KeyCode::Char(char) if self.is_valid_keyword_character(char) => self.add_char(char),
+                KeyCode::Char(' ') => self.start_new_keyword(),
+                _ => self.remain_in_keyword_search_mode(),
+            }
+        }
+        else {
+            self.remain_in_keyword_search_mode()
+        }
+    }
+
+    fn is_valid_keyword_character(&self, char: char) -> bool {
+        char.is_ascii_graphic()
+    }
+
+    fn add_char(mut self, char: char) -> AppStateMode {
+        debug_assert!(self.mode.filtering_keywords.len() > 0, "this vec should always contain at least one element");
+
+        self.mode.filtering_keywords.last_mut().unwrap().push(char);
+        self.refresh_snippet_list();
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn start_new_keyword(mut self) -> AppStateMode {
+        debug_assert!(self.mode.filtering_keywords.len() > 0, "this vec should always contain at least one element");
+
+        if !self.mode.filtering_keywords.last().unwrap().is_empty() {
+            self.mode.filtering_keywords.push(String::new());
+        }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn refresh_snippet_list(&mut self) {
+        let snippet_ids = self.library.search(self.mode.filtering_keywords.iter().map(String::as_str), self.filtering_tags.iter().map(|tag| tag.name.as_str()));
+        self.mode.leftover_snippets = snippet_ids;
+    }
+
+    pub fn draw(&mut self, frame: &mut Frame) {
+        self.assert_invariant();
+
+        let (search_bar_area, tag_list_area, snippet_list_area, snippet_viewer_area) = {
+            let area = frame.area();
+            let [ upper_area, search_bar_area ] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+            let [ tag_list_area, right_area ] = Layout::horizontal([ Constraint::Length(20), Constraint::Fill(1) ]).areas(upper_area);
+            let [ snippet_list_area, snippet_viewer_area ] = Layout::vertical([ Constraint::Length(15), Constraint::Fill(1) ]).areas(right_area);
+
+            (search_bar_area, tag_list_area, snippet_list_area, snippet_viewer_area)
+        };
+
+        let buffer = frame.buffer_mut();
+        self.render_search_bar(search_bar_area, buffer);
+        self.render_tag_list(tag_list_area, buffer);
+        self.render_snippet_list(snippet_list_area, buffer);
+        self.render_snippet(snippet_viewer_area, buffer);
+
+        self.assert_invariant();
+    }
+
+    fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
+        let library = &self.library;
+        let snippet = library.snippet(self.shown_snippet.into());
+        let snippet_viewer = widgets::snippet_view::SnippetView::new(snippet, library);
+        let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
+
+        ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
+    }
+
+    fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        let border = Block::new().borders(Borders::ALL).border_type(BorderType::Plain);
+        let inner_area = border.inner(area);
+
+        let tag_list = {
+            let selected_tags = self.filtering_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
+            let listed_tags = &self.listed_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
+
+            widgets::tags_view::TagsView::new(selected_tags.iter().copied(), listed_tags.iter().copied())
+        };
+
+        ratatui::widgets::Widget::render(border, area, buffer);
+        ratatui::widgets::Widget::render(tag_list, inner_area, buffer);
+    }
+
+    fn render_snippet_list(&mut self, area: Rect, buffer: &mut Buffer) {
+        let snippet_list = {
+            let items = self.mode.leftover_snippets.iter().map(|id| self.library.snippet(*id).description.as_str());
+
+            widgets::description_list::Widget::new(items, false)
+        };
+        let snippet_list_state = &mut self.mode.snippet_list_state;
+        snippet_list_state.select(self.shown_snippet.into());
+
+        ratatui::widgets::StatefulWidget::render(snippet_list, area, buffer, snippet_list_state);
+    }
+
+    fn render_search_bar(&mut self, area: Rect, buffer: &mut Buffer) {
+        let prompt = self.mode.filtering_keywords.join(" ");
+        let paragraph = ratatui::widgets::Paragraph::new(prompt).on_light_blue();
+
+        paragraph.render(area, buffer);
+    }
+
+    fn remain_in_keyword_search_mode(self) -> AppStateMode {
+        self.assert_invariant();
+
+        self.into()
+    }
+
+    fn cancel_keyword_search(self) -> AppStateMode {
+        self.switch_to_view_mode()
+    }
+
+    fn switch_to_view_mode(self) -> AppStateMode {
+        self.assert_invariant();
+
+        AppState {
+            library: self.library,
+            mode: mode::View::initial(),
+            filtering_tags: self.filtering_tags,
+            listed_snippets: self.listed_snippets,
+            listed_tags: self.listed_tags,
+            shown_snippet: self.shown_snippet,
+        }.into()
+    }
+}
+
 impl From<AppState<mode::View>> for AppStateMode {
     fn from(state: AppState<mode::View>) -> Self {
         AppStateMode::View(state)
@@ -453,5 +626,11 @@ impl From<AppState<mode::View>> for AppStateMode {
 impl From<AppState<mode::TagSearch>> for AppStateMode {
     fn from(state: AppState<mode::TagSearch>) -> Self {
         AppStateMode::TagSearch(state)
+    }
+}
+
+impl From<AppState<mode::KeywordSearch>> for AppStateMode {
+    fn from(state: AppState<mode::KeywordSearch>) -> Self {
+        AppStateMode::KeywordSearch(state)
     }
 }
