@@ -121,7 +121,7 @@ mod test {
         let snippet1 = Snippet{
             description: String::from("a"),
             extra_keywords: vec![],
-            parts: Vec::new(),
+            pages: Vec::new(),
             links: Vec::new(),
             tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
             tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
@@ -139,7 +139,7 @@ mod test {
         let snippet1 = Snippet{
             description: String::from("a"),
             extra_keywords: vec![],
-            parts: Vec::new(),
+            pages: Vec::new(),
             links: Vec::new(),
             tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
             tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List}};
 
-use crate::{document::Document, snippets::{Library, snippets::{Part, Snippet}}, ui::widgets::{document_view, metadata_view}};
+use crate::{document::Document, snippets::{Library, snippets::{Page, Snippet}}, ui::widgets::{document_view, metadata_view}};
 
 pub struct Widget<'a> {
     snippet: &'a Snippet,
@@ -10,38 +10,38 @@ pub struct Widget<'a> {
 }
 
 pub struct State {
-    selected_part: usize,
+    selected_page: usize,
 }
 
 impl State {
     pub fn new() -> Self {
         State{
-            selected_part: 0,
+            selected_page: 0,
         }
     }
 
     pub fn select_first(&mut self) {
-        self.selected_part = 0
+        self.selected_page = 0
     }
 
     pub fn select_next(&mut self) {
-        self.selected_part += 1
+        self.selected_page += 1
     }
 
     pub fn select_previous(&mut self) {
-        if self.selected_part >= 1 {
-            self.selected_part -= 1
+        if self.selected_page >= 1 {
+            self.selected_page -= 1
         }
     }
 
-    fn ensure_within_bounds(&mut self, part_count: usize) {
-        if self.selected_part >= part_count {
-            self.selected_part = 0
+    fn ensure_within_bounds(&mut self, page_count: usize) {
+        if self.selected_page >= page_count {
+            self.selected_page = 0
         }
     }
 
     pub fn selected(&self) -> usize {
-        self.selected_part
+        self.selected_page
     }
 }
 
@@ -53,23 +53,23 @@ impl<'a> Widget<'a> {
         }
     }
 
-    fn selected_snippet_part(&self, state: &mut State) -> (usize, &'a Part) {
+    fn selected_snippet_page(&self, state: &mut State) -> (usize, &'a Page) {
         let snippet = self.snippet;
 
-        state.ensure_within_bounds(snippet.parts.len());
-        let selected_part_index = state.selected_part;
+        state.ensure_within_bounds(snippet.pages.len());
+        let selected_page_index = state.selected_page;
 
-        (selected_part_index, &snippet.parts[selected_part_index])
+        (selected_page_index, &snippet.pages[selected_page_index])
     }
 
-    fn render_border(&self, area: Rect, buffer: &mut Buffer, selected_part_index: usize, selected_part: &Part) -> Rect {
+    fn render_border(&self, area: Rect, buffer: &mut Buffer, selected_page_index: usize, selected_page: &Page) -> Rect {
         let bottom_title = {
-            let one_based_index = selected_part_index + 1;
-            let part_count = self.snippet.parts.len();
+            let one_based_index = selected_page_index + 1;
+            let page_count = self.snippet.pages.len();
 
-            let caption = match &selected_part.caption {
-                Some(caption) => format!(" {}/{} {} ", one_based_index, part_count, caption),
-                None => format!(" {}/{} ", one_based_index, part_count),
+            let caption = match &selected_page.caption {
+                Some(caption) => format!(" {}/{} {} ", one_based_index, page_count, caption),
+                None => format!(" {}/{} ", one_based_index, page_count),
             };
 
             Line::raw(caption)
@@ -127,10 +127,10 @@ impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
     type State = State;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let (selected_part_index, selected_part) = self.selected_snippet_part(state);
+        let (selected_page_index, selected_page) = self.selected_snippet_page(state);
         let link_count = self.snippet.links.len();
 
-        let area = self.render_border(area, buffer, selected_part_index, selected_part);
+        let area = self.render_border(area, buffer, selected_page_index, selected_page);
 
         // Compute layout
         let (document_viewer_area, metadata_area, links_area) = {
@@ -147,7 +147,7 @@ impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
             }
         };
 
-        self.render_document_viewer(document_viewer_area, buffer, selected_part.document());
+        self.render_document_viewer(document_viewer_area, buffer, selected_page.document());
         self.render_metadata_viewer(metadata_area, buffer);
 
         if let Some(links_area) = links_area {

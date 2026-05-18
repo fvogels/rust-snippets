@@ -25,7 +25,7 @@ use rkyv::{Archive, Deserialize, Serialize};
         pub identifier: Option<String>,
         pub links: Vec<String>,
         pub description: String,
-        pub parts: Vec<Part>,
+        pub pages: Vec<Page>,
         pub tags: Vec<Tag>,
         pub keywords: Vec<String>,
         pub path: String,
@@ -38,7 +38,7 @@ use rkyv::{Archive, Deserialize, Serialize};
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
-    pub struct Part {
+    pub struct Page {
         pub attributes: Vec<(String, String)>,
         pub source: Vec<String>,
         pub url: Option<String>,
@@ -57,7 +57,7 @@ use rkyv::{Archive, Deserialize, Serialize};
             let metadata_string = metadata_segment.lines.join("\n");
             let metadata = parse_metadata(&metadata_string)?;
 
-            let parts: anyhow::Result<Vec<Part>> =  segment_iterator.map(|segment| {
+            let pages: anyhow::Result<Vec<Page>> =  segment_iterator.map(|segment| {
                     let attributes = match segment.caption {
                         Some(caption) => {
                             attstring::parse(caption.as_str())
@@ -65,18 +65,18 @@ use rkyv::{Archive, Deserialize, Serialize};
                         None => {
                             Ok(Vec::new())
                         }
-                    }.context("Parsing attributes of snippet part")?;
+                    }.context("Parsing attributes of snippet page")?;
 
                     let caption = attributes.iter().find(|pair| pair.0 == "caption").map(|p| p.1.clone());
                     let url = attributes.iter().find(|pair| pair.0 == "url").map(|p| p.1.clone());
 
-                    let part = Part{ attributes, source: segment.lines, caption, url };
+                    let page = Page{ attributes, source: segment.lines, caption, url };
 
-                    Ok(part)
+                    Ok(page)
                 }).collect();
-            let parts = parts?;
+            let pages = pages?;
 
-            if parts.len() == 0 {
+            if pages.len() == 0 {
                 anyhow::bail!("Missing snippet segments");
             }
 
@@ -100,7 +100,7 @@ use rkyv::{Archive, Deserialize, Serialize};
                 description: metadata.description,
                 identifier: metadata.identifier,
                 links: metadata.links.unwrap_or(Vec::new()),
-                parts,
+                pages,
                 tags,
                 keywords,
                 path,
@@ -127,7 +127,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 pub struct Snippet {
     pub description: String,
     pub links: Vec<usize>,
-    pub parts: Vec<Part>,
+    pub pages: Vec<Page>,
     pub tags: Vec<Tag>,
     pub tag_set: HashSet<String>,
     pub extra_keywords: Vec<String>,
@@ -139,7 +139,7 @@ pub struct Tag {
     pub name: String,
 }
 
-pub struct Part {
+pub struct Page {
     pub attributes: HashMap<String, String>,
     pub syntax_highlighter: Rc<SyntaxHighlighter>,
     pub caption: Option<String>,
@@ -153,14 +153,14 @@ impl Snippet {
         let description = raw_snippet.description;
         let tags = raw_snippet.tags.into_iter().map(Tag::from_raw).collect::<Vec<_>>();
         let tag_set = tags.iter().map(|tag| tag.name.clone()).collect();
-        let parts = raw_snippet.parts.into_iter().map(|raw_part| Part::from_raw(raw_part, syntax_highlighter.clone())).collect();
+        let pages = raw_snippet.pages.into_iter().map(|raw_page| Page::from_raw(raw_page, syntax_highlighter.clone())).collect();
         let extra_keywords = raw_snippet.keywords;
         let links = raw_snippet.links.iter().map(|id| snippet_table[id.as_str()]).collect();
 
         Snippet {
             description,
             links,
-            parts,
+            pages,
             tags,
             tag_set,
             extra_keywords,
@@ -190,12 +190,12 @@ impl Tag {
     }
 }
 
-impl Part {
-    pub fn from_raw(raw_part: raw::Part, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
-        let raw::Part { attributes, source, caption, url } = raw_part;
+impl Page {
+    pub fn from_raw(raw_page: raw::Page, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
+        let raw::Page { attributes, source, caption, url } = raw_page;
         let attributes = attributes.into_iter().collect();
 
-        Part{ attributes, source, syntax_highlighter, contents: OnceCell::new(), caption, url }
+        Page{ attributes, source, syntax_highlighter, contents: OnceCell::new(), caption, url }
     }
 
     pub fn document(&self) -> &document::Document {
