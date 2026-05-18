@@ -94,7 +94,7 @@ mod mode {
 
             View {
                 active_tags: Vec::new(),
-                highlighted_snippet_index: Cyclic::new(0, snippets.len() as u64).into(),
+                highlighted_snippet_index: Cyclic::new(0, snippets.len()).into(),
                 shown_snippet: snippets[0],
                 snippets,
                 tags,
@@ -153,7 +153,7 @@ mod mode {
                     None
                 }
                 else {
-                    Some(Cyclic::new(0, tag_list.len() as u64))
+                    Some(Cyclic::new(0, tag_list.len()))
                 }
             };
 
@@ -306,7 +306,7 @@ impl AppState<mode::View> {
             widgets::description_list::Widget::new(items, true)
         };
         let snippet_list_state = &mut self.mode.snippet_list_state;
-        snippet_list_state.select(self.mode.highlighted_snippet_index.map(|c| c.value() as usize));
+        snippet_list_state.select(self.mode.highlighted_snippet_index.map(|c| c.value()));
 
         ratatui::widgets::StatefulWidget::render(snippet_list, area, buffer, snippet_list_state);
     }
@@ -367,7 +367,7 @@ impl AppState<mode::View> {
 
     fn assert_invariant(&self) {
         if let Some(highlighted_snippet_index) = self.mode.highlighted_snippet_index {
-            debug_assert_eq!(highlighted_snippet_index.modulo() as usize, self.mode.snippets.len());
+            debug_assert_eq!(highlighted_snippet_index.modulo(), self.mode.snippets.len());
         }
     }
 
@@ -399,7 +399,7 @@ impl AppState<mode::View> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.sub(1);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value() as usize];
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
         }
 
         self.remain_in_view_mode()
@@ -409,7 +409,7 @@ impl AppState<mode::View> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.add(1);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value() as usize];
+            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
         }
 
         self.remain_in_view_mode()
@@ -425,7 +425,7 @@ impl AppState<mode::View> {
     fn refresh(&mut self) {
         let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), self.mode.active_tags.iter());
 
-        self.mode.highlighted_snippet_index = Cyclic::new(0, snippets.len() as u64).into();
+        self.mode.highlighted_snippet_index = Cyclic::new(0, snippets.len()).into();
         self.mode.shown_snippet = snippets[0];
         self.mode.snippets = snippets;
         self.mode.tags = tags;
@@ -457,7 +457,7 @@ impl AppState<mode::TagSearch> {
     }
 
     fn render_tag_list(&mut self, area: Rect, buffer: &mut Buffer) {
-        self.mode.tag_list_state.select(self.mode.highlighted_tag_index.map(|c| c.value() as usize));
+        self.mode.tag_list_state.select(self.mode.highlighted_tag_index.map(|c| c.value()));
 
         let border = Block::new().borders(Borders::ALL).border_type(BorderType::Double);
         let inner_area = border.inner(area);
@@ -535,7 +535,7 @@ impl AppState<mode::TagSearch> {
     fn cancel_tag_search(self) -> AppStateMode {
         self.assert_invariant();
 
-        let highlighted_snippet_index = Cyclic::new(0, self.mode.snippets.len() as u64);
+        let highlighted_snippet_index = Cyclic::new(0, self.mode.snippets.len());
 
         AppState {
             library: self.library,
@@ -592,7 +592,7 @@ impl AppState<mode::TagSearch> {
 
     fn highlight_last_tag(mut self) -> AppStateMode {
         if let Some(index) = self.mode.highlighted_tag_index {
-            self.mode.highlighted_tag_index = index.set(self.mode.tags.len() as u64 - 1).into();
+            self.mode.highlighted_tag_index = index.set(self.mode.tags.len() - 1).into();
         }
         else {
             assert!(self.mode.tags.is_empty(), "missing highlighted tag index only allowed when there are no tags to highlight");
@@ -602,14 +602,14 @@ impl AppState<mode::TagSearch> {
     }
 
     fn highlight_page_up(mut self) -> AppStateMode {
-        let page_size = self.mode.page_size.unwrap() as u64;
+        let page_size = self.mode.page_size.unwrap();
 
         if let Some(index) = self.mode.highlighted_tag_index {
             if index.value() < page_size {
                 self.mode.highlighted_tag_index = index.set(0).into();
             }
             else {
-                self.mode.highlighted_tag_index = index.sub(self.mode.page_size.unwrap() as u64).into();
+                self.mode.highlighted_tag_index = index.sub(self.mode.page_size.unwrap()).into();
             }
         }
         else {
@@ -620,14 +620,14 @@ impl AppState<mode::TagSearch> {
     }
 
     fn highlight_page_down(mut self) -> AppStateMode {
-        let page_size = self.mode.page_size.unwrap() as u64;
+        let page_size = self.mode.page_size.unwrap();
 
         if let Some(index) = self.mode.highlighted_tag_index {
             if index.value() + page_size >= index.modulo() {
                 self.mode.highlighted_tag_index = index.set(index.modulo() - 1).into();
             }
             else {
-                self.mode.highlighted_tag_index = index.add(self.mode.page_size.unwrap() as u64).into();
+                self.mode.highlighted_tag_index = index.add(self.mode.page_size.unwrap()).into();
             }
         }
         else {
@@ -641,7 +641,7 @@ impl AppState<mode::TagSearch> {
         let lowercased = self.mode.tag_input.to_lowercase();
 
         self.mode.tags = self.mode.original_tags.iter().filter(|tag| tag.name.to_lowercase().starts_with(lowercased.as_str())).cloned().collect::<Vec<_>>();
-        self.mode.highlighted_tag_index = if self.mode.tags.is_empty() { None } else { Cyclic::new(0, self.mode.tags.len() as u64).into() };
+        self.mode.highlighted_tag_index = if self.mode.tags.is_empty() { None } else { Cyclic::new(0, self.mode.tags.len()).into() };
     }
 
     fn select_highlighted_tag(self) -> AppStateMode {
@@ -649,7 +649,7 @@ impl AppState<mode::TagSearch> {
             self.assert_invariant();
 
             let updated_active_tags = {
-                let selected_index = highlighted_tag_index.value() as usize;
+                let selected_index = highlighted_tag_index.value();
                 let selected_tag = self.mode.tags[selected_index].clone();
                 let mut tags = self.mode.active_tags;
                 tags.push(selected_tag);
@@ -658,7 +658,7 @@ impl AppState<mode::TagSearch> {
 
             let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), updated_active_tags.iter());
 
-            let highlighted_snippet_index = Cyclic::new(0, snippets.len() as u64);
+            let highlighted_snippet_index = Cyclic::new(0, snippets.len());
             let shown_snippet = snippets[0];
 
             AppState {
@@ -775,7 +775,7 @@ impl AppState<mode::KeywordSearch> {
         self.mode.filtered_snippets = snippet_ids;
 
         if let Some(id) = self.mode.filtered_snippets.get(0) {
-            self.mode.highlighted_snippet_index = Some(Cyclic::new(0, self.mode.filtered_snippets.len() as u64));
+            self.mode.highlighted_snippet_index = Some(Cyclic::new(0, self.mode.filtered_snippets.len()));
             self.mode.shown_snippet = *id;
         }
         else {
@@ -787,7 +787,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.sub(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.mode.shown_snippet = self.mode.filtered_snippets[updated_index.value() as usize];
+            self.mode.shown_snippet = self.mode.filtered_snippets[updated_index.value()];
         }
 
         self.remain_in_keyword_search_mode()
@@ -797,7 +797,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.add(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.mode.shown_snippet = self.mode.filtered_snippets[updated_index.value() as usize];
+            self.mode.shown_snippet = self.mode.filtered_snippets[updated_index.value()];
         }
 
         self.remain_in_keyword_search_mode()
@@ -855,7 +855,7 @@ impl AppState<mode::KeywordSearch> {
             widgets::description_list::Widget::new(items, false)
         };
         let snippet_list_state = &mut self.mode.snippet_list_state;
-        snippet_list_state.select(self.mode.highlighted_snippet_index.map(|c| c.value() as usize));
+        snippet_list_state.select(self.mode.highlighted_snippet_index.map(|c| c.value()));
 
         ratatui::widgets::StatefulWidget::render(snippet_list, area, buffer, snippet_list_state);
     }
@@ -883,11 +883,11 @@ impl AppState<mode::KeywordSearch> {
     }
 
     fn switch_to_view_mode(self) -> AppStateMode {
-        if let Some(index) = self.mode.highlighted_snippet_index {
-            self.assert_invariant();
+        self.assert_invariant();
 
+        if let Some(_) = self.mode.highlighted_snippet_index {
             let shown_snippet_index = match self.find_snippet_in_list(self.mode.shown_snippet, &self.mode.snippets) {
-                Some(index) => Cyclic::new(index as u64, self.mode.snippets.len() as u64),
+                Some(index) => Cyclic::new(index, self.mode.snippets.len()),
                 None => panic!("expected to be able to find shown snippet in list of snippets"),
             };
 

@@ -1,48 +1,34 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Cyclic {
-    value: u64,
-    modulo: u64,
+pub struct Cyclic<T = usize> where T: std::ops::Add<Output = T> + std::ops::Sub<Output = T> + std::ops::Rem<Output = T> + Copy {
+    value: T,
+    modulo: T,
 }
 
-impl Cyclic {
-    pub fn new(value: u64, modulo: u64) -> Self {
-        assert!(modulo > 0);
-
+impl<T> Cyclic<T> where T: std::ops::Add<Output = T> + std::ops::Sub<Output = T> + std::ops::Rem<Output = T> + Copy {
+    pub fn new(value: T, modulo: T) -> Self {
         Cyclic { value: value % modulo, modulo }
     }
 
-    pub fn add(&self, delta: u64) -> Cyclic {
+    pub fn add(&self, delta: T) -> Self {
         self.set(self.value + delta)
     }
 
-    pub fn sub(&self, delta: u64) -> Cyclic {
+    pub fn sub(&self, delta: T) -> Self {
         let value = self.value + self.modulo - (delta % self.modulo);
 
         self.set(value)
     }
 
-    pub fn set(&self, value: u64) -> Cyclic {
+    pub fn set(&self, value: T) -> Self {
         Cyclic { value: value % self.modulo, modulo: self.modulo }
     }
 
-    pub fn value(&self) -> u64 {
+    pub fn value(&self) -> T {
         self.value
     }
 
-    pub fn modulo(&self) -> u64 {
+    pub fn modulo(&self) -> T {
         self.modulo
-    }
-}
-
-impl From<Cyclic> for u64 {
-    fn from(cyclic: Cyclic) -> Self {
-        cyclic.value
-    }
-}
-
-impl From<Cyclic> for usize {
-    fn from(cyclic: Cyclic) -> Self {
-        cyclic.value as usize
     }
 }
 
