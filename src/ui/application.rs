@@ -85,7 +85,7 @@ mod mode {
         pub(super) highlighted_snippet_index: Option<Cyclic>,
         pub(super) shown_snippet: usize,
         pub(super) snippet_list_state: widgets::description_list::State,
-        pub(super) snippet_viewer_state: widgets::snippet_view::SnippetViewState,
+        pub(super) snippet_viewer_state: widgets::snippet_view::State,
         pub(super) page_size: Option<usize>,
     }
 
@@ -100,7 +100,7 @@ mod mode {
                 snippets,
                 tags,
                 snippet_list_state: widgets::description_list::State::default(),
-                snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
+                snippet_viewer_state: widgets::snippet_view::State::new(),
                 page_size: None,
             }
         }
@@ -115,7 +115,7 @@ mod mode {
                 snippets,
                 tags,
                 snippet_list_state: widgets::description_list::State::default(),
-                snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
+                snippet_viewer_state: widgets::snippet_view::State::new(),
                 page_size: None,
             }
         }
@@ -143,7 +143,7 @@ mod mode {
         pub(super) highlighted_tag_index: Option<Cyclic>,
 
         /// State of the tag list
-        pub(super) tag_list_state: widgets::tags_view::TagsViewState,
+        pub(super) tag_list_state: widgets::tags_view::State,
 
         /// Size of a page that fits on the screen; used by the PgUp and PgDown handlers
         pub(super) page_size: Option<usize>,
@@ -161,7 +161,7 @@ mod mode {
             };
 
             TagSearch {
-                tag_list_state: widgets::tags_view::TagsViewState::new(),
+                tag_list_state: widgets::tags_view::State::new(),
                 highlighted_tag_index,
                 tag_input: String::new(),
                 tags: tag_list.clone(),
@@ -204,7 +204,7 @@ mod mode {
         pub(super) snippet_list_state: widgets::description_list::State,
 
         /// State of snippet viewer widget
-        pub(super) snippet_viewer_state: widgets::snippet_view::SnippetViewState,
+        pub(super) snippet_viewer_state: widgets::snippet_view::State,
 
         /// Page size to be used when user presses pgup/pgdown
         pub(super) page_size: Option<usize>,
@@ -218,7 +218,7 @@ mod mode {
                 highlighted_snippet_index: highlighted_snippet_index,
                 shown_snippet: snippets[0],
                 snippet_list_state: widgets::description_list::State::default(),
-                snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
+                snippet_viewer_state: widgets::snippet_view::State::new(),
                 filtered_snippets: snippets.clone(),
                 tags,
                 active_tags,
@@ -299,7 +299,7 @@ impl AppState<mode::View> {
             let selected_tags = self.mode.active_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
             let listed_tags = &self.mode.tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
 
-            widgets::tags_view::TagsView::new(selected_tags.iter().copied(), listed_tags.iter().copied())
+            widgets::tags_view::Widget::new(selected_tags.iter().copied(), listed_tags.iter().copied())
         };
 
         ratatui::widgets::Widget::render(border, area, buffer);
@@ -323,7 +323,7 @@ impl AppState<mode::View> {
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
         let snippet = library.snippet(self.mode.shown_snippet);
-        let snippet_viewer = widgets::snippet_view::SnippetView::new(snippet, library);
+        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
 
         ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
@@ -539,7 +539,7 @@ impl AppState<mode::TagSearch> {
             let active_tags = self.mode.active_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
             let listed_tags = self.mode.tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
 
-            widgets::tags_view::TagsView::new(active_tags.iter().copied(), listed_tags.iter().copied())
+            widgets::tags_view::Widget::new(active_tags.iter().copied(), listed_tags.iter().copied())
         };
 
         ratatui::widgets::Widget::render(border, area, buffer);
@@ -960,7 +960,7 @@ impl AppState<mode::KeywordSearch> {
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
         let snippet = library.snippet(self.mode.shown_snippet);
-        let snippet_viewer = widgets::snippet_view::SnippetView::new(snippet, library);
+        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
 
         ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
@@ -974,7 +974,7 @@ impl AppState<mode::KeywordSearch> {
             let selected_tags = self.mode.active_tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
             let listed_tags = self.mode.tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>();
 
-            widgets::tags_view::TagsView::new(selected_tags.iter().copied(), listed_tags.iter().copied())
+            widgets::tags_view::Widget::new(selected_tags.iter().copied(), listed_tags.iter().copied())
         };
 
         ratatui::widgets::Widget::render(border, area, buffer);

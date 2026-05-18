@@ -1,21 +1,21 @@
 use std::collections::HashMap;
 
-use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List, StatefulWidget, Widget}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List}};
 
 use crate::{document::Document, snippets::{Library, snippets::{Part, Snippet}}, ui::widgets::{document_view, metadata_view}};
 
-pub struct SnippetView<'a> {
+pub struct Widget<'a> {
     snippet: &'a Snippet,
     library: &'a Library,
 }
 
-pub struct SnippetViewState {
+pub struct State {
     selected_part: usize,
 }
 
-impl SnippetViewState {
+impl State {
     pub fn new() -> Self {
-        SnippetViewState{
+        State{
             selected_part: 0,
         }
     }
@@ -45,15 +45,15 @@ impl SnippetViewState {
     }
 }
 
-impl<'a> SnippetView<'a> {
+impl<'a> Widget<'a> {
     pub fn new(snippet: &'a Snippet, library: &'a Library) -> Self {
-        SnippetView{
+        Widget{
             snippet,
             library,
         }
     }
 
-    fn selected_snippet_part(&self, state: &mut SnippetViewState) -> (usize, &'a Part) {
+    fn selected_snippet_part(&self, state: &mut State) -> (usize, &'a Part) {
         let snippet = self.snippet;
 
         state.ensure_within_bounds(snippet.parts.len());
@@ -78,14 +78,14 @@ impl<'a> SnippetView<'a> {
         let block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
         let inner_area = block.inner(area);
 
-        block.render(area, buffer);
+        ratatui::widgets::Widget::render(block, area, buffer);
 
         inner_area
     }
 
     fn render_document_viewer(&self, area: Rect, buffer: &mut Buffer, document: &Document) {
         let document_viewer = document_view::Widget::new(document);
-        document_viewer.render(area, buffer);
+        ratatui::widgets::Widget::render(document_viewer, area, buffer);
     }
 
     fn render_metadata_viewer(&self, area: Rect, buffer: &mut Buffer) {
@@ -106,7 +106,8 @@ impl<'a> SnippetView<'a> {
 
             metadata_view::Widget::new(categories)
         };
-        metadata_viewer.render(area, buffer);
+
+        ratatui::widgets::Widget::render(metadata_viewer, area, buffer);
     }
 
     fn render_links(&self, area: Rect, buffer: &mut Buffer) {
@@ -117,13 +118,13 @@ impl<'a> SnippetView<'a> {
         ).collect::<Vec<_>>();
         let links_list = List::new(linked_nodes);
 
-        block.render(area, buffer);
+        ratatui::widgets::Widget::render(block, area, buffer);
         ratatui::widgets::Widget::render(links_list, block_inner_area, buffer);
     }
 }
 
-impl<'a> StatefulWidget for SnippetView<'a> {
-    type State = SnippetViewState;
+impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
+    type State = State;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let (selected_part_index, selected_part) = self.selected_snippet_part(state);
