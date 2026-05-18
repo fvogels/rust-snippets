@@ -125,6 +125,7 @@ mod mode {
         pub snippet_viewer_state: widgets::snippet_view::SnippetViewState,
         pub leftover_snippets: Vec<usize>,
         pub highlighted_snippet_index: Option<Cyclic>,
+        pub shown_snippet: usize,
     }
 
     impl KeywordSearch {
@@ -132,6 +133,7 @@ mod mode {
             KeywordSearch {
                 filtering_keywords: vec![String::new()],
                 highlighted_snippet_index: Some(Cyclic::new(0, snippets.len() as u64)),
+                shown_snippet: snippets[0],
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::SnippetViewState::new(),
                 leftover_snippets: snippets,
@@ -180,6 +182,16 @@ impl<Mode: mode::Mode> AppState<Mode> {
         self.listed_tags = tags.into_iter().cloned().collect();
         self.listed_tags.sort_by(|tag1, tag2| tag1.name.cmp(&tag2.name));
         self.highlighted_snippet_index = Cyclic::new(0, self.listed_snippets.len() as u64);
+    }
+
+    fn find_snippet_in_list(&self, snippet_id: usize, list: &Vec<usize>) -> Option<usize> {
+        match list.binary_search(&snippet_id) {
+            Ok(index) => {
+                debug_assert!(list[index] == snippet_id, "binary search failed to do its job; was the list correctly sorted?");
+                Some(index)
+            },
+            Err(_) => None
+        }
     }
 }
 
@@ -501,6 +513,7 @@ impl AppState<mode::KeywordSearch> {
             log::debug!("Key pressed: {:?}", event.code);
             match event.code {
                 KeyCode::Esc => self.cancel_keyword_search(),
+                KeyCode::Enter => self.switch_to_view_mode(),
                 KeyCode::Up => self.highlight_previous_snippet(),
                 KeyCode::Down => self.highlight_next_snippet(),
                 KeyCode::Char(char) if self.is_valid_keyword_character(char) => self.add_char(char),
@@ -584,7 +597,7 @@ impl AppState<mode::KeywordSearch> {
 
         if let Some(id) = self.mode.leftover_snippets.get(0) {
             self.mode.highlighted_snippet_index = Some(Cyclic::new(0, self.mode.leftover_snippets.len() as u64));
-            self.shown_snippet = *id;
+            self.mode.shown_snippet = *id;
         }
         else {
             self.mode.highlighted_snippet_index = None
@@ -595,7 +608,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.sub(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.shown_snippet = self.listed_snippets[updated_index.value() as usize];
+            self.mode.shown_snippet = self.mode.leftover_snippets[updated_index.value() as usize];
         }
 
         self.remain_in_keyword_search_mode()
@@ -605,7 +618,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.add(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.shown_snippet = self.listed_snippets[updated_index.value() as usize];
+            self.mode.shown_snippet = self.mode.leftover_snippets[updated_index.value() as usize];
         }
 
         self.remain_in_keyword_search_mode()
@@ -634,7 +647,7 @@ impl AppState<mode::KeywordSearch> {
 
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
-        let snippet = library.snippet(self.shown_snippet);
+        let snippet = library.snippet(self.mode.shown_snippet);
         let snippet_viewer = widgets::snippet_view::SnippetView::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
 
@@ -682,20 +695,40 @@ impl AppState<mode::KeywordSearch> {
     }
 
     fn cancel_keyword_search(self) -> AppStateMode {
-        self.switch_to_view_mode()
-    }
-
-    fn switch_to_view_mode(self) -> AppStateMode {
         self.assert_invariant();
 
         AppState {
             library: self.library,
             mode: mode::View::initial(),
-            shown_snippet: self.listed_snippets[self.highlighted_snippet_index.value() as usize],
+            shown_snippet: self.shown_snippet,
             filtering_tags: self.filtering_tags,
             listed_snippets: self.listed_snippets,
             listed_tags: self.listed_tags,
             highlighted_snippet_index: self.highlighted_snippet_index,
+        }.into()
+    }
+
+    fn switch_to_view_mode(self) -> AppStateMode {
+        self.assert_invariant();
+
+        let index_of_shown_snippet = match self.find_snippet_in_list(self.mode.shown_snippet, &self.listed_snippets) {
+            Some(index) => Cyclic::new(index as u64, self.listed_snippets.len() as u64),
+            None => panic!("expected to be able to find shown snippet in list of snippets"),
+        };
+
+        log::debug!("shown snippet: {}", self.mode.shown_snippet);
+        log::debug!("snippet list: {:?}", self.listed_snippets);
+        log::debug!("index: {}", index_of_shown_snippet.value());
+        log::debug!("item: {:?}", self.listed_snippets[index_of_shown_snippet.value() as usize]);
+
+        AppState {
+            library: self.library,
+            mode: mode::View::initial(),
+            shown_snippet: self.mode.shown_snippet,
+            filtering_tags: self.filtering_tags,
+            listed_snippets: self.listed_snippets,
+            listed_tags: self.listed_tags,
+            highlighted_snippet_index: index_of_shown_snippet,
         }.into()
     }
 }
