@@ -19,7 +19,7 @@ pub use theme::Theme;
 pub use syntax::SyntaxHighlighter;
 pub use mdconverter::{parse};
 
-use crate::document::fragment::Code;
+pub use crate::document::fragment::Code;
 
 #[derive(Debug)]
 pub struct Document {
