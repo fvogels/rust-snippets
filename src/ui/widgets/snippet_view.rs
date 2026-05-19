@@ -20,6 +20,12 @@ impl State {
         }
     }
 
+    fn ensure_within_bounds(&mut self, page_count: usize) {
+        if self.selected_page >= page_count {
+            self.selected_page = 0
+        }
+    }
+
     pub fn select_page(&mut self, page_index: usize) {
         self.selected_page = page_index;
     }
