@@ -367,25 +367,20 @@ impl AppState<mode::View> {
 
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
-
-        match self.mode.shown_snippet {
+        let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
+        let snippet_id = match self.mode.shown_snippet {
             ShownSnippet::Page { snippet_id, page_index } => {
-                let snippet = library.snippet(snippet_id);
-                let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
-                let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
                 snippet_viewer_state.select_page(page_index.value());
-
-                ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
+                snippet_id
             },
-            ShownSnippet::Overview { snippet_id, page_count } => {
-                let snippet = library.snippet(snippet_id);
-                let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
-                let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
+            ShownSnippet::Overview { snippet_id, .. } => {
                 snippet_viewer_state.select_overview();
-
-                ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
+                snippet_id
             }
-        }
+        };
+        let snippet = library.snippet(snippet_id);
+        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
+        ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
