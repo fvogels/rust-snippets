@@ -1,8 +1,8 @@
 use std::{collections::HashSet, io, mem};
 
-use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders, Widget}};
+use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers}, layout::{Constraint, Layout, Margin, Rect}, style::Stylize, widgets::{Block, BorderType, Borders, Clear, List, ListItem, Padding, Widget}};
 
-use crate::{snippets::{Library, snippets::Tag}, ui::widgets, util::Cyclic};
+use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::ViewOverlay, widgets}, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -87,6 +87,12 @@ mod mode {
         pub(super) snippet_list_state: widgets::description_list::State,
         pub(super) snippet_viewer_state: widgets::snippet_view::State,
         pub(super) page_size: Option<usize>,
+        pub(super) overlay: ViewOverlay,
+    }
+
+    pub enum ViewOverlay {
+        None,
+        CopySnippet,
     }
 
     impl View {
@@ -102,6 +108,7 @@ mod mode {
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::State::new(),
                 page_size: None,
+                overlay: ViewOverlay::None,
             }
         }
 
@@ -117,6 +124,7 @@ mod mode {
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::State::new(),
                 page_size: None,
+                overlay: ViewOverlay::None,
             }
         }
     }
@@ -332,8 +340,9 @@ impl AppState<mode::View> {
     pub fn draw(&mut self, frame: &mut Frame) {
         self.assert_invariant();
 
+        let area = frame.area();
+
         let (tag_list_area, snippet_list_area, snippet_viewer_area) = {
-            let area = frame.area();
             let [ tag_list_area, right_area ] = Layout::horizontal([ Constraint::Length(20), Constraint::Fill(1) ]).areas(area);
             let [ snippet_list_area, snippet_view_area ] = Layout::vertical([ Constraint::Length(15), Constraint::Fill(1) ]).areas(right_area);
 
@@ -345,7 +354,53 @@ impl AppState<mode::View> {
         self.render_snippet_list(snippet_list_area, buffer);
         self.render_snippet(snippet_viewer_area, buffer);
 
+        match self.mode.overlay {
+            ViewOverlay::None => { },
+            ViewOverlay::CopySnippet => self.render_copy_snippet_overlay(area, buffer),
+        }
+
         self.assert_invariant();
+    }
+
+    fn currently_shown_snippet(&self) -> &Snippet {
+        let snippet_id = self.mode.shown_snippet;
+
+        self.library.snippet(snippet_id)
+    }
+
+    fn currently_shown_page(&self) -> &Page {
+        let snippet = self.currently_shown_snippet();
+        let pages = &snippet.pages;
+        let shown_page = &pages[0];
+
+        shown_page
+    }
+
+    fn render_copy_snippet_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
+        let block_caption = " Copy snippet to clipboard ";
+
+        let shown_page = self.currently_shown_page();
+        let code_blocks = shown_page.document().code_fragments();
+        let list_items = code_blocks.enumerate().map(|(index, code)| {
+            let language = code.language.as_ref().map(String::as_str).unwrap_or("unknown language");
+            let caption = code.metadata.as_ref().map(String::as_str).unwrap_or("Code snippet");
+            let list_item_content = format!("[{index}] {caption} ({language})", index=index+1, caption=caption, language=language);
+
+            ListItem::new(list_item_content)
+        }).collect::<Vec<_>>();
+        let longest_list_item = list_items.iter().map(ListItem::width).max().unwrap();
+        let required_width = *[longest_list_item + 4, block_caption.len() + 4].iter().max().unwrap();
+        let required_height = list_items.len() + 4;
+
+        let overlay_area = area.centered(Constraint::Length(required_width as u16), Constraint::Length(required_height as u16));
+        let block = Block::new().borders(Borders::ALL).border_type(BorderType::Double).title(" Copy snippet to clipboard ").padding(Padding::uniform(1)).on_dark_gray();
+        let block_inner_area = block.inner(overlay_area);
+        Clear::default().render(overlay_area, buffer);
+        block.render(overlay_area, buffer);
+
+        let list = List::new(list_items);
+
+        list.render(block_inner_area, buffer);
     }
 
     pub fn handle_event(self, event: Event) -> AppStateMode {
@@ -359,19 +414,71 @@ impl AppState<mode::View> {
 
     fn handle_key_event(self, event: KeyEvent) -> AppStateMode {
         if event.is_press() {
-            match event.code {
-                KeyCode::Char('q') => self.quit(),
-                KeyCode::Char('#') => self.switch_to_tag_search_mode(),
-                KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
-                KeyCode::Delete => self.drop_filtering_tag(),
-                KeyCode::Up => self.highlight_previous_snippet(),
-                KeyCode::Down => self.highlight_next_snippet(),
-                KeyCode::PageUp => self.highlight_previous_page(),
-                KeyCode::PageDown => self.highlight_next_page(),
-                KeyCode::Home => self.highlight_first_snippet(),
-                KeyCode::End => self.highlight_last_snippet(),
-                _ => self.remain_in_view_mode(),
+            match self.mode.overlay {
+                ViewOverlay::None => {
+                    match event.code {
+                        KeyCode::Char('q') => self.quit(),
+                        KeyCode::Char('#') => self.switch_to_tag_search_mode(),
+                        KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
+                        KeyCode::Char('c') => self.show_copy_snippet_overlay(),
+                        KeyCode::Delete => self.drop_filtering_tag(),
+                        KeyCode::Up => self.highlight_previous_snippet(),
+                        KeyCode::Down => self.highlight_next_snippet(),
+                        KeyCode::PageUp => self.highlight_previous_page(),
+                        KeyCode::PageDown => self.highlight_next_page(),
+                        KeyCode::Home => self.highlight_first_snippet(),
+                        KeyCode::End => self.highlight_last_snippet(),
+                        _ => self.remain_in_view_mode(),
+                    }
+                },
+                ViewOverlay::CopySnippet => {
+                    match event.code {
+                        KeyCode::Esc => self.remove_overlay(),
+                        KeyCode::Char(char) if char.is_ascii_digit() => self.copy_code_to_clipboard(char),
+                        _ => self.remain_in_view_mode(),
+                    }
+                }
             }
+        }
+        else {
+            self.remain_in_view_mode()
+        }
+    }
+
+    fn show_copy_snippet_overlay(mut self) -> AppStateMode {
+        // Find out if the snippet actually contains code blocks
+        let page = self.currently_shown_page();
+        let has_at_least_one_code_block = page.document().code_fragments().next().is_some();
+
+        if has_at_least_one_code_block {
+            self.mode.overlay = ViewOverlay::CopySnippet;
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn remove_overlay(mut self) -> AppStateMode {
+        self.mode.overlay = ViewOverlay::None;
+
+        self.remain_in_view_mode()
+    }
+
+    fn copy_code_to_clipboard(mut self, char: char) -> AppStateMode {
+        let page = self.currently_shown_page();
+        let index = {
+            let digit = char.to_digit(10).unwrap();
+            if digit == 0 {
+                9
+            }
+            else {
+                digit - 1
+            }
+        } as usize;
+        let block = page.document().code_fragments().nth(index);
+
+        if let Some(code) = block {
+            external::clipboard::copy_to_clipboard(code.original.clone()).unwrap();
+            self.remove_overlay()
         }
         else {
             self.remain_in_view_mode()
