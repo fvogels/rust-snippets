@@ -508,7 +508,7 @@ impl AppState<mode::View> {
         self.remain_in_view_mode()
     }
 
-    fn copy_code_to_clipboard(mut self, char: char) -> AppStateMode {
+    fn copy_code_to_clipboard(self, char: char) -> AppStateMode {
         let page = self.currently_shown_page();
         let index = {
             let digit = char.to_digit(10).unwrap();
