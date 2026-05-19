@@ -106,7 +106,12 @@ mod mode {
             let snippet = library.snippet(snippet_id);
             let page_count = snippet.pages.len();
 
-            ShownSnippet::Page { snippet_id, page_index: Cyclic::new(0, page_count) }
+            if page_count == 1 {
+                ShownSnippet::Page { snippet_id, page_index: Cyclic::new(0, page_count) }
+            }
+            else {
+                ShownSnippet::Overview { snippet_id, page_count }
+            }
         }
 
         pub fn next_page(&mut self) {
