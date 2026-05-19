@@ -1078,11 +1078,12 @@ impl AppState<mode::KeywordSearch> {
 
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
-        let snippet = match self.mode.shown_snippet {
-            ShownSnippet::Page { snippet_id, .. } => library.snippet(snippet_id)
+        let (snippet, page_index) = match self.mode.shown_snippet {
+            ShownSnippet::Page { snippet_id, page_index } => (library.snippet(snippet_id), page_index)
         };
         let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
+        snippet_viewer_state.select_page(page_index);
 
         ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
     }

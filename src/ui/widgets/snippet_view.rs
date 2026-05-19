@@ -43,6 +43,10 @@ impl State {
     pub fn selected(&self) -> usize {
         self.selected_page
     }
+
+    pub fn select_page(&mut self, page_index: usize) {
+        self.selected_page = page_index;
+    }
 }
 
 impl<'a> Widget<'a> {
