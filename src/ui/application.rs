@@ -421,6 +421,7 @@ impl AppState<mode::View> {
                         KeyCode::Char('#') => self.switch_to_tag_search_mode(),
                         KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
                         KeyCode::Char('c') => self.show_copy_snippet_overlay(),
+                        KeyCode::Char('C') => self.copy_first_to_clipboard(),
                         KeyCode::Delete => self.drop_filtering_tag(),
                         KeyCode::Up => self.highlight_previous_snippet(),
                         KeyCode::Down => self.highlight_next_snippet(),
@@ -443,6 +444,18 @@ impl AppState<mode::View> {
         else {
             self.remain_in_view_mode()
         }
+    }
+
+    fn copy_first_to_clipboard(self) -> AppStateMode {
+        let page = self.currently_shown_page();
+
+        if let Some(code) = page.document().code_fragments().next() {
+            let to_be_copied = code.original.clone();
+
+            external::clipboard::copy_to_clipboard(to_be_copied).unwrap();
+        }
+
+        self.remain_in_view_mode()
     }
 
     fn show_copy_snippet_overlay(mut self) -> AppStateMode {
