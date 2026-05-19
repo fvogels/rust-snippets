@@ -929,6 +929,8 @@ impl AppState<mode::KeywordSearch> {
                 KeyCode::PageDown => self.highlight_next_page(),
                 KeyCode::Home => self.highlight_first_snippet(),
                 KeyCode::End => self.highlight_last_snippet(),
+                KeyCode::Char('[') => self.previous_page(),
+                KeyCode::Char(']') => self.next_page(),
                 KeyCode::Char(char) if self.is_valid_keyword_character(char) => self.add_char(char),
                 KeyCode::Char(' ') => self.start_new_keyword(),
                 KeyCode::Backspace => {
@@ -1091,6 +1093,18 @@ impl AppState<mode::KeywordSearch> {
             self.mode.highlighted_snippet_index = updated_index.into();
             self.mode.shown_snippet = ShownSnippet::new(&self.library, self.mode.snippets[updated_index.value()]);
         }
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn previous_page(mut self) -> AppStateMode {
+        self.mode.shown_snippet.previous_page();
+
+        self.remain_in_keyword_search_mode()
+    }
+
+    fn next_page(mut self) -> AppStateMode {
+        self.mode.shown_snippet.next_page();
 
         self.remain_in_keyword_search_mode()
     }
