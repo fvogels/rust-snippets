@@ -2,7 +2,7 @@ use std::{collections::HashSet, io, mem};
 
 use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders,  Widget}};
 
-use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets}, util::Cyclic};
+use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets::{self, links_overlay::Link}}, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -93,6 +93,7 @@ mod mode {
     pub enum ViewOverlay {
         None,
         CopySnippet,
+        Links,
     }
 
     pub enum ShownSnippet {
@@ -392,6 +393,7 @@ impl AppState<mode::View> {
         match self.mode.overlay {
             ViewOverlay::None => { },
             ViewOverlay::CopySnippet => self.render_copy_snippet_overlay(area, buffer),
+            ViewOverlay::Links => self.render_links_overlay(area, buffer),
         }
 
         self.assert_invariant();
@@ -421,6 +423,19 @@ impl AppState<mode::View> {
         widget.render(area, buffer)
     }
 
+    fn render_links_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
+        let shown_snippet = self.currently_shown_snippet();
+        let links = shown_snippet.links.iter().copied().map(|linked_id| {
+            Link {
+                caption: &self.library.snippet(linked_id).description,
+                snippet_id: linked_id,
+            }
+        }).collect::<Vec<_>>();
+        let widget = widgets::links_overlay::Widget::new(links);
+
+        widget.render(area, buffer)
+    }
+
     pub fn handle_event(self, event: Event) -> AppStateMode {
         self.assert_invariant();
 
@@ -439,6 +454,7 @@ impl AppState<mode::View> {
                         KeyCode::Char('#') => self.switch_to_tag_search_mode(),
                         KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
                         KeyCode::Char('c') => self.show_copy_snippet_overlay(),
+                        KeyCode::Char('l') => self.show_links_overlay(),
                         KeyCode::Char('C') => self.copy_first_to_clipboard(),
                         KeyCode::Char('[') => self.previous_page(),
                         KeyCode::Char(']') => self.next_page(),
@@ -457,6 +473,12 @@ impl AppState<mode::View> {
                     match event.code {
                         KeyCode::Esc => self.remove_overlay(),
                         KeyCode::Char(char) if char.is_ascii_digit() => self.copy_code_to_clipboard(char),
+                        _ => self.remain_in_view_mode(),
+                    }
+                },
+                ViewOverlay::Links => {
+                    match event.code {
+                        KeyCode::Esc => self.remove_overlay(),
                         _ => self.remain_in_view_mode(),
                     }
                 }
@@ -508,6 +530,18 @@ impl AppState<mode::View> {
 
         if has_at_least_one_code_block {
             self.mode.overlay = ViewOverlay::CopySnippet;
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn show_links_overlay(mut self) -> AppStateMode {
+        // Find out if the snippet has links
+        let snippet = self.currently_shown_snippet();
+        let links = &snippet.links;
+
+        if !links.is_empty() {
+            self.mode.overlay = ViewOverlay::Links;
         }
 
         self.remain_in_view_mode()

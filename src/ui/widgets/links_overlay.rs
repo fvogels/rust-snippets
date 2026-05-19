@@ -4,26 +4,30 @@ use crate::document::{Code};
 
 
 pub struct Widget<'a> {
-    code_blocks: &'a Vec<&'a Code>,
+    links: Vec<Link<'a>>
+}
+
+pub struct Link<'a> {
+    pub caption: &'a str,
+    pub snippet_id: usize,
 }
 
 impl<'a> Widget<'a> {
-    pub fn new(code_blocks: &'a Vec<&'a Code>) -> Self {
+    pub fn new(links: Vec<Link<'a>>) -> Self {
         Widget{
-            code_blocks
+            links
         }
     }
 }
 
 impl<'a> ratatui::widgets::Widget for Widget<'a> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let block_title = " Copy snippet to clipboard ";
+        let block_title = " Linked snippets ";
 
-        let code_blocks = self.code_blocks;
-        let list_items = code_blocks.iter().enumerate().map(|(index, code)| {
-            let language = code.language.as_ref().map(String::as_str).unwrap_or("unknown language");
-            let caption = code.metadata.as_ref().map(String::as_str).unwrap_or("Code snippet");
-            let list_item_content = format!("[{index}] {caption} ({language})", index=index+1, caption=caption, language=language);
+        let links = self.links;
+        let list_items = links.iter().enumerate().map(|(index, link)| {
+            let caption = link.caption;
+            let list_item_content = format!("[{index}] {caption}", index=index+1, caption=caption);
 
             ListItem::new(list_item_content)
         }).collect::<Vec<_>>();

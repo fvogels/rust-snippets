@@ -5,3 +5,4 @@ pub mod description_list;
 pub mod document_view;
 pub mod metadata_view;
 pub mod clipboard_overlay;
+pub mod links_overlay;
