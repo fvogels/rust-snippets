@@ -1,8 +1,8 @@
 use std::{collections::HashSet, io, mem};
 
-use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers}, layout::{Constraint, Layout, Margin, Rect}, style::Stylize, widgets::{Block, BorderType, Borders, Clear, List, ListItem, Padding, Widget}};
+use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders, Clear, List, ListItem, Padding, Widget}};
 
-use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::ViewOverlay, widgets}, util::Cyclic};
+use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets}, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -83,7 +83,7 @@ mod mode {
         pub(super) snippets: Vec<usize>,
         pub(super) tags: Vec<Tag>,
         pub(super) highlighted_snippet_index: Option<Cyclic>,
-        pub(super) shown_snippet: usize,
+        pub(super) shown_snippet: ShownSnippet,
         pub(super) snippet_list_state: widgets::description_list::State,
         pub(super) snippet_viewer_state: widgets::snippet_view::State,
         pub(super) page_size: Option<usize>,
@@ -95,6 +95,10 @@ mod mode {
         CopySnippet,
     }
 
+    pub enum ShownSnippet {
+        Page { snippet_id: usize, page_index: usize },
+    }
+
     impl View {
         pub fn initial(snippets: Vec<usize>, tags: Vec<Tag>) -> Self {
             assert!(!snippets.is_empty(), "no snippets");
@@ -102,7 +106,7 @@ mod mode {
             View {
                 active_tags: Vec::new(),
                 highlighted_snippet_index: Cyclic::new(0, snippets.len()).into(),
-                shown_snippet: snippets[0],
+                shown_snippet: ShownSnippet::Page { snippet_id: snippets[0], page_index: 0 },
                 snippets,
                 tags,
                 snippet_list_state: widgets::description_list::State::default(),
@@ -112,7 +116,7 @@ mod mode {
             }
         }
 
-        pub fn new(snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>, shown_snippet: usize) -> Self {
+        pub fn new(snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>, shown_snippet: ShownSnippet) -> Self {
             assert!(!snippets.is_empty(), "no snippets");
 
             View {
@@ -206,7 +210,7 @@ mod mode {
         pub(super) highlighted_snippet_index: Option<Cyclic>,
 
         /// Snippet being shown in snippet viewer
-        pub(super) shown_snippet: usize,
+        pub(super) shown_snippet: ShownSnippet,
 
         /// State of snippet list widget
         pub(super) snippet_list_state: widgets::description_list::State,
@@ -224,7 +228,7 @@ mod mode {
                 keywords: vec![String::new()],
                 original_highlighted_snippet_index: highlighted_snippet_index,
                 highlighted_snippet_index: highlighted_snippet_index,
-                shown_snippet: snippets[0],
+                shown_snippet: ShownSnippet::Page { snippet_id: snippets[0], page_index: 0 },
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::State::new(),
                 filtered_snippets: snippets.clone(),
@@ -330,11 +334,16 @@ impl AppState<mode::View> {
 
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
-        let snippet = library.snippet(self.mode.shown_snippet);
-        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
-        let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
 
-        ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
+        match self.mode.shown_snippet {
+            ShownSnippet::Page { snippet_id, page_index } => {
+                let snippet = library.snippet(snippet_id);
+                let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
+                let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
+
+                ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
+            }
+        }
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
@@ -363,9 +372,11 @@ impl AppState<mode::View> {
     }
 
     fn currently_shown_snippet(&self) -> &Snippet {
-        let snippet_id = self.mode.shown_snippet;
-
-        self.library.snippet(snippet_id)
+        match self.mode.shown_snippet {
+            ShownSnippet::Page { snippet_id, .. } => {
+                self.library.snippet(snippet_id)
+            }
+        }
     }
 
     fn currently_shown_page(&self) -> &Page {
@@ -513,7 +524,8 @@ impl AppState<mode::View> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.sub(1);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            let shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
         }
 
         self.remain_in_view_mode()
@@ -523,7 +535,8 @@ impl AppState<mode::View> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.add(1);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            let shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
         }
 
         self.remain_in_view_mode()
@@ -533,7 +546,8 @@ impl AppState<mode::View> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.set(0);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            let shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
         }
 
         self.remain_in_view_mode()
@@ -543,7 +557,8 @@ impl AppState<mode::View> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.set(index.modulo() - 1);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            let shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
         }
 
         self.remain_in_view_mode()
@@ -562,7 +577,8 @@ impl AppState<mode::View> {
                 }
             };
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            let shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
         }
 
         self.remain_in_view_mode()
@@ -581,7 +597,8 @@ impl AppState<mode::View> {
                 }
             };
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            let shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
         }
 
         self.remain_in_view_mode()
@@ -598,7 +615,7 @@ impl AppState<mode::View> {
         let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), self.mode.active_tags.iter());
 
         self.mode.highlighted_snippet_index = Cyclic::new(0, snippets.len()).into();
-        self.mode.shown_snippet = snippets[0];
+        self.mode.shown_snippet = ShownSnippet::Page { snippet_id: snippets[0], page_index: 0 };
         self.mode.snippets = snippets;
         self.mode.tags = tags;
     }
@@ -708,10 +725,11 @@ impl AppState<mode::TagSearch> {
         self.assert_invariant();
 
         let highlighted_snippet_index = Cyclic::new(0, self.mode.snippets.len());
+        let shown_snippet = self.mode.snippets[0];
 
         AppState {
             library: self.library,
-            mode: mode::View::new(self.mode.snippets, self.mode.original_tags, self.mode.active_tags, highlighted_snippet_index.into(), 0),
+            mode: mode::View::new(self.mode.snippets, self.mode.original_tags, self.mode.active_tags, highlighted_snippet_index.into(), ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }),
         }.into()
     }
 
@@ -835,7 +853,7 @@ impl AppState<mode::TagSearch> {
 
             AppState {
                 library: self.library,
-                mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index.into(), shown_snippet),
+                mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index.into(), ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }),
             }.into()
         }
         else {
@@ -952,7 +970,7 @@ impl AppState<mode::KeywordSearch> {
 
         if let Some(id) = self.mode.filtered_snippets.get(0) {
             self.mode.highlighted_snippet_index = Some(Cyclic::new(0, self.mode.filtered_snippets.len()));
-            self.mode.shown_snippet = *id;
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: *id, page_index: 0 };
         }
         else {
             self.mode.highlighted_snippet_index = None
@@ -963,7 +981,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.sub(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.mode.shown_snippet = self.mode.filtered_snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.filtered_snippets[updated_index.value()], page_index: 0 };
         }
 
         self.remain_in_keyword_search_mode()
@@ -973,7 +991,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.add(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.mode.shown_snippet = self.mode.filtered_snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.filtered_snippets[updated_index.value()], page_index: 0 };
         }
 
         self.remain_in_keyword_search_mode()
@@ -983,7 +1001,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.set(0);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
         }
 
         self.remain_in_keyword_search_mode()
@@ -993,7 +1011,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.set(index.modulo() - 1);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
         }
 
         self.remain_in_keyword_search_mode()
@@ -1012,7 +1030,7 @@ impl AppState<mode::KeywordSearch> {
                 }
             };
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
         }
 
         self.remain_in_keyword_search_mode()
@@ -1031,7 +1049,7 @@ impl AppState<mode::KeywordSearch> {
                 }
             };
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = self.mode.snippets[updated_index.value()];
+            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
         }
 
         self.remain_in_keyword_search_mode()
@@ -1060,7 +1078,9 @@ impl AppState<mode::KeywordSearch> {
 
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
-        let snippet = library.snippet(self.mode.shown_snippet);
+        let snippet = match self.mode.shown_snippet {
+            ShownSnippet::Page { snippet_id, .. } => library.snippet(snippet_id)
+        };
         let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
 
@@ -1122,7 +1142,10 @@ impl AppState<mode::KeywordSearch> {
         self.assert_invariant();
 
         if let Some(_) = self.mode.highlighted_snippet_index {
-            let shown_snippet_index = match self.find_snippet_in_list(self.mode.shown_snippet, &self.mode.snippets) {
+            let shown_snippet = match self.mode.shown_snippet {
+                ShownSnippet::Page { snippet_id, .. } => snippet_id
+            };
+            let shown_snippet_index = match self.find_snippet_in_list(shown_snippet, &self.mode.snippets) {
                 Some(index) => Cyclic::new(index, self.mode.snippets.len()),
                 None => panic!("expected to be able to find shown snippet in list of snippets"),
             };
