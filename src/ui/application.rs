@@ -1,6 +1,6 @@
 use std::{collections::HashSet, io, mem};
 
-use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders, Clear, List, ListItem, Padding, Widget}};
+use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders,  Widget}};
 
 use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets}, util::Cyclic};
 
