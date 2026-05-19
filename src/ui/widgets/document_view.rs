@@ -168,10 +168,10 @@ impl<'a> DocumentRenderer<'a> {
                 let caption = metadata.as_ref().cloned().unwrap_or("Code snippet".to_owned());
 
                 if let Some(language) = language {
-                    format!(" [{index}] {caption} ({language})", index=self.code_block_index, language=language, caption=caption)
+                    format!(" {caption} ({language})", language=language, caption=caption)
                 }
                 else {
-                    format!(" [{index}] {caption}", index=self.code_block_index, caption=caption)
+                    format!(" {caption}", caption=caption)
                 }
             };
             let caption = format!("{caption:<width$}", caption=caption, width=code_block_width);
