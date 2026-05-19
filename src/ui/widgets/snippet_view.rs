@@ -20,30 +20,6 @@ impl State {
         }
     }
 
-    pub fn select_first(&mut self) {
-        self.selected_page = 0
-    }
-
-    pub fn select_next(&mut self) {
-        self.selected_page += 1
-    }
-
-    pub fn select_previous(&mut self) {
-        if self.selected_page >= 1 {
-            self.selected_page -= 1
-        }
-    }
-
-    fn ensure_within_bounds(&mut self, page_count: usize) {
-        if self.selected_page >= page_count {
-            self.selected_page = 0
-        }
-    }
-
-    pub fn selected(&self) -> usize {
-        self.selected_page
-    }
-
     pub fn select_page(&mut self, page_index: usize) {
         self.selected_page = page_index;
     }
