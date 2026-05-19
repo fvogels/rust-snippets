@@ -98,6 +98,7 @@ mod mode {
 
     pub enum ShownSnippet {
         Page { snippet_id: usize, page_index: Cyclic },
+        Overview { snippet_id: usize, page_count: usize },
     }
 
     impl ShownSnippet {
@@ -112,6 +113,9 @@ mod mode {
             match self {
                 ShownSnippet::Page { page_index, .. } => {
                     *page_index = page_index.add(1);
+                },
+                ShownSnippet::Overview { snippet_id, page_count } => {
+                    *self = ShownSnippet::Page { snippet_id: *snippet_id, page_index: Cyclic::new(0, *page_count) }
                 }
             }
         }
@@ -120,6 +124,9 @@ mod mode {
             match self {
                 ShownSnippet::Page { page_index, .. } => {
                     *page_index = page_index.sub(1);
+                }
+                ShownSnippet::Overview { snippet_id, page_count } => {
+                    *self = ShownSnippet::Page { snippet_id: *snippet_id, page_index: Cyclic::new(*page_count - 1, *page_count) }
                 }
             }
         }
@@ -369,6 +376,14 @@ impl AppState<mode::View> {
                 snippet_viewer_state.select_page(page_index.value());
 
                 ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
+            },
+            ShownSnippet::Overview { snippet_id, page_count } => {
+                let snippet = library.snippet(snippet_id);
+                let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
+                let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
+                snippet_viewer_state.select_overview();
+
+                ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
             }
         }
     }
@@ -402,6 +417,9 @@ impl AppState<mode::View> {
     fn currently_shown_snippet(&self) -> &Snippet {
         match self.mode.shown_snippet {
             ShownSnippet::Page { snippet_id, .. } => {
+                self.library.snippet(snippet_id)
+            },
+            ShownSnippet::Overview { snippet_id, .. } => {
                 self.library.snippet(snippet_id)
             }
         }
@@ -1210,12 +1228,20 @@ impl AppState<mode::KeywordSearch> {
 
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
-        let (snippet, page_index) = match self.mode.shown_snippet {
-            ShownSnippet::Page { snippet_id, page_index } => (library.snippet(snippet_id), page_index)
-        };
-        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
-        snippet_viewer_state.select_page(page_index.value());
+
+        let snippet_id = match self.mode.shown_snippet {
+            ShownSnippet::Page { snippet_id, page_index } => {
+                snippet_viewer_state.select_page(page_index.value());
+                snippet_id
+            },
+            ShownSnippet::Overview { snippet_id, page_count } => {
+                snippet_viewer_state.select_overview();
+                snippet_id
+            },
+        };
+        let snippet = self.library.snippet(snippet_id);
+        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
 
         ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
     }
@@ -1276,7 +1302,8 @@ impl AppState<mode::KeywordSearch> {
 
         if let Some(_) = self.mode.highlighted_snippet_index {
             let shown_snippet = match self.mode.shown_snippet {
-                ShownSnippet::Page { snippet_id, .. } => snippet_id
+                ShownSnippet::Page { snippet_id, .. } => snippet_id,
+                ShownSnippet::Overview { snippet_id, .. } => snippet_id,
             };
             let shown_snippet_index = match self.find_snippet_in_list(shown_snippet, &self.mode.snippets) {
                 Some(index) => Cyclic::new(index, self.mode.snippets.len()),
