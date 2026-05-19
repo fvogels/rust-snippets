@@ -442,6 +442,7 @@ impl AppState<mode::View> {
                         KeyCode::Char('C') => self.copy_first_to_clipboard(),
                         KeyCode::Char('[') => self.previous_page(),
                         KeyCode::Char(']') => self.next_page(),
+                        KeyCode::Char('o') => self.open_link_in_browser(),
                         KeyCode::Delete => self.drop_filtering_tag(),
                         KeyCode::Up => self.highlight_previous_snippet(),
                         KeyCode::Down => self.highlight_next_snippet(),
@@ -464,6 +465,16 @@ impl AppState<mode::View> {
         else {
             self.remain_in_view_mode()
         }
+    }
+
+    fn open_link_in_browser(self) -> AppStateMode {
+        let page = self.currently_shown_page();
+
+        if let Some(url) = &page.url {
+            external::browser::open(url.as_str()).unwrap();
+        }
+
+        self.remain_in_view_mode()
     }
 
     fn previous_page(mut self) -> AppStateMode {
