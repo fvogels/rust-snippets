@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List}};
 
-use crate::{document::Document, snippets::{Library, snippets::{Page, Snippet}}, ui::widgets::{document_view, metadata_view}};
+use crate::{document::Document, snippets::{Library, snippets::{Page, Snippet}}, ui::widgets::{self, document_view, metadata_view}};
 
 pub struct Widget<'a> {
     snippet: &'a Snippet,
@@ -10,24 +10,33 @@ pub struct Widget<'a> {
 }
 
 pub struct State {
-    selected_page: usize,
+    selected_page: SelectedPage,
+}
+
+enum SelectedPage {
+    Page(usize),
+    Overview,
 }
 
 impl State {
     pub fn new() -> Self {
         State{
-            selected_page: 0,
+            selected_page: SelectedPage::Overview,
         }
     }
 
-    fn ensure_within_bounds(&mut self, page_count: usize) {
-        if self.selected_page >= page_count {
-            self.selected_page = 0
-        }
-    }
+    // fn ensure_within_bounds(&mut self, page_count: usize) {
+    //     if self.selected_page >= page_count {
+    //         self.selected_page = 0
+    //     }
+    // }
 
     pub fn select_page(&mut self, page_index: usize) {
-        self.selected_page = page_index;
+        self.selected_page = SelectedPage::Page(page_index);
+    }
+
+    pub fn select_overview(&mut self) {
+        self.selected_page = SelectedPage::Overview;
     }
 }
 
@@ -39,14 +48,14 @@ impl<'a> Widget<'a> {
         }
     }
 
-    fn selected_snippet_page(&self, state: &mut State) -> (usize, &'a Page) {
-        let snippet = self.snippet;
+    // fn selected_snippet_page(&self, state: &mut State) -> (usize, &'a Page) {
+    //     let snippet = self.snippet;
 
-        state.ensure_within_bounds(snippet.pages.len());
-        let selected_page_index = state.selected_page;
+    //     // state.ensure_within_bounds(snippet.pages.len());
+    //     let selected_page_index = state.selected_page;
 
-        (selected_page_index, &snippet.pages[selected_page_index])
-    }
+    //     (selected_page_index, &snippet.pages[selected_page_index])
+    // }
 
     fn render_border(&self, area: Rect, buffer: &mut Buffer, selected_page_index: usize, selected_page: &Page) -> Rect {
         let bottom_title = {
@@ -107,16 +116,18 @@ impl<'a> Widget<'a> {
         ratatui::widgets::Widget::render(block, area, buffer);
         ratatui::widgets::Widget::render(links_list, block_inner_area, buffer);
     }
-}
 
-impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
-    type State = State;
+    fn render_overview(&self, area: Rect, buffer: &mut Buffer) {
+        let snippet = self.snippet;
+        let overview = widgets::snippet_overview::Widget::new(&self.library, snippet);
+        ratatui::widgets::Widget::render(overview, area, buffer);
+    }
 
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let (selected_page_index, selected_page) = self.selected_snippet_page(state);
+    fn render_page(&self, page_index: usize, area: Rect, buffer: &mut Buffer) {
+        let selected_page = &self.snippet.pages[page_index];
         let link_count = self.snippet.links.len();
 
-        let area = self.render_border(area, buffer, selected_page_index, selected_page);
+        let area = self.render_border(area, buffer, page_index, selected_page);
 
         // Compute layout
         let (document_viewer_area, metadata_area, links_area) = {
@@ -138,6 +149,17 @@ impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
 
         if let Some(links_area) = links_area {
             self.render_links(links_area, buffer);
+        }
+    }
+}
+
+impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
+    type State = State;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        match state.selected_page {
+            SelectedPage::Overview => self.render_overview(area, buffer),
+            SelectedPage::Page(page_index) => self.render_page(page_index, area, buffer),
         }
     }
 }
