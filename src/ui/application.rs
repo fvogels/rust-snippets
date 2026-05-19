@@ -106,12 +106,7 @@ mod mode {
             let snippet = library.snippet(snippet_id);
             let page_count = snippet.pages.len();
 
-            if page_count == 1 {
-                ShownSnippet::Page { snippet_id, page_index: Cyclic::new(0, page_count) }
-            }
-            else {
-                ShownSnippet::Overview { snippet_id, page_count }
-            }
+            ShownSnippet::Page { snippet_id, page_index: Cyclic::new(0, page_count) }
         }
 
         pub fn next_page(&mut self) {
@@ -477,6 +472,7 @@ impl AppState<mode::View> {
                         KeyCode::Char('[') => self.previous_page(),
                         KeyCode::Char(']') => self.next_page(),
                         KeyCode::Char('o') => self.open_link_in_browser(),
+                        KeyCode::Char('`') => self.show_snippet_overview(),
                         KeyCode::Delete => self.drop_filtering_tag(),
                         KeyCode::Up => self.highlight_previous_snippet(),
                         KeyCode::Down => self.highlight_next_snippet(),
@@ -506,6 +502,17 @@ impl AppState<mode::View> {
         else {
             self.remain_in_view_mode()
         }
+    }
+
+    fn show_snippet_overview(mut self) -> AppStateMode {
+        match self.mode.shown_snippet {
+            ShownSnippet::Overview { .. } => { },
+            ShownSnippet::Page { snippet_id, page_index } => {
+                self.mode.shown_snippet = ShownSnippet::Overview { snippet_id, page_count: page_index.modulo() }
+            }
+        }
+
+        self.remain_in_view_mode()
     }
 
     fn jump_to_linked_snippet(mut self, char: char) -> AppStateMode {
