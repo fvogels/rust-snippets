@@ -74,7 +74,7 @@ struct AppState<Mode: mode::Mode> {
 }
 
 mod mode {
-    use crate::{snippets::snippets::Tag, ui::widgets, util::Cyclic};
+    use crate::{snippets::{Library, snippets::Tag}, ui::widgets, util::Cyclic};
 
     pub trait Mode { }
 
@@ -96,17 +96,26 @@ mod mode {
     }
 
     pub enum ShownSnippet {
-        Page { snippet_id: usize, page_index: usize },
+        Page { snippet_id: usize, page_index: Cyclic },
+    }
+
+    impl ShownSnippet {
+        pub fn new(library: &Library, snippet_id: usize) -> Self {
+            let snippet = library.snippet(snippet_id);
+            let page_count = snippet.pages.len();
+
+            ShownSnippet::Page { snippet_id, page_index: Cyclic::new(0, page_count) }
+        }
     }
 
     impl View {
-        pub fn initial(snippets: Vec<usize>, tags: Vec<Tag>) -> Self {
+        pub fn initial(library: &Library, snippets: Vec<usize>, tags: Vec<Tag>) -> Self {
             assert!(!snippets.is_empty(), "no snippets");
 
             View {
                 active_tags: Vec::new(),
                 highlighted_snippet_index: Cyclic::new(0, snippets.len()).into(),
-                shown_snippet: ShownSnippet::Page { snippet_id: snippets[0], page_index: 0 },
+                shown_snippet: ShownSnippet::new(library, snippets[0]),
                 snippets,
                 tags,
                 snippet_list_state: widgets::description_list::State::default(),
@@ -223,12 +232,12 @@ mod mode {
     }
 
     impl KeywordSearch {
-        pub fn new(snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>) -> Self {
+        pub fn new(library: &Library, snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>) -> Self {
             KeywordSearch {
                 keywords: vec![String::new()],
                 original_highlighted_snippet_index: highlighted_snippet_index,
                 highlighted_snippet_index: highlighted_snippet_index,
-                shown_snippet: ShownSnippet::Page { snippet_id: snippets[0], page_index: 0 },
+                shown_snippet: ShownSnippet::new(library, snippets[0]),
                 snippet_list_state: widgets::description_list::State::default(),
                 snippet_viewer_state: widgets::snippet_view::State::new(),
                 filtered_snippets: snippets.clone(),
@@ -298,8 +307,8 @@ impl AppState<mode::View> {
         let listed_snippets = library.snippets().collect::<Vec<_>>();
 
         AppState {
+            mode: mode::View::initial(&library, listed_snippets, listed_tags),
             library,
-            mode: mode::View::initial(listed_snippets, listed_tags),
         }
     }
 
@@ -340,6 +349,7 @@ impl AppState<mode::View> {
                 let snippet = library.snippet(snippet_id);
                 let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
                 let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
+                snippet_viewer_state.select_page(page_index.value());
 
                 ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
             }
@@ -515,8 +525,8 @@ impl AppState<mode::View> {
         self.assert_invariant();
 
         AppStateMode::KeywordSearch(AppState {
+            mode: mode::KeywordSearch::new(&self.library, self.mode.snippets, self.mode.tags, self.mode.active_tags, self.mode.highlighted_snippet_index),
             library: self.library,
-            mode: mode::KeywordSearch::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, self.mode.highlighted_snippet_index),
         })
     }
 
@@ -525,7 +535,7 @@ impl AppState<mode::View> {
             let updated_index = index.sub(1);
             self.mode.highlighted_snippet_index = updated_index.into();
             let shown_snippet = self.mode.snippets[updated_index.value()];
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, shown_snippet);
         }
 
         self.remain_in_view_mode()
@@ -536,7 +546,7 @@ impl AppState<mode::View> {
             let updated_index = index.add(1);
             self.mode.highlighted_snippet_index = updated_index.into();
             let shown_snippet = self.mode.snippets[updated_index.value()];
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, shown_snippet);
         }
 
         self.remain_in_view_mode()
@@ -547,7 +557,7 @@ impl AppState<mode::View> {
             let updated_index = index.set(0);
             self.mode.highlighted_snippet_index = updated_index.into();
             let shown_snippet = self.mode.snippets[updated_index.value()];
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, shown_snippet);
         }
 
         self.remain_in_view_mode()
@@ -558,7 +568,7 @@ impl AppState<mode::View> {
             let updated_index = index.set(index.modulo() - 1);
             self.mode.highlighted_snippet_index = updated_index.into();
             let shown_snippet = self.mode.snippets[updated_index.value()];
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, shown_snippet);
         }
 
         self.remain_in_view_mode()
@@ -578,7 +588,7 @@ impl AppState<mode::View> {
             };
             self.mode.highlighted_snippet_index = updated_index.into();
             let shown_snippet = self.mode.snippets[updated_index.value()];
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, shown_snippet);
         }
 
         self.remain_in_view_mode()
@@ -598,7 +608,7 @@ impl AppState<mode::View> {
             };
             self.mode.highlighted_snippet_index = updated_index.into();
             let shown_snippet = self.mode.snippets[updated_index.value()];
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, shown_snippet);
         }
 
         self.remain_in_view_mode()
@@ -615,7 +625,7 @@ impl AppState<mode::View> {
         let (snippets, tags) = apply_filters(&self.library, Vec::new().into_iter(), self.mode.active_tags.iter());
 
         self.mode.highlighted_snippet_index = Cyclic::new(0, snippets.len()).into();
-        self.mode.shown_snippet = ShownSnippet::Page { snippet_id: snippets[0], page_index: 0 };
+        self.mode.shown_snippet = ShownSnippet::new(&self.library, snippets[0]);
         self.mode.snippets = snippets;
         self.mode.tags = tags;
     }
@@ -728,8 +738,8 @@ impl AppState<mode::TagSearch> {
         let shown_snippet = self.mode.snippets[0];
 
         AppState {
+            mode: mode::View::new(self.mode.snippets, self.mode.original_tags, self.mode.active_tags, highlighted_snippet_index.into(), ShownSnippet::new(&self.library, shown_snippet)),
             library: self.library,
-            mode: mode::View::new(self.mode.snippets, self.mode.original_tags, self.mode.active_tags, highlighted_snippet_index.into(), ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }),
         }.into()
     }
 
@@ -852,8 +862,8 @@ impl AppState<mode::TagSearch> {
             let shown_snippet = snippets[0];
 
             AppState {
+                mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index.into(), ShownSnippet::new(&self.library, shown_snippet)),
                 library: self.library,
-                mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index.into(), ShownSnippet::Page { snippet_id: shown_snippet, page_index: 0 }),
             }.into()
         }
         else {
@@ -970,7 +980,7 @@ impl AppState<mode::KeywordSearch> {
 
         if let Some(id) = self.mode.filtered_snippets.get(0) {
             self.mode.highlighted_snippet_index = Some(Cyclic::new(0, self.mode.filtered_snippets.len()));
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: *id, page_index: 0 };
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, *id);
         }
         else {
             self.mode.highlighted_snippet_index = None
@@ -981,7 +991,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.sub(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.filtered_snippets[updated_index.value()], page_index: 0 };
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, self.mode.filtered_snippets[updated_index.value()]);
         }
 
         self.remain_in_keyword_search_mode()
@@ -991,7 +1001,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.add(1);
             self.mode.highlighted_snippet_index = Some(updated_index);
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.filtered_snippets[updated_index.value()], page_index: 0 };
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, self.mode.filtered_snippets[updated_index.value()]);
         }
 
         self.remain_in_keyword_search_mode()
@@ -1001,7 +1011,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.set(0);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, self.mode.filtered_snippets[updated_index.value()]);
         }
 
         self.remain_in_keyword_search_mode()
@@ -1011,7 +1021,7 @@ impl AppState<mode::KeywordSearch> {
         if let Some(index) = self.mode.highlighted_snippet_index {
             let updated_index = index.set(index.modulo() - 1);
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, self.mode.filtered_snippets[updated_index.value()]);
         }
 
         self.remain_in_keyword_search_mode()
@@ -1030,7 +1040,7 @@ impl AppState<mode::KeywordSearch> {
                 }
             };
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, self.mode.snippets[updated_index.value()]);
         }
 
         self.remain_in_keyword_search_mode()
@@ -1049,7 +1059,7 @@ impl AppState<mode::KeywordSearch> {
                 }
             };
             self.mode.highlighted_snippet_index = updated_index.into();
-            self.mode.shown_snippet = ShownSnippet::Page { snippet_id: self.mode.snippets[updated_index.value()], page_index: 0 };
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, self.mode.snippets[updated_index.value()]);
         }
 
         self.remain_in_keyword_search_mode()
@@ -1083,7 +1093,7 @@ impl AppState<mode::KeywordSearch> {
         };
         let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
-        snippet_viewer_state.select_page(page_index);
+        snippet_viewer_state.select_page(page_index.value());
 
         ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
     }
