@@ -19,9 +19,22 @@ pub use theme::Theme;
 pub use syntax::SyntaxHighlighter;
 pub use mdconverter::{parse};
 
+use crate::document::fragment::Code;
+
 #[derive(Debug)]
 pub struct Document {
     pub fragments: Vec<Fragment>
+}
+
+impl Document {
+    pub fn code_fragments<'a>(&'a self) -> impl Iterator<Item=&'a Code> {
+        self.fragments.iter().filter_map(|fragment| {
+            match fragment {
+                Fragment::Code(code) => Some(code),
+                _ => None,
+            }
+        })
+    }
 }
 
 #[cfg(test)]
