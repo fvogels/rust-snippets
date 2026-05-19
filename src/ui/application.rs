@@ -479,10 +479,43 @@ impl AppState<mode::View> {
                 ViewOverlay::Links => {
                     match event.code {
                         KeyCode::Esc => self.remove_overlay(),
+                        KeyCode::Char(char) if char.is_ascii_digit() => self.jump_to_linked_snippet(char),
                         _ => self.remain_in_view_mode(),
                     }
                 }
             }
+        }
+        else {
+            self.remain_in_view_mode()
+        }
+    }
+
+    fn jump_to_linked_snippet(mut self, char: char) -> AppStateMode {
+        let snippet = self.currently_shown_snippet();
+        let index = {
+            let digit = char.to_digit(10).unwrap();
+            if digit == 0 {
+                9
+            }
+            else {
+                digit - 1
+            }
+        } as usize;
+        let linked_snippet_id = snippet.links.get(index);
+
+        if let Some(id) = linked_snippet_id {
+            let index = self.find_snippet_in_list(*id, &self.mode.snippets);
+
+            self.mode.shown_snippet = ShownSnippet::new(&self.library, *id);
+
+            if let Some(index) = index {
+                self.mode.highlighted_snippet_index = Some(Cyclic::new(index, self.mode.snippets.len()));
+            }
+            else {
+                self.mode.highlighted_snippet_index = None;
+            }
+
+            self.remove_overlay()
         }
         else {
             self.remain_in_view_mode()
