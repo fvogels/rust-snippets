@@ -106,6 +106,22 @@ mod mode {
 
             ShownSnippet::Page { snippet_id, page_index: Cyclic::new(0, page_count) }
         }
+
+        pub fn next_page(&mut self) {
+            match self {
+                ShownSnippet::Page { page_index, .. } => {
+                    *page_index = page_index.add(1);
+                }
+            }
+        }
+
+        pub fn previous_page(&mut self) {
+            match self {
+                ShownSnippet::Page { page_index, .. } => {
+                    *page_index = page_index.sub(1);
+                }
+            }
+        }
     }
 
     impl View {
@@ -424,6 +440,8 @@ impl AppState<mode::View> {
                         KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
                         KeyCode::Char('c') => self.show_copy_snippet_overlay(),
                         KeyCode::Char('C') => self.copy_first_to_clipboard(),
+                        KeyCode::Char('[') => self.previous_page(),
+                        KeyCode::Char(']') => self.next_page(),
                         KeyCode::Delete => self.drop_filtering_tag(),
                         KeyCode::Up => self.highlight_previous_snippet(),
                         KeyCode::Down => self.highlight_next_snippet(),
@@ -446,6 +464,18 @@ impl AppState<mode::View> {
         else {
             self.remain_in_view_mode()
         }
+    }
+
+    fn previous_page(mut self) -> AppStateMode {
+        self.mode.shown_snippet.previous_page();
+
+        self.remain_in_view_mode()
+    }
+
+    fn next_page(mut self) -> AppStateMode {
+        self.mode.shown_snippet.next_page();
+
+        self.remain_in_view_mode()
     }
 
     fn copy_first_to_clipboard(self) -> AppStateMode {
