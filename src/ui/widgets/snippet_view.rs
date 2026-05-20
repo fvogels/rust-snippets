@@ -75,7 +75,7 @@ impl<'a> Widget<'a> {
                 let content = {
                     let link_count = self.snippet.links.len();
                     let link_word = if link_count == 1 { "link" } else { "links" };
-                    format!(" [l] {} {} ", self.snippet.links.len(), link_word)
+                    format!(" [l] {} {} ", link_count, link_word)
                 };
                 let span = Span::default().content(content).on_blue();
                 spans.push(span);
@@ -87,7 +87,7 @@ impl<'a> Widget<'a> {
                 let content = {
                     let link_count = self.snippet.web_links.len();
                     let link_word = if link_count == 1 { "weblink" } else { "weblinks" };
-                    format!(" [w] {} {} ", self.snippet.links.len(), link_word)
+                    format!(" [w] {} {} ", link_count, link_word)
                 };
                 let span = Span::default().content(content).on_blue();
                 spans.push(span);
