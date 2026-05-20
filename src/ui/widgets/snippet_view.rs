@@ -16,7 +16,6 @@ pub struct State {
 struct Layout {
     document_area: Rect,
     metadata_area: Rect,
-    links_area: Option<Rect>,
 }
 
 enum SelectedPage {
@@ -164,27 +163,13 @@ impl<'a> Widget<'a> {
     }
 
     fn compute_layout(&self, area: Rect) -> Layout {
-        let link_count = self.snippet.links.len();
         let [left_area, right_area] = ratatui::layout::Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(area);
         let metadata_area = right_area;
+        let document_area = left_area;
 
-        if link_count > 0 {
-            let [document_viewer_area, links_area] = ratatui::layout::Layout::vertical([Constraint::Fill(1), Constraint::Length((link_count + 1) as u16)]).areas(left_area);
-
-            Layout {
-                document_area: document_viewer_area,
-                metadata_area,
-                links_area: Some(links_area),
-            }
-        }
-        else {
-            let document_viewer_area = left_area;
-
-            Layout {
-                document_area: document_viewer_area,
-                metadata_area,
-                links_area: None,
-            }
+        Layout {
+            document_area,
+            metadata_area,
         }
     }
 
@@ -196,9 +181,6 @@ impl<'a> Widget<'a> {
 
         self.render_document_viewer(layout.document_area, buffer, selected_page.document());
         self.render_metadata_viewer(layout.metadata_area, buffer);
-        if let Some(links_area) = layout.links_area {
-            self.render_links(links_area, buffer);
-        }
     }
 }
 
