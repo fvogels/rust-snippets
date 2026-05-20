@@ -109,9 +109,11 @@ impl<'a> Widget<'a> {
     fn render_links(&self, area: Rect, buffer: &mut Buffer) {
         let block = Block::new().borders(Borders::TOP).title_top(" See also ").title_alignment(ratatui::layout::HorizontalAlignment::Center);
         let block_inner_area = block.inner(area);
-        let linked_nodes = self.snippet.links.iter().map(|linked_id|
-            self.library.snippet(*linked_id).description.as_str()
-        ).collect::<Vec<_>>();
+        let linked_nodes = self.snippet.links.iter().enumerate().map(|(index, linked_id)| {
+            let snippet_description = self.library.snippet(*linked_id).description.as_str();
+
+            format!("[{}] {}", index+1, snippet_description)
+        }).collect::<Vec<_>>();
         let links_list = List::new(linked_nodes);
 
         ratatui::widgets::Widget::render(block, area, buffer);
