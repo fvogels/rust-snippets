@@ -38,7 +38,7 @@ impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
         let descriptions = self.items;
         let list_block = {
-            let title = Line::raw("Snippets");
+            let title = Line::raw(" Snippets ");
             let bottom_title = {
                 if let Some(selected) = state.list_state.selected() {
                     // checked_add is necessary: jumping to the last element sets the selected index to the maximum value, and doing +1 on this causes a panic
@@ -63,7 +63,7 @@ impl<'a> ratatui::widgets::Widget for Widget<'a> {
         let highlight_style = Style::new().bg(ratatui::style::Color::LightGreen);
         let descriptions = self.items;
         let list_block = {
-            let title = Line::raw("Snippets");
+            let title = Line::raw(" Snippets ");
             let bottom_title = {
                 Line::raw(format!(" {} snippets ", descriptions.len())).right_aligned()
             };
