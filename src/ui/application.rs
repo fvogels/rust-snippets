@@ -535,15 +535,7 @@ impl AppState<mode::View> {
 
     fn jump_to_linked_snippet(mut self, char: char) -> AppStateMode {
         let snippet = self.currently_shown_snippet();
-        let index = {
-            let digit = char.to_digit(10).unwrap();
-            if digit == 0 {
-                9
-            }
-            else {
-                digit - 1
-            }
-        } as usize;
+        let index = convert_char_to_index(char);
         let linked_snippet_id = snippet.links.get(index);
 
         if let Some(id) = linked_snippet_id {
@@ -567,15 +559,7 @@ impl AppState<mode::View> {
 
     fn open_web_link(mut self, char: char) -> AppStateMode {
         let snippet = self.currently_shown_snippet();
-        let index = {
-            let digit = char.to_digit(10).unwrap();
-            if digit == 0 {
-                9
-            }
-            else {
-                digit - 1
-            }
-        } as usize;
+        let index = convert_char_to_index(char);
 
         if let Some(web_link) = snippet.web_links.get(index) {
             external::browser::open(web_link.url.as_str()).unwrap();
@@ -664,15 +648,7 @@ impl AppState<mode::View> {
 
     fn copy_code_to_clipboard(self, char: char) -> AppStateMode {
         let page = self.currently_shown_page();
-        let index = {
-            let digit = char.to_digit(10).unwrap();
-            if digit == 0 {
-                9
-            }
-            else {
-                digit - 1
-            }
-        } as usize;
+        let index = convert_char_to_index(char);
         let block = page.document().code_fragments().nth(index);
 
         if let Some(code) = block {
@@ -1394,5 +1370,17 @@ impl From<AppState<mode::TagSearch>> for AppStateMode {
 impl From<AppState<mode::KeywordSearch>> for AppStateMode {
     fn from(state: AppState<mode::KeywordSearch>) -> Self {
         AppStateMode::KeywordSearch(state)
+    }
+}
+
+/// Converts a char to a corresponding index.
+/// The car must be a digit 0-9.
+fn convert_char_to_index(char: char) -> usize {
+    let digit = char.to_digit(10).unwrap();
+    if digit == 0 {
+        9
+    }
+    else {
+        digit as usize - 1
     }
 }
