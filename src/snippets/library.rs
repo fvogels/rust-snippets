@@ -123,6 +123,7 @@ mod test {
             extra_keywords: vec![],
             pages: Vec::new(),
             links: Vec::new(),
+            web_links: Vec::new(),
             tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
             tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
         };
@@ -141,6 +142,7 @@ mod test {
             extra_keywords: vec![],
             pages: Vec::new(),
             links: Vec::new(),
+            web_links: Vec::new(),
             tags: vec![create_feature_tag("tag-a"), create_feature_tag("tag-b")],
             tag_set: HashSet::from([String::from("tag-a"), String::from("tag-b")]),
         };

@@ -2,7 +2,7 @@ use std::{collections::HashSet, io, mem};
 
 use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders,  Widget}};
 
-use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets::{self, links_overlay::Link}}, util::Cyclic};
+use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag, WebLink}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets::{self, links_overlay::Link}}, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -94,6 +94,7 @@ mod mode {
         None,
         CopySnippet,
         Links,
+        WebLinks,
     }
 
     pub enum ShownSnippet {
@@ -404,6 +405,7 @@ impl AppState<mode::View> {
             ViewOverlay::None => { },
             ViewOverlay::CopySnippet => self.render_copy_snippet_overlay(area, buffer),
             ViewOverlay::Links => self.render_links_overlay(area, buffer),
+            ViewOverlay::WebLinks => self.render_weblinks_overlay(area, buffer),
         }
 
         self.assert_invariant();
@@ -449,6 +451,14 @@ impl AppState<mode::View> {
         widget.render(area, buffer)
     }
 
+    fn render_weblinks_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
+        let shown_snippet = self.currently_shown_snippet();
+        let links = &shown_snippet.web_links;
+        let widget = widgets::weblink_overlay::Widget::new(links);
+
+        widget.render(area, buffer)
+    }
+
     pub fn handle_event(self, event: Event) -> AppStateMode {
         self.assert_invariant();
 
@@ -468,6 +478,7 @@ impl AppState<mode::View> {
                         KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
                         KeyCode::Char('c') => self.show_copy_snippet_overlay(),
                         KeyCode::Char('l') => self.show_links_overlay(),
+                        KeyCode::Char('w') => self.show_weblinks_overlay(),
                         KeyCode::Char('C') => self.copy_first_to_clipboard(),
                         KeyCode::Char('[') => self.previous_page(),
                         KeyCode::Char(']') => self.next_page(),
@@ -494,6 +505,13 @@ impl AppState<mode::View> {
                     match event.code {
                         KeyCode::Esc => self.remove_overlay(),
                         KeyCode::Char(char) if char.is_ascii_digit() => self.jump_to_linked_snippet(char),
+                        _ => self.remain_in_view_mode(),
+                    }
+                },
+                ViewOverlay::WebLinks => {
+                    match event.code {
+                        KeyCode::Esc => self.remove_overlay(),
+                        KeyCode::Char(char) if char.is_ascii_digit() => self.open_web_link(char),
                         _ => self.remain_in_view_mode(),
                     }
                 }
@@ -540,6 +558,27 @@ impl AppState<mode::View> {
                 self.mode.highlighted_snippet_index = None;
             }
 
+            self.remove_overlay()
+        }
+        else {
+            self.remain_in_view_mode()
+        }
+    }
+
+    fn open_web_link(mut self, char: char) -> AppStateMode {
+        let snippet = self.currently_shown_snippet();
+        let index = {
+            let digit = char.to_digit(10).unwrap();
+            if digit == 0 {
+                9
+            }
+            else {
+                digit - 1
+            }
+        } as usize;
+
+        if let Some(web_link) = snippet.web_links.get(index) {
+            external::browser::open(web_link.url.as_str()).unwrap();
             self.remove_overlay()
         }
         else {
@@ -600,6 +639,18 @@ impl AppState<mode::View> {
 
         if !links.is_empty() {
             self.mode.overlay = ViewOverlay::Links;
+        }
+
+        self.remain_in_view_mode()
+    }
+
+    fn show_weblinks_overlay(mut self) -> AppStateMode {
+        // Find out if the snippet has web links
+        let snippet = self.currently_shown_snippet();
+        let web_links = &snippet.web_links;
+
+        if !web_links.is_empty() {
+            self.mode.overlay = ViewOverlay::WebLinks;
         }
 
         self.remain_in_view_mode()
