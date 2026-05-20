@@ -478,11 +478,11 @@ impl AppState<mode::View> {
                         KeyCode::Char('/') => self.switch_to_keyword_search_mode(),
                         KeyCode::Char('c') => self.show_copy_snippet_overlay(),
                         KeyCode::Char('l') => self.show_links_overlay(),
+                        KeyCode::Char('W') => self.open_first_web_link(),
                         KeyCode::Char('w') => self.show_weblinks_overlay(),
                         KeyCode::Char('C') => self.copy_first_to_clipboard(),
                         KeyCode::Char('[') => self.previous_page(),
                         KeyCode::Char(']') => self.next_page(),
-                        KeyCode::Char('o') => self.open_link_in_browser(),
                         KeyCode::Char('`') => self.show_snippet_overview(),
                         KeyCode::Delete => self.drop_filtering_tag(),
                         KeyCode::Up => self.highlight_previous_snippet(),
@@ -570,16 +570,6 @@ impl AppState<mode::View> {
         }
     }
 
-    fn open_link_in_browser(self) -> AppStateMode {
-        let page = self.currently_shown_page();
-
-        if let Some(url) = &page.url {
-            external::browser::open(url.as_str()).unwrap();
-        }
-
-        self.remain_in_view_mode()
-    }
-
     fn previous_page(mut self) -> AppStateMode {
         self.mode.shown_snippet.previous_page();
 
@@ -642,6 +632,18 @@ impl AppState<mode::View> {
 
     fn remove_overlay(mut self) -> AppStateMode {
         self.mode.overlay = ViewOverlay::None;
+
+        self.remain_in_view_mode()
+    }
+
+    fn open_first_web_link(self) -> AppStateMode {
+        let snippet = self.currently_shown_snippet();
+
+        if let Some(web_link) = snippet.web_links.get(0) {
+            let url = web_link.url.as_str();
+
+            external::browser::open(url).unwrap();
+        }
 
         self.remain_in_view_mode()
     }
