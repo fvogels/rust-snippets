@@ -14,6 +14,14 @@ pub struct Archive {
 #[derive(Debug, Deserialize)]
 struct Metadata {
     tags: Option<HashMap<String, Vec<String>>>,
+    #[serde(rename(deserialize="web"))]
+    web_links: Option<Vec<WebLink>>
+}
+
+#[derive(Debug, Deserialize)]
+struct WebLink {
+    caption: String,
+    url: String,
 }
 
 impl Metadata {
@@ -29,6 +37,23 @@ impl Metadata {
                     let tag = raw::Tag{ category: category.clone(), name };
                     result.push(tag);
                 }
+            }
+        }
+
+        result
+    }
+
+    fn web_links(&self) -> Vec<raw::WebLink> {
+        let mut result = Vec::new();
+
+        if let Some(web_links) = &self.web_links {
+            for web_link in web_links {
+                let raw_web_link = raw::WebLink{
+                    caption: web_link.caption.clone(),
+                    url: web_link.url.clone(),
+                };
+
+                result.push(raw_web_link);
             }
         }
 
@@ -136,12 +161,16 @@ impl Archive {
             let is_directory = entry.file_type()?.is_dir();
 
             if is_directory {
-                Archive::load_snippet_files_rec(&entry.path(), &mut |mut raw_snippet| {
+                Archive::load_snippet_files_rec(&entry.path(), &mut |mut snippet| {
                     for tag in metadata.tags() {
-                        raw_snippet.tags.push(tag);
+                        snippet.tags.push(tag);
                     }
 
-                    receiver(raw_snippet);
+                    for web_link in metadata.web_links() {
+                        snippet.web_links.push(web_link);
+                    }
+
+                    receiver(snippet);
                 })?;
             }
             else if entry.file_name().to_str().unwrap().ends_with(".snippet") {
@@ -149,6 +178,10 @@ impl Archive {
 
                 for tag in metadata.tags() {
                     snippet.tags.push(tag);
+                }
+
+                for web_link in metadata.web_links() {
+                    snippet.web_links.push(web_link);
                 }
 
                 receiver(snippet);
