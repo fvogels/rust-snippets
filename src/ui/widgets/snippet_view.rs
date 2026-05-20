@@ -57,7 +57,7 @@ impl<'a> Widget<'a> {
     //     (selected_page_index, &snippet.pages[selected_page_index])
     // }
 
-    fn render_border(&self, area: Rect, buffer: &mut Buffer, selected_page_index: usize, selected_page: &Page) -> Rect {
+    fn render_page_border(&self, area: Rect, buffer: &mut Buffer, selected_page_index: usize, selected_page: &Page) -> Rect {
         let bottom_title = {
             let one_based_index = selected_page_index + 1;
             let page_count = self.snippet.pages.len();
@@ -67,6 +67,20 @@ impl<'a> Widget<'a> {
                 None => format!(" {}/{} ", one_based_index, page_count),
             };
 
+            Line::raw(caption)
+        };
+
+        let block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        let inner_area = block.inner(area);
+
+        ratatui::widgets::Widget::render(block, area, buffer);
+
+        inner_area
+    }
+
+    fn render_overview_border(&self, area: Rect, buffer: &mut Buffer) -> Rect {
+        let bottom_title = {
+            let caption = " Snippet overview ";
             Line::raw(caption)
         };
 
@@ -118,16 +132,17 @@ impl<'a> Widget<'a> {
     }
 
     fn render_overview(&self, area: Rect, buffer: &mut Buffer) {
+        let inner_area = self.render_overview_border(area, buffer);
         let snippet = self.snippet;
         let overview = widgets::snippet_overview::Widget::new(&self.library, snippet);
-        ratatui::widgets::Widget::render(overview, area, buffer);
+        ratatui::widgets::Widget::render(overview, inner_area, buffer);
     }
 
     fn render_page(&self, page_index: usize, area: Rect, buffer: &mut Buffer) {
         let selected_page = &self.snippet.pages[page_index];
         let link_count = self.snippet.links.len();
 
-        let area = self.render_border(area, buffer, page_index, selected_page);
+        let area = self.render_page_border(area, buffer, page_index, selected_page);
 
         // Compute layout
         let (document_viewer_area, metadata_area, links_area) = {
