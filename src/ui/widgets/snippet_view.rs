@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List, Padding}};
 
 use crate::{document::Document, snippets::{Library, snippets::{Page, Snippet}}, ui::widgets::{self, document_view, metadata_view}};
 
@@ -80,7 +80,7 @@ impl<'a> Widget<'a> {
 
     fn render_overview_border(&self, area: Rect, buffer: &mut Buffer) -> Rect {
         let bottom_title = Line::raw(" Snippet overview ");
-        let block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        let block = Block::new().title_bottom(bottom_title).borders(Borders::ALL).padding(Padding::uniform(1));
         let inner_area = block.inner(area);
 
         ratatui::widgets::Widget::render(block, area, buffer);
