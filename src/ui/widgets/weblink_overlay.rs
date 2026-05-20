@@ -17,7 +17,7 @@ impl<'a> Widget<'a> {
 
 impl<'a> ratatui::widgets::Widget for Widget<'a> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let block_title = " Copy snippet to clipboard ";
+        let block_title = " Web links ";
 
         let web_links = self.web_links;
         let list_items = web_links.iter().enumerate().map(|(index, web_link)| {
