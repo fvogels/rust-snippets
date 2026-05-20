@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ratatui::{buffer::Buffer, layout::{Constraint, Rect}, text::Line, widgets::{Block, Borders, List, Padding}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Rect}, style::Stylize, text::{Line, Span}, widgets::{Block, Borders, List, Padding}};
 
 use crate::{document::Document, snippets::{Library, snippets::{Page, Snippet}}, ui::widgets::{self, document_view, metadata_view}};
 
@@ -49,19 +49,55 @@ impl<'a> Widget<'a> {
     }
 
     fn render_page_border(&self, area: Rect, buffer: &mut Buffer, selected_page_index: usize, selected_page: &Page) -> Rect {
+        let mut block = Block::new().borders(Borders::ALL);
+
+        if let Some(page_caption) = &selected_page.caption {
+            let title = format!(" {} ", page_caption);
+            let span = Span::default().content(title).on_light_blue();
+            block = block.title_top(span);
+        }
+
         let bottom_title = {
-            let one_based_index = selected_page_index + 1;
-            let page_count = self.snippet.pages.len();
+            let mut spans = Vec::new();
+            let separator = Span::default().content(" ");
 
-            let caption = match &selected_page.caption {
-                Some(caption) => format!(" {}/{} {} ", one_based_index, page_count, caption),
-                None => format!(" {}/{} ", one_based_index, page_count),
+            let current_page_span = {
+                let one_based_index = selected_page_index + 1;
+                let page_count = self.snippet.pages.len();
+
+                let caption = format!(" {}/{} ", one_based_index, page_count);
+                Span::default().content(caption).on_blue()
             };
+            spans.push(current_page_span);
 
-            Line::raw(caption)
+            if !self.snippet.links.is_empty() {
+                spans.push(separator.clone());
+
+                let content = {
+                    let link_count = self.snippet.links.len();
+                    let link_word = if link_count == 1 { "link" } else { "links" };
+                    format!(" [l] {} {} ", self.snippet.links.len(), link_word)
+                };
+                let span = Span::default().content(content).on_blue();
+                spans.push(span);
+            }
+
+            if !self.snippet.web_links.is_empty() {
+                spans.push(separator.clone());
+
+                let content = {
+                    let link_count = self.snippet.web_links.len();
+                    let link_word = if link_count == 1 { "weblink" } else { "weblinks" };
+                    format!(" [w] {} {} ", self.snippet.links.len(), link_word)
+                };
+                let span = Span::default().content(content).on_blue();
+                spans.push(span);
+            }
+
+            Line::default().spans(spans)
         };
 
-        let block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
+        block = block.title_bottom(bottom_title);
         let inner_area = block.inner(area);
 
         ratatui::widgets::Widget::render(block, area, buffer);
