@@ -1,6 +1,6 @@
 use std::{cell::{OnceCell}, collections::{HashMap, HashSet}, rc::Rc};
 
-use crate::{document::{self, Document, Fragment, SyntaxHighlighter, Theme}};
+use crate::{document::{self, Document, SyntaxHighlighter, Theme}};
 
 
 pub mod raw {
