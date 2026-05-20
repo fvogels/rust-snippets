@@ -25,12 +25,6 @@ impl State {
         }
     }
 
-    // fn ensure_within_bounds(&mut self, page_count: usize) {
-    //     if self.selected_page >= page_count {
-    //         self.selected_page = 0
-    //     }
-    // }
-
     pub fn select_page(&mut self, page_index: usize) {
         self.selected_page = SelectedPage::Page(page_index);
     }
@@ -47,15 +41,6 @@ impl<'a> Widget<'a> {
             library,
         }
     }
-
-    // fn selected_snippet_page(&self, state: &mut State) -> (usize, &'a Page) {
-    //     let snippet = self.snippet;
-
-    //     // state.ensure_within_bounds(snippet.pages.len());
-    //     let selected_page_index = state.selected_page;
-
-    //     (selected_page_index, &snippet.pages[selected_page_index])
-    // }
 
     fn render_page_border(&self, area: Rect, buffer: &mut Buffer, selected_page_index: usize, selected_page: &Page) -> Rect {
         let bottom_title = {
@@ -137,12 +122,11 @@ impl<'a> Widget<'a> {
     fn render_page(&self, page_index: usize, area: Rect, buffer: &mut Buffer) {
         let selected_page = &self.snippet.pages[page_index];
         let link_count = self.snippet.links.len();
-
-        let area = self.render_page_border(area, buffer, page_index, selected_page);
+        let inside_border_area = self.render_page_border(area, buffer, page_index, selected_page);
 
         // Compute layout
         let (document_viewer_area, metadata_area, links_area) = {
-            let [left_area, right_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(area);
+            let [left_area, right_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(inside_border_area);
             let metadata_area = right_area;
 
             if link_count > 0 {
