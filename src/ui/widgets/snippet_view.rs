@@ -79,11 +79,7 @@ impl<'a> Widget<'a> {
     }
 
     fn render_overview_border(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        let bottom_title = {
-            let caption = " Snippet overview ";
-            Line::raw(caption)
-        };
-
+        let bottom_title = Line::raw(" Snippet overview ");
         let block = Block::new().title_bottom(bottom_title).borders(Borders::ALL);
         let inner_area = block.inner(area);
 
