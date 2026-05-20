@@ -129,7 +129,7 @@ impl Archive {
         }
 
         let metadata = fs::read_to_string(metadata_file_path)?;
-        let metadata = serde_yaml::from_str::<Metadata>(&metadata).unwrap();
+        let metadata = serde_yaml::from_str::<Metadata>(&metadata).context("failed to parse yaml")?;
 
         for entry in directory.read_dir()? {
             let entry = entry?;

@@ -62,7 +62,7 @@ pub mod raw {
             let metadata_segment = segment_iterator.next().context("Missing metadata segment")?;
 
             let metadata_string = metadata_segment.lines.join("\n");
-            let metadata = parse_metadata(&metadata_string)?;
+            let metadata = parse_metadata(&metadata_string).with_context(|| format!("parsing metadata from {}", path))?;
 
             let pages: anyhow::Result<Vec<Page>> =  segment_iterator.map(|segment| {
                     let attributes = match segment.caption {
