@@ -7,7 +7,7 @@ pub mod raw {
     use std::{collections::HashMap, fs, path::Path};
 
     use anyhow::Context;
-use rkyv::{Archive, Deserialize, Serialize};
+    use rkyv::{Archive, Deserialize, Serialize};
     use crate::{util::{attstring, segment_file}};
 
     #[derive(Debug, serde::Deserialize)]
@@ -17,10 +17,11 @@ use rkyv::{Archive, Deserialize, Serialize};
         links: Option<Vec<String>>,
         tags: Option<HashMap<String, Vec<String>>>,
         keywords: Option<Vec<String>>,
+        #[serde(rename(deserialize="web"))]
+        web_links: Option<Vec<WebLink>>,
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
-
     pub struct Snippet {
         pub identifier: Option<String>,
         pub links: Vec<String>,
@@ -29,12 +30,19 @@ use rkyv::{Archive, Deserialize, Serialize};
         pub tags: Vec<Tag>,
         pub keywords: Vec<String>,
         pub path: String,
+        pub web_links: Vec<WebLink>,
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
     pub struct Tag {
         pub category: String,
         pub name: String,
+    }
+
+    #[derive(Debug, Archive, Serialize, Deserialize, serde::Deserialize)]
+    pub struct WebLink {
+        pub caption: String,
+        pub url: String,
     }
 
     #[derive(Debug, Archive, Serialize, Deserialize)]
@@ -95,6 +103,7 @@ use rkyv::{Archive, Deserialize, Serialize};
             };
 
             let keywords = metadata.keywords.unwrap_or_default();
+            let web_links = metadata.web_links.unwrap_or_default();
 
             let snippet = Snippet{
                 description: metadata.description,
@@ -104,6 +113,7 @@ use rkyv::{Archive, Deserialize, Serialize};
                 tags,
                 keywords,
                 path,
+                web_links,
             };
 
             Ok(snippet)
@@ -131,12 +141,18 @@ pub struct Snippet {
     pub tags: Vec<Tag>,
     pub tag_set: HashSet<String>,
     pub extra_keywords: Vec<String>,
+    pub web_links: Vec<WebLink>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Tag {
     pub category: String,
     pub name: String,
+}
+
+pub struct WebLink {
+    pub caption: String,
+    pub url: String,
 }
 
 pub struct Page {
@@ -155,7 +171,8 @@ impl Snippet {
         let tag_set = tags.iter().map(|tag| tag.name.clone()).collect();
         let pages = raw_snippet.pages.into_iter().map(|raw_page| Page::from_raw(raw_page, syntax_highlighter.clone())).collect();
         let extra_keywords = raw_snippet.keywords;
-        let links = raw_snippet.links.iter().map(|id| snippet_table[id.as_str()]).collect();
+        let links = raw_snippet.links.into_iter().map(|id| snippet_table[id.as_str()]).collect();
+        let web_links = raw_snippet.web_links.into_iter().map(WebLink::from_raw).collect();
 
         Snippet {
             description,
@@ -164,6 +181,7 @@ impl Snippet {
             tags,
             tag_set,
             extra_keywords,
+            web_links,
         }
     }
 
@@ -187,6 +205,12 @@ impl Tag {
             category: raw_tag.category,
             name: raw_tag.name,
         }
+    }
+}
+
+impl WebLink {
+    pub fn from_raw(raw_web_link: raw::WebLink) -> Self {
+        WebLink { caption: raw_web_link.caption, url: raw_web_link.url }
     }
 }
 
