@@ -49,7 +49,6 @@ pub mod raw {
     pub struct Page {
         pub attributes: Vec<(String, String)>,
         pub source: Vec<String>,
-        pub url: Option<String>,
         pub caption: Option<String>,
     }
 
@@ -76,9 +75,8 @@ pub mod raw {
                     }.context("Parsing attributes of snippet page")?;
 
                     let caption = attributes.iter().find(|pair| pair.0 == "caption").map(|p| p.1.clone());
-                    let url = attributes.iter().find(|pair| pair.0 == "url").map(|p| p.1.clone());
 
-                    let page = Page{ attributes, source: segment.lines, caption, url };
+                    let page = Page{ attributes, source: segment.lines, caption };
 
                     Ok(page)
                 }).collect();
@@ -159,7 +157,6 @@ pub struct Page {
     pub attributes: HashMap<String, String>,
     pub syntax_highlighter: Rc<SyntaxHighlighter>,
     pub caption: Option<String>,
-    pub url: Option<String>,
     pub source: Vec<String>,
     pub contents: OnceCell<Document>,
 }
@@ -216,10 +213,10 @@ impl WebLink {
 
 impl Page {
     pub fn from_raw(raw_page: raw::Page, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
-        let raw::Page { attributes, source, caption, url } = raw_page;
+        let raw::Page { attributes, source, caption } = raw_page;
         let attributes = attributes.into_iter().collect();
 
-        Page{ attributes, source, syntax_highlighter, contents: OnceCell::new(), caption, url }
+        Page{ attributes, source, syntax_highlighter, contents: OnceCell::new(), caption }
     }
 
     pub fn document(&self) -> &document::Document {
