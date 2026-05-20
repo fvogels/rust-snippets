@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, text::Line, widgets::{Block, Borders, List, Padding}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Rect}, text::Line, widgets::{Block, Borders, List, Padding}};
 
 use crate::{document::Document, snippets::{Library, snippets::{Page, Snippet}}, ui::widgets::{self, document_view, metadata_view}};
 
@@ -11,6 +11,12 @@ pub struct Widget<'a> {
 
 pub struct State {
     selected_page: SelectedPage,
+}
+
+struct Layout {
+    document: Rect,
+    metadata: Rect,
+    links: Option<Rect>,
 }
 
 enum SelectedPage {
@@ -119,30 +125,40 @@ impl<'a> Widget<'a> {
         ratatui::widgets::Widget::render(overview, inner_area, buffer);
     }
 
+    fn compute_layout(&self, area: Rect) -> Layout {
+        let link_count = self.snippet.links.len();
+        let [left_area, right_area] = ratatui::layout::Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(area);
+        let metadata_area = right_area;
+
+        if link_count > 0 {
+            let [document_viewer_area, links_area] = ratatui::layout::Layout::vertical([Constraint::Fill(1), Constraint::Length((link_count + 1) as u16)]).areas(left_area);
+
+            Layout {
+                document: document_viewer_area,
+                metadata: metadata_area,
+                links: Some(links_area),
+            }
+        }
+        else {
+            let document_viewer_area = left_area;
+
+            Layout {
+                document: document_viewer_area,
+                metadata: metadata_area,
+                links: None,
+            }
+        }
+    }
+
     fn render_page(&self, page_index: usize, area: Rect, buffer: &mut Buffer) {
         let selected_page = &self.snippet.pages[page_index];
-        let link_count = self.snippet.links.len();
         let inside_border_area = self.render_page_border(area, buffer, page_index, selected_page);
 
-        // Compute layout
-        let (document_viewer_area, metadata_area, links_area) = {
-            let [left_area, right_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(20)]).areas(inside_border_area);
-            let metadata_area = right_area;
+        let layout = self.compute_layout(inside_border_area);
 
-            if link_count > 0 {
-                let [document_viewer_area, links_area] = Layout::vertical([Constraint::Fill(1), Constraint::Length((link_count + 1) as u16)]).areas(left_area);
-                (document_viewer_area, metadata_area, Some(links_area))
-            }
-            else {
-                let document_viewer_area = left_area;
-                (document_viewer_area, metadata_area, None)
-            }
-        };
-
-        self.render_document_viewer(document_viewer_area, buffer, selected_page.document());
-        self.render_metadata_viewer(metadata_area, buffer);
-
-        if let Some(links_area) = links_area {
+        self.render_document_viewer(layout.document, buffer, selected_page.document());
+        self.render_metadata_viewer(layout.metadata, buffer);
+        if let Some(links_area) = layout.links {
             self.render_links(links_area, buffer);
         }
     }
