@@ -1,4 +1,4 @@
-use ratatui::{style::{Color, Stylize}, text::{Line, Span}, widgets::{List, ListItem, Paragraph}};
+use ratatui::{style::Stylize, text::{Line, Span}, widgets::Paragraph};
 
 use crate::snippets::{Library, snippets::Snippet};
 
