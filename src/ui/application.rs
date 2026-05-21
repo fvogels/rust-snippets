@@ -2,7 +2,7 @@ use std::{collections::HashSet, io, mem};
 
 use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders,  Widget}};
 
-use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets}, util::Cyclic};
+use crate::{external, snippets::{Library, snippets::{Page, Snippet, SnippetId, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets}, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -74,13 +74,13 @@ struct AppState<Mode: mode::Mode> {
 }
 
 mod mode {
-    use crate::{snippets::{Library, snippets::Tag}, ui::widgets, util::Cyclic};
+    use crate::{snippets::{Library, snippets::{SnippetId, Tag}}, ui::widgets, util::Cyclic};
 
     pub trait Mode { }
 
     pub struct View {
         pub(super) active_tags: Vec<Tag>,
-        pub(super) snippets: Vec<usize>,
+        pub(super) snippets: Vec<SnippetId>,
         pub(super) tags: Vec<Tag>,
         pub(super) highlighted_snippet_index: Option<Cyclic>,
         pub(super) shown_snippet: ShownSnippet,
@@ -98,12 +98,12 @@ mod mode {
     }
 
     pub enum ShownSnippet {
-        Page { snippet_id: usize, page_index: Cyclic },
-        Overview { snippet_id: usize, page_count: usize },
+        Page { snippet_id: SnippetId, page_index: Cyclic },
+        Overview { snippet_id: SnippetId, page_count: usize },
     }
 
     impl ShownSnippet {
-        pub fn new(library: &Library, snippet_id: usize) -> Self {
+        pub fn new(library: &Library, snippet_id: SnippetId) -> Self {
             let snippet = library.snippet(snippet_id);
             let page_count = snippet.pages.len();
 
@@ -134,7 +134,7 @@ mod mode {
     }
 
     impl View {
-        pub fn initial(library: &Library, snippets: Vec<usize>, tags: Vec<Tag>) -> Self {
+        pub fn initial(library: &Library, snippets: Vec<SnippetId>, tags: Vec<Tag>) -> Self {
             assert!(!snippets.is_empty(), "no snippets");
 
             View {
@@ -150,7 +150,7 @@ mod mode {
             }
         }
 
-        pub fn new(snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>, shown_snippet: ShownSnippet) -> Self {
+        pub fn new(snippets: Vec<SnippetId>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>, shown_snippet: ShownSnippet) -> Self {
             assert!(!snippets.is_empty(), "no snippets");
 
             View {
@@ -171,7 +171,7 @@ mod mode {
 
     pub struct TagSearch {
         /// List of snippets before the search started
-        pub(super) snippets: Vec<usize>,
+        pub(super) snippets: Vec<SnippetId>,
 
         /// Tags that were listed before the search started
         pub(super) original_tags: Vec<Tag>,
@@ -196,7 +196,7 @@ mod mode {
     }
 
     impl TagSearch {
-        pub fn new(snippets: Vec<usize>, tag_list: Vec<Tag>, active_tags: Vec<Tag>) -> Self {
+        pub fn new(snippets: Vec<SnippetId>, tag_list: Vec<Tag>, active_tags: Vec<Tag>) -> Self {
             let highlighted_tag_index = {
                 if tag_list.is_empty() {
                     None
@@ -222,20 +222,23 @@ mod mode {
     impl Mode for TagSearch { }
 
     pub struct KeywordSearch {
-        /// Original list of snippets, pre-search
-        pub(super) snippets: Vec<usize>,
+        /// Original list of snippets, pre-search.
+        /// The keyword filtering is applied on this list.
+        /// When leaving keyword search mode, this snippet list will be restored to the contents of this list.
+        pub(super) snippets: Vec<SnippetId>,
 
-        /// List of tags
+        /// List of tags.
         pub(super) tags: Vec<Tag>,
 
         /// List of active tags
+        /// `snippets` contains snippets that are tagged with these.
         pub(super) active_tags: Vec<Tag>,
 
         /// Keywords used in filtering
         pub(super) keywords: Vec<String>,
 
         /// Subset of snippets that match keywords
-        pub(super) filtered_snippets: Vec<usize>,
+        pub(super) filtered_snippets: Vec<SnippetId>,
 
         /// Highlighted snippet pre-search; restored if user cancels search
         pub(super) original_highlighted_snippet_index: Option<Cyclic>,
@@ -257,7 +260,7 @@ mod mode {
     }
 
     impl KeywordSearch {
-        pub fn new(library: &Library, snippets: Vec<usize>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>) -> Self {
+        pub fn new(library: &Library, snippets: Vec<SnippetId>, tags: Vec<Tag>, active_tags: Vec<Tag>, highlighted_snippet_index: Option<Cyclic>) -> Self {
             KeywordSearch {
                 keywords: vec![String::new()],
                 original_highlighted_snippet_index: highlighted_snippet_index,
@@ -278,7 +281,7 @@ mod mode {
 }
 
 /// Recomputes the list of snippets and the list of tags.
-fn apply_filters<'a, 'b>(library: &Library, filtering_keywords: impl Iterator<Item=&'a str>, filtering_tags: impl Iterator<Item=&'b Tag>) -> (Vec<usize>, Vec<Tag>) {
+fn apply_filters<'a, 'b>(library: &Library, filtering_keywords: impl Iterator<Item=&'a str>, filtering_tags: impl Iterator<Item=&'b Tag>) -> (Vec<SnippetId>, Vec<Tag>) {
     // We need to iterate twice over the tags, so we need to make a copy
     let filtering_tags = filtering_tags.collect::<Vec<_>>();
 
@@ -315,7 +318,7 @@ impl<Mode: mode::Mode> AppState<Mode> {
         AppStateMode::Quit
     }
 
-    fn find_snippet_in_list(&self, snippet_id: usize, list: &Vec<usize>) -> Option<usize> {
+    fn find_snippet_in_list(&self, snippet_id: SnippetId, list: &Vec<SnippetId>) -> Option<usize> {
         match list.binary_search(&snippet_id) {
             Ok(index) => {
                 debug_assert!(list[index] == snippet_id, "binary search failed to do its job; was the list correctly sorted?");

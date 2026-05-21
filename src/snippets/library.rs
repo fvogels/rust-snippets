@@ -1,10 +1,10 @@
 use std::{collections::{HashMap, HashSet}, rc::Rc};
 
-use crate::{document, snippets::{archive::Archive, snippets::{Snippet, Tag}}, util::trie};
+use crate::{document, snippets::{archive::Archive, snippets::{Snippet, SnippetId, Tag}}, util::trie};
 
 pub struct Library {
     snippets: Vec<Snippet>,
-    trie: trie::Trie<usize>,
+    trie: trie::Trie<SnippetId>,
     tags: Vec<Tag>,
 }
 
@@ -14,9 +14,11 @@ impl Library {
         let mut trie_builder = trie::Builder::new();
 
         for snippet_index in 0..snippets.len() {
+            let snippet_id = SnippetId::new(snippet_index);
             let snippet = &snippets[snippet_index];
+
             for keyword in snippet.keywords() {
-                trie_builder.add(&keyword, snippet_index);
+                trie_builder.add(&keyword, snippet_id);
             }
         }
 
@@ -30,16 +32,19 @@ impl Library {
     }
 
     pub fn from_archive(archive: Archive, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
+        // Get raw snippets ordered alphabetically by description (case insensitive)
         let raw_snippets = {
             let mut snippets = archive.raw_snippets;
-            snippets.sort_by(|x, y| x.description.cmp(&y.description));
+            snippets.sort_by(|x, y| x.description.to_lowercase().cmp(&y.description.to_lowercase()));
             snippets
         };
+
+        // Build table that maps raw identifiers (strings) to snippet identifiers (usize)
         let mut snippet_table = HashMap::new();
 
         for (index, raw_snippet) in raw_snippets.iter().enumerate() {
-            if let Some(id) = &raw_snippet.identifier {
-                snippet_table.insert(id.clone(), index);
+            if let Some(raw_identifier) = &raw_snippet.identifier {
+                snippet_table.insert(raw_identifier.clone(), SnippetId::new(index));
             }
         }
 
@@ -47,7 +52,7 @@ impl Library {
         Library::new(snippets)
     }
 
-    pub fn search<'a, 'b>(&self, keywords: impl Iterator<Item=&'a str>, tags: impl Iterator<Item=&'b str>) -> Vec<usize> {
+    pub fn search<'a, 'b>(&self, keywords: impl Iterator<Item=&'a str>, tags: impl Iterator<Item=&'b str>) -> Vec<SnippetId> {
         let mut intersection = self.collect_snippets_with_tags(tags);
 
         for keyword in keywords {
@@ -57,18 +62,18 @@ impl Library {
             }
         }
 
-        let mut result: Vec<usize> = intersection.iter().copied().collect();
+        let mut result = intersection.iter().copied().collect::<Vec<_>>();
         result.sort();
         result
     }
 
-    fn collect_snippets_with_tags<'a>(&self, tags: impl Iterator<Item=&'a str>) -> HashSet<usize> {
+    fn collect_snippets_with_tags<'a>(&self, tags: impl Iterator<Item=&'a str>) -> HashSet<SnippetId> {
         let tag_list = tags.collect::<Vec<_>>();
 
-        (0..self.snippets.len()).filter(|id| self.snippet(*id).has_tags(tag_list.iter().copied())).collect()
+        (0..self.snippets.len()).map(SnippetId::new).filter(|id| self.snippet(*id).has_tags(tag_list.iter().copied())).collect()
     }
 
-    fn search_single(&self, keyword: &str) -> HashSet<usize> {
+    fn search_single(&self, keyword: &str) -> HashSet<SnippetId> {
         let mut result = HashSet::new();
 
         self.trie.iter(keyword).for_each(|snippet_indices| {
@@ -78,12 +83,12 @@ impl Library {
         result
     }
 
-    pub fn snippets(&self) -> impl Iterator<Item=usize> {
-        0..self.snippets.len()
+    pub fn snippets(&self) -> impl Iterator<Item=SnippetId> {
+        (0..self.snippets.len()).map(SnippetId::new)
     }
 
-    pub fn snippet<'a>(&'a self, index: usize) -> &'a Snippet {
-        &self.snippets[index]
+    pub fn snippet<'a>(&'a self, snippet_id: SnippetId) -> &'a Snippet {
+        &self.snippets[snippet_id.as_usize()]
     }
 
     pub fn tags<'a>(&'a self) -> &'a Vec<Tag> {

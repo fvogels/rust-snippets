@@ -65,21 +65,21 @@ pub mod raw {
             let metadata = parse_metadata(&metadata_string).with_context(|| format!("parsing metadata from {}", path))?;
 
             let pages: anyhow::Result<Vec<Page>> =  segment_iterator.map(|segment| {
-                    let attributes = match segment.caption {
-                        Some(caption) => {
-                            attstring::parse(caption.as_str())
-                        },
-                        None => {
-                            Ok(Vec::new())
-                        }
-                    }.context("Parsing attributes of snippet page")?;
+                let attributes = match segment.caption {
+                    Some(caption) => {
+                        attstring::parse(caption.as_str())
+                    },
+                    None => {
+                        Ok(Vec::new())
+                    }
+                }.context("Parsing attributes of snippet page")?;
 
-                    let caption = attributes.iter().find(|pair| pair.0 == "caption").map(|p| p.1.clone());
+                let caption = attributes.iter().find(|pair| pair.0 == "caption").map(|p| p.1.clone());
 
-                    let page = Page{ attributes, source: segment.lines, caption };
+                let page = Page{ attributes, source: segment.lines, caption };
 
-                    Ok(page)
-                }).collect();
+                Ok(page)
+            }).collect();
             let pages = pages?;
 
             if pages.len() == 0 {
@@ -134,12 +134,25 @@ pub mod raw {
 
 pub struct Snippet {
     pub description: String,
-    pub links: Vec<usize>,
+    pub links: Vec<SnippetId>,
     pub pages: Vec<Page>,
     pub tags: Vec<Tag>,
     pub tag_set: HashSet<String>,
     pub extra_keywords: Vec<String>,
     pub web_links: Vec<WebLink>,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+pub struct SnippetId(usize);
+
+impl SnippetId {
+    pub fn new(value: usize) -> Self {
+        SnippetId(value)
+    }
+
+    pub fn as_usize(&self) -> usize {
+        self.0
+    }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -162,7 +175,7 @@ pub struct Page {
 }
 
 impl Snippet {
-    pub fn from_raw(raw_snippet: raw::Snippet, snippet_table: &HashMap<String, usize>, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
+    pub fn from_raw(raw_snippet: raw::Snippet, snippet_table: &HashMap<String, SnippetId>, syntax_highlighter: Rc<document::SyntaxHighlighter>) -> Self {
         let description = raw_snippet.description;
         let tags = raw_snippet.tags.into_iter().map(Tag::from_raw).collect::<Vec<_>>();
         let tag_set = tags.iter().map(|tag| tag.name.clone()).collect();
