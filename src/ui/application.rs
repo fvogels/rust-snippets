@@ -795,7 +795,9 @@ impl AppState<mode::View> {
 
 impl AppState<mode::TagSearch> {
     fn assert_invariant(&self) {
-        // TODO
+        if let Some(tag_index) = self.mode.highlighted_tag_index {
+            debug_assert_eq!(tag_index.modulo(), self.mode.tags.len());
+        }
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
