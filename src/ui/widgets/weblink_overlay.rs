@@ -1,6 +1,6 @@
 use ratatui::{buffer::Buffer, layout::Rect, text::Line};
 
-use crate::{snippets::snippets::WebLink, ui::widgets::list_overlay};
+use crate::{snippets::snippets::WebLink, ui::widgets};
 
 
 pub struct Widget<'a> {
@@ -22,7 +22,7 @@ impl<'a> ratatui::widgets::Widget for Widget<'a> {
             Line::raw(web_link.caption.clone())
         }).collect();
 
-        let widget = list_overlay::Widget::new(block_title, lines);
+        let widget = widgets::list_overlay::Widget::new(block_title, lines);
         widget.render(area, buffer);
     }
 }

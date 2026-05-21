@@ -2,7 +2,7 @@ use std::{collections::HashSet, io, mem};
 
 use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders,  Widget}};
 
-use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets::{self, links_overlay::Link}}, util::Cyclic};
+use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets}, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -441,12 +441,9 @@ impl AppState<mode::View> {
     fn render_links_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
         let shown_snippet = self.currently_shown_snippet();
         let links = shown_snippet.links.iter().copied().map(|linked_id| {
-            Link {
-                caption: &self.library.snippet(linked_id).description,
-                snippet_id: linked_id,
-            }
+            self.library.snippet(linked_id).description.clone()
         }).collect::<Vec<_>>();
-        let widget = widgets::links_overlay::Widget::new(links);
+        let widget = widgets::links_overlay::Widget::new(&links);
 
         widget.render(area, buffer)
     }
