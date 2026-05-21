@@ -1,6 +1,6 @@
-use ratatui::{buffer::Buffer, layout::{Constraint, Rect}, style::Stylize, widgets::{Block, BorderType, Borders, Clear, List, ListItem, Padding}};
+use ratatui::{buffer::Buffer, layout::Rect, text::Line};
 
-use crate::{document::Code, snippets::snippets::WebLink};
+use crate::{snippets::snippets::WebLink, ui::widgets::list_overlay};
 
 
 pub struct Widget<'a> {
@@ -18,26 +18,11 @@ impl<'a> Widget<'a> {
 impl<'a> ratatui::widgets::Widget for Widget<'a> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         let block_title = " Web links ";
+        let lines = self.web_links.iter().map(|web_link| {
+            Line::raw(web_link.caption.clone())
+        }).collect();
 
-        let web_links = self.web_links;
-        let list_items = web_links.iter().enumerate().map(|(index, web_link)| {
-            let caption = &web_link.caption;
-            let list_item_content = format!("[{index}] {caption}", index=index+1, caption=caption);
-
-            ListItem::new(list_item_content)
-        }).collect::<Vec<_>>();
-        let longest_list_item = list_items.iter().map(ListItem::width).max().unwrap();
-        let required_width = *[longest_list_item + 4, block_title.len() + 4].iter().max().unwrap();
-        let required_height = list_items.len() + 4;
-
-        let overlay_area = area.centered(Constraint::Length(required_width as u16), Constraint::Length(required_height as u16));
-        let block = Block::new().borders(Borders::ALL).border_type(BorderType::Double).title(block_title).padding(Padding::uniform(1)).on_dark_gray();
-        let block_inner_area = block.inner(overlay_area);
-        Clear::default().render(overlay_area, buffer);
-        block.render(overlay_area, buffer);
-
-        let list = List::new(list_items);
-
-        list.render(block_inner_area, buffer);
+        let widget = list_overlay::Widget::new(block_title, lines);
+        widget.render(area, buffer);
     }
 }
