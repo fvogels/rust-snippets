@@ -433,7 +433,7 @@ impl AppState<mode::View> {
     fn render_copy_snippet_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
         let shown_page = self.currently_shown_page();
         let code_blocks = shown_page.document().code_fragments().collect::<Vec<_>>();
-        let widget = widgets::clipboard_overlay::Widget::new(&code_blocks);
+        let widget = widgets::clipboard_overlay::Widget::new(code_blocks);
 
         widget.render(area, buffer)
     }
