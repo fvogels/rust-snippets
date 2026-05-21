@@ -19,7 +19,7 @@ impl<'a> ratatui::widgets::Widget for Widget<'a> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         let block_title = " Web links ";
         let lines = self.web_links.iter().map(|web_link| {
-            Line::raw(web_link.caption.clone())
+            Line::raw(web_link.caption.as_str())
         }).collect();
 
         let widget = widgets::list_overlay::Widget::new(block_title, lines);
