@@ -2,7 +2,7 @@ use std::{collections::HashSet, io, mem};
 
 use ratatui::{DefaultTerminal, Frame, buffer::Buffer, crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyModifiers}}, layout::{Constraint, Layout, Rect}, style::Stylize, widgets::{Block, BorderType, Borders,  Widget}};
 
-use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag, WebLink}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets::{self, links_overlay::Link}}, util::Cyclic};
+use crate::{external, snippets::{Library, snippets::{Page, Snippet, Tag}}, ui::{application::mode::{ShownSnippet, ViewOverlay}, widgets::{self, links_overlay::Link}}, util::Cyclic};
 
 pub struct Application {
     active_mode: AppStateMode,
@@ -369,18 +369,18 @@ impl AppState<mode::View> {
     fn render_snippet(&mut self, area: Rect, buffer: &mut Buffer) {
         let library = &self.library;
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
-        let snippet_id = match self.mode.shown_snippet {
+
+        let (snippet_id, page_selection) = match self.mode.shown_snippet {
             ShownSnippet::Page { snippet_id, page_index } => {
-                snippet_viewer_state.select_page(page_index.value());
-                snippet_id
+                (snippet_id, widgets::snippet_view::PageSelection::Page(page_index.value()))
             },
             ShownSnippet::Overview { snippet_id, .. } => {
-                snippet_viewer_state.select_overview();
-                snippet_id
-            }
+                (snippet_id, widgets::snippet_view::PageSelection::Overview)
+            },
         };
-        let snippet = library.snippet(snippet_id);
-        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
+        let snippet = self.library.snippet(snippet_id);
+        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library, page_selection);
+
         ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
     }
 
@@ -557,7 +557,7 @@ impl AppState<mode::View> {
         }
     }
 
-    fn open_web_link(mut self, char: char) -> AppStateMode {
+    fn open_web_link(self, char: char) -> AppStateMode {
         let snippet = self.currently_shown_snippet();
         let index = convert_char_to_index(char);
 
@@ -1266,18 +1266,16 @@ impl AppState<mode::KeywordSearch> {
         let library = &self.library;
         let snippet_viewer_state = &mut self.mode.snippet_viewer_state;
 
-        let snippet_id = match self.mode.shown_snippet {
+        let (snippet_id, page_selection) = match self.mode.shown_snippet {
             ShownSnippet::Page { snippet_id, page_index } => {
-                snippet_viewer_state.select_page(page_index.value());
-                snippet_id
+                (snippet_id, widgets::snippet_view::PageSelection::Page(page_index.value()))
             },
-            ShownSnippet::Overview { snippet_id, page_count } => {
-                snippet_viewer_state.select_overview();
-                snippet_id
+            ShownSnippet::Overview { snippet_id, .. } => {
+                (snippet_id, widgets::snippet_view::PageSelection::Overview)
             },
         };
         let snippet = self.library.snippet(snippet_id);
-        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library);
+        let snippet_viewer = widgets::snippet_view::Widget::new(snippet, library, page_selection);
 
         ratatui::widgets::StatefulWidget::render(snippet_viewer, area, buffer, snippet_viewer_state);
     }

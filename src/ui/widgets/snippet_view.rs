@@ -6,44 +6,34 @@ use crate::{document::Document, snippets::{Library, snippets::{Page, Snippet}}, 
 
 pub struct Widget<'a> {
     snippet: &'a Snippet,
+    selected_page: PageSelection,
     library: &'a Library,
 }
 
-pub struct State {
-    selected_page: SelectedPage,
-}
+pub struct State { }
 
 struct Layout {
     document_area: Rect,
     metadata_area: Rect,
 }
 
-enum SelectedPage {
+pub enum PageSelection {
     Page(usize),
     Overview,
 }
 
 impl State {
     pub fn new() -> Self {
-        State{
-            selected_page: SelectedPage::Overview,
-        }
-    }
-
-    pub fn select_page(&mut self, page_index: usize) {
-        self.selected_page = SelectedPage::Page(page_index);
-    }
-
-    pub fn select_overview(&mut self) {
-        self.selected_page = SelectedPage::Overview;
+        State { }
     }
 }
 
 impl<'a> Widget<'a> {
-    pub fn new(snippet: &'a Snippet, library: &'a Library) -> Self {
+    pub fn new(snippet: &'a Snippet, library: &'a Library, selected_page: PageSelection) -> Self {
         Widget{
             snippet,
             library,
+            selected_page,
         }
     }
 
@@ -187,10 +177,10 @@ impl<'a> Widget<'a> {
 impl<'a> ratatui::widgets::StatefulWidget for Widget<'a> {
     type State = State;
 
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        match state.selected_page {
-            SelectedPage::Overview => self.render_overview(area, buffer),
-            SelectedPage::Page(page_index) => self.render_page(page_index, area, buffer),
+    fn render(self, area: Rect, buffer: &mut Buffer, _: &mut State) {
+        match self.selected_page {
+            PageSelection::Overview => self.render_overview(area, buffer),
+            PageSelection::Page(page_index) => self.render_page(page_index, area, buffer),
         }
     }
 }
