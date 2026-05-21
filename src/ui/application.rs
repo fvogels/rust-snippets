@@ -1039,7 +1039,13 @@ impl AppState<mode::TagSearch> {
 
 impl AppState<mode::KeywordSearch> {
     fn assert_invariant(&self) {
-        // TODO
+        if let Some(snippet_index) = self.mode.highlighted_snippet_index {
+            debug_assert_eq!(snippet_index.modulo(), self.mode.filtered_snippets.len());
+        }
+
+        if let Some(snippet_index) = self.mode.original_highlighted_snippet_index {
+            debug_assert_eq!(snippet_index.modulo(), self.mode.snippets.len());
+        }
     }
 
     pub fn handle_event(self, event: Event) -> AppStateMode {
