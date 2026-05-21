@@ -328,6 +328,10 @@ impl<Mode: mode::Mode> AppState<Mode> {
             Err(_) => None
         }
     }
+
+    fn tag_list_width(&self) -> u16 {
+        (self.longest_tag_length + 4) as u16
+    }
 }
 
 impl AppState<mode::View> {
@@ -396,7 +400,7 @@ impl AppState<mode::View> {
         let area = frame.area();
 
         let (tag_list_area, snippet_list_area, snippet_viewer_area) = {
-            let [ tag_list_area, right_area ] = Layout::horizontal([ Constraint::Length(20), Constraint::Fill(1) ]).areas(area);
+            let [ tag_list_area, right_area ] = Layout::horizontal([ Constraint::Length(self.tag_list_width()), Constraint::Fill(1) ]).areas(area);
             let [ snippet_list_area, snippet_view_area ] = Layout::vertical([ Constraint::Length(15), Constraint::Fill(1) ]).areas(right_area);
 
             ( tag_list_area, snippet_list_area, snippet_view_area )
@@ -811,7 +815,7 @@ impl AppState<mode::TagSearch> {
         let (search_bar_area, tag_list_area, snippet_list_area) = {
             let area = frame.area();
             let [ upper_area, search_bar_area ] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
-            let [ tag_list_area, snippet_list_area ] = Layout::horizontal([ Constraint::Length(20), Constraint::Fill(1) ]).areas(upper_area);
+            let [ tag_list_area, snippet_list_area ] = Layout::horizontal([ Constraint::Length(self.tag_list_width()), Constraint::Fill(1) ]).areas(upper_area);
 
             ( search_bar_area, tag_list_area, snippet_list_area )
         };
@@ -1262,7 +1266,7 @@ impl AppState<mode::KeywordSearch> {
         let (search_bar_area, tag_list_area, snippet_list_area, snippet_viewer_area) = {
             let area = frame.area();
             let [ upper_area, search_bar_area ] = Layout::vertical([ Constraint::Fill(1), Constraint::Length(1) ]).areas(area);
-            let [ tag_list_area, right_area ] = Layout::horizontal([ Constraint::Length(20), Constraint::Fill(1) ]).areas(upper_area);
+            let [ tag_list_area, right_area ] = Layout::horizontal([ Constraint::Length(self.tag_list_width()), Constraint::Fill(1) ]).areas(upper_area);
             let [ snippet_list_area, snippet_viewer_area ] = Layout::vertical([ Constraint::Length(15), Constraint::Fill(1) ]).areas(right_area);
 
             (search_bar_area, tag_list_area, snippet_list_area, snippet_viewer_area)
