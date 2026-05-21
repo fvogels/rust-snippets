@@ -70,6 +70,7 @@ impl AppStateMode {
 
 struct AppState<Mode: mode::Mode> {
     library: Library,
+    longest_tag_length: usize,
     mode: Mode,
 }
 
@@ -333,10 +334,12 @@ impl AppState<mode::View> {
     pub fn initial(library: Library) -> Self {
         let listed_tags = library.tags().clone();
         let listed_snippets = library.snippets().collect::<Vec<_>>();
+        let longest_tag_length = listed_tags.iter().map(|tag| tag.name.len()).max().unwrap_or(10);
 
         AppState {
             mode: mode::View::initial(&library, listed_snippets, listed_tags),
             library,
+            longest_tag_length,
         }
     }
 
@@ -679,6 +682,7 @@ impl AppState<mode::View> {
 
         AppStateMode::TagSearch(AppState {
             library: self.library,
+            longest_tag_length: self.longest_tag_length,
             mode: mode::TagSearch::new(self.mode.snippets, self.mode.tags, self.mode.active_tags),
         })
     }
@@ -689,6 +693,7 @@ impl AppState<mode::View> {
         AppStateMode::KeywordSearch(AppState {
             mode: mode::KeywordSearch::new(&self.library, self.mode.snippets, self.mode.tags, self.mode.active_tags, self.mode.highlighted_snippet_index),
             library: self.library,
+            longest_tag_length: self.longest_tag_length,
         })
     }
 
@@ -904,6 +909,7 @@ impl AppState<mode::TagSearch> {
         AppState {
             mode: mode::View::new(self.mode.snippets, self.mode.original_tags, self.mode.active_tags, highlighted_snippet_index.into(), ShownSnippet::new(&self.library, shown_snippet)),
             library: self.library,
+            longest_tag_length: self.longest_tag_length,
         }.into()
     }
 
@@ -1028,6 +1034,7 @@ impl AppState<mode::TagSearch> {
             AppState {
                 mode: mode::View::new(snippets, tags, updated_active_tags, highlighted_snippet_index.into(), ShownSnippet::new(&self.library, shown_snippet)),
                 library: self.library,
+                longest_tag_length: self.longest_tag_length,
             }.into()
         }
         else {
@@ -1336,6 +1343,7 @@ impl AppState<mode::KeywordSearch> {
         AppState {
             library: self.library,
             mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, self.mode.original_highlighted_snippet_index, self.mode.shown_snippet),
+            longest_tag_length: self.longest_tag_length,
         }.into()
     }
 
@@ -1355,6 +1363,7 @@ impl AppState<mode::KeywordSearch> {
             AppState {
                 library: self.library,
                 mode: mode::View::new(self.mode.snippets, self.mode.tags, self.mode.active_tags, shown_snippet_index.into(), self.mode.shown_snippet),
+                longest_tag_length: self.longest_tag_length,
             }.into()
         }
         else {
