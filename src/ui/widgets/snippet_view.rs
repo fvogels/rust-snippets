@@ -86,7 +86,7 @@ impl<'a> Widget<'a> {
             Line::default().spans(spans)
         };
 
-        block = block.title_bottom(bottom_title);
+        block = block.title_bottom(bottom_title).padding(Padding::uniform(1));
         let inner_area = block.inner(area);
 
         ratatui::widgets::Widget::render(block, area, buffer);
