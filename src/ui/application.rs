@@ -80,14 +80,31 @@ mod mode {
     pub trait Mode { }
 
     pub struct View {
+        /// Tags selected by user and acting as a filter
         pub(super) active_tags: Vec<Tag>,
+
+        /// Snippets that satisfy the tag selection
         pub(super) snippets: Vec<SnippetId>,
+
+        /// List of tags that can be selected from
         pub(super) tags: Vec<Tag>,
+
+        /// Index of the snippet selected in the snippet list
         pub(super) highlighted_snippet_index: Option<Cyclic>,
+
+        /// Which snippet is shown and which of its pages
         pub(super) shown_snippet: ShownSnippet,
+
+        /// Snippet list's widget state
         pub(super) snippet_list_state: widgets::description_list::State,
+
+        /// Snippet viewer's widget state
         pub(super) snippet_viewer_state: widgets::snippet_view::State,
+
+        /// By how much pgup/pgdown should jump
         pub(super) page_size: Option<usize>,
+
+        /// Currently active overlay
         pub(super) overlay: ViewOverlay,
     }
 
