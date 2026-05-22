@@ -440,7 +440,7 @@ impl AppState<mode::View> {
 
         match self.mode.overlay {
             ViewOverlay::None => { },
-            ViewOverlay::CopyCodeBlock => self.render_copy_snippet_overlay(area, buffer),
+            ViewOverlay::CopyCodeBlock => self.render_copy_code_block_overlay(area, buffer),
             ViewOverlay::Links => self.render_links_overlay(area, buffer),
             ViewOverlay::WebLinks => self.render_weblinks_overlay(area, buffer),
             ViewOverlay::SnippetPage => self.render_snippet_overlay(area, buffer),
@@ -460,17 +460,21 @@ impl AppState<mode::View> {
         }
     }
 
-    fn currently_shown_page(&self) -> &Page {
-        let snippet = self.currently_shown_snippet();
-        let pages = &snippet.pages;
-        let shown_page = &pages[0];
+    fn currently_shown_page(&self) -> Option<&Page> {
+        match self.mode.shown_snippet {
+            ShownSnippet::Overview { .. } => None,
+            ShownSnippet::Page { page_index, .. } => {
+                let snippet = self.currently_shown_snippet();
 
-        shown_page
+                Some(&snippet.pages[page_index.value()])
+            }
+        }
     }
 
-    fn render_copy_snippet_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
-        let shown_page = self.currently_shown_page();
-        let code_blocks = shown_page.document().code_fragments().collect::<Vec<_>>();
+    fn render_copy_code_block_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
+        // Unwrapping should be safe, as switching to this overlay is only allowed when there is a currently shown page
+        let page = self.currently_shown_page().unwrap();
+        let code_blocks = page.document().code_fragments().collect::<Vec<_>>();
         let widget = widgets::clipboard_overlay::Widget::new(code_blocks);
 
         widget.render(area, buffer)
@@ -495,8 +499,9 @@ impl AppState<mode::View> {
     }
 
     fn render_snippet_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
-        let shown_page = self.currently_shown_page();
-        let widget = widgets::snippet_overlay::Widget::new(shown_page);
+        // Unwrapping should be safe, as switching to this overlay is only allowed when there is a currently shown page
+        let page = self.currently_shown_page().unwrap();
+        let widget = widgets::snippet_overlay::Widget::new(page);
 
         widget.render(area, buffer)
     }
@@ -632,24 +637,25 @@ impl AppState<mode::View> {
     }
 
     fn copy_first_to_clipboard(self) -> AppStateMode {
-        let page = self.currently_shown_page();
+        if let Some(page) = self.currently_shown_page() {
+            if let Some(code) = page.document().code_fragments().next() {
+                let to_be_copied = code.original.clone();
 
-        if let Some(code) = page.document().code_fragments().next() {
-            let to_be_copied = code.original.clone();
-
-            external::clipboard::copy_to_clipboard(to_be_copied).unwrap();
+                external::clipboard::copy_to_clipboard(to_be_copied).unwrap();
+            }
         }
 
         self.remain_in_view_mode()
     }
 
     fn show_copy_snippet_overlay(mut self) -> AppStateMode {
-        // Find out if the snippet actually contains code blocks
-        let page = self.currently_shown_page();
-        let has_at_least_one_code_block = page.document().code_fragments().next().is_some();
+        if let Some(page) = self.currently_shown_page() {
+            // Find out if the snippet actually contains code blocks
+            let has_at_least_one_code_block = page.document().code_fragments().next().is_some();
 
-        if has_at_least_one_code_block {
-            self.mode.overlay = ViewOverlay::CopyCodeBlock;
+            if has_at_least_one_code_block {
+                self.mode.overlay = ViewOverlay::CopyCodeBlock;
+            }
         }
 
         self.remain_in_view_mode()
@@ -680,7 +686,9 @@ impl AppState<mode::View> {
     }
 
     fn show_snippet_overlay(mut self) -> AppStateMode {
-        self.mode.overlay = ViewOverlay::SnippetPage;
+        if self.currently_shown_page().is_some() {
+            self.mode.overlay = ViewOverlay::SnippetPage;
+        }
 
         self.remain_in_view_mode()
     }
@@ -704,13 +712,17 @@ impl AppState<mode::View> {
     }
 
     fn copy_code_to_clipboard(self, char: char) -> AppStateMode {
-        let page = self.currently_shown_page();
-        let index = convert_char_to_index(char);
-        let block = page.document().code_fragments().nth(index);
+        if let Some(page) = self.currently_shown_page() {
+            let index = convert_char_to_index(char);
+            let block = page.document().code_fragments().nth(index);
 
-        if let Some(code) = block {
-            external::clipboard::copy_to_clipboard(code.original.clone()).unwrap();
-            self.remove_overlay()
+            if let Some(code) = block {
+                external::clipboard::copy_to_clipboard(code.original.clone()).unwrap();
+                self.remove_overlay()
+            }
+            else {
+                self.remain_in_view_mode()
+            }
         }
         else {
             self.remain_in_view_mode()
