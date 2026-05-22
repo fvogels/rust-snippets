@@ -24,7 +24,9 @@ enum Commands {
         keywords: Vec<String>,
     },
     UI,
-    Archive,
+    Archive {
+        roots: Vec<String>,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -40,10 +42,10 @@ enum ListSubcommand {
 }
 
 impl Commands {
-    fn handle(&self) -> anyhow::Result<()> {
+    fn handle(self) -> anyhow::Result<()> {
         match self {
             Self::List { subcommand } => {
-                match *subcommand {
+                match subcommand {
                     ListSubcommand::Snippets => list_snippets(),
                     ListSubcommand::Tags => list_tags(),
                     ListSubcommand::Languages => list_syntax_highlighting_languages(),
@@ -52,7 +54,7 @@ impl Commands {
             },
             Self::Search { keywords } => search(keywords),
             Self::UI => start_ui(),
-            Self::Archive => create_archive(),
+            Self::Archive { roots } => create_archive(roots),
         }
     }
 }
@@ -61,7 +63,7 @@ pub fn start() -> anyhow::Result<()> {
     CommandLineInterface::parse().command.handle()
 }
 
-fn search<'a>(keywords: &Vec<String>) -> anyhow::Result<()> {
+fn search<'a>(keywords: Vec<String>) -> anyhow::Result<()> {
     let library = load_library();
     let tags: Vec<&str> = Vec::new();
     let snippets = library.search(keywords.iter().map(std::ops::Deref::deref), tags.into_iter());
@@ -132,12 +134,11 @@ fn list_tags() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn create_archive() -> anyhow::Result<()> {
-    let root = "../data/snippets";
+fn create_archive(roots: Vec<String>) -> anyhow::Result<()> {
     let archive_path = "./archive.bin";
 
     let (archive, duration) = timing::measure(|| -> anyhow::Result<Archive> {
-        let archive = snippets::Archive::load_snippet_files(&root)?;
+        let archive = snippets::Archive::load_snippet_files(roots.iter())?;
         archive.write(&archive_path)?;
         Ok(archive)
     });

@@ -1,7 +1,7 @@
 all: cleanlog archive ui
 
 archive:
-	cargo run -- archive
+	cargo run -- archive ../data/snippets
 
 ui:
 	cargo run -- ui

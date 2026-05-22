@@ -66,10 +66,12 @@ impl Archive {
         Archive { raw_snippets }
     }
 
-    pub fn load_snippet_files<P: AsRef<Path>>(root: &P) -> anyhow::Result<Self> {
-        let root = root.as_ref();
+    pub fn load_snippet_files<P: AsRef<Path>>(roots: impl Iterator<Item=P>) -> anyhow::Result<Self> {
         let mut raw_snippets = Vec::new();
-        Archive::load_snippet_files_rec(&root, &mut |raw_snippet| raw_snippets.push(raw_snippet)).with_context(|| format!("Loading all snippet files recursively, starting in {}", root.display()))?;
+
+        for root in roots {
+            Archive::load_snippet_files_rec(&root, &mut |raw_snippet| raw_snippets.push(raw_snippet)).with_context(|| format!("Loading all snippet files recursively, starting in {}", root.as_ref().display()))?;
+        }
 
         Archive::verify(&raw_snippets)?;
 
