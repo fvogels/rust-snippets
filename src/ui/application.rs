@@ -566,6 +566,7 @@ impl AppState<mode::View> {
                 ViewOverlay::SnippetPage => {
                     match event.code {
                         KeyCode::Esc => self.remove_overlay(),
+                        KeyCode::Char('v') => self.remove_overlay(),
                         _ => self.remain_in_view_mode(),
                     }
                 }
