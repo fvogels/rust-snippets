@@ -122,7 +122,7 @@ mod mode {
         WebLinks,
 
         /// Fullscreen view of snippet page
-        Snippet
+        SnippetPage
     }
 
     pub enum ShownSnippet {
@@ -443,7 +443,7 @@ impl AppState<mode::View> {
             ViewOverlay::CopyCodeBlock => self.render_copy_snippet_overlay(area, buffer),
             ViewOverlay::Links => self.render_links_overlay(area, buffer),
             ViewOverlay::WebLinks => self.render_weblinks_overlay(area, buffer),
-            ViewOverlay::Snippet => self.render_snippet_overlay(area, buffer),
+            ViewOverlay::SnippetPage => self.render_snippet_overlay(area, buffer),
         }
 
         self.assert_invariant();
@@ -558,7 +558,7 @@ impl AppState<mode::View> {
                         _ => self.remain_in_view_mode(),
                     }
                 },
-                ViewOverlay::Snippet => {
+                ViewOverlay::SnippetPage => {
                     match event.code {
                         KeyCode::Esc => self.remove_overlay(),
                         _ => self.remain_in_view_mode(),
@@ -680,7 +680,7 @@ impl AppState<mode::View> {
     }
 
     fn show_snippet_overlay(mut self) -> AppStateMode {
-        self.mode.overlay = ViewOverlay::Snippet;
+        self.mode.overlay = ViewOverlay::SnippetPage;
 
         self.remain_in_view_mode()
     }
