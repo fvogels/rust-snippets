@@ -42,6 +42,18 @@ impl<'a> Widget<'a> {
         }
     }
 
+    fn render_web_links(&mut self) {
+        if !self.snippet.web_links.is_empty() {
+            self.render_blank_line();
+            self.render_caption("Web links");
+
+            for web_link in &self.snippet.web_links {
+                let line = Span::default().content(web_link.caption.as_str()).into_left_aligned_line();
+                self.lines.push(line);
+            }
+        }
+    }
+
     fn render_blank_line(&mut self) {
         let line = Line::default();
         self.lines.push(line);
@@ -52,6 +64,7 @@ impl<'a> ratatui::widgets::Widget for Widget<'a> {
     fn render(mut self, area: ratatui::prelude::Rect, buffer: &mut ratatui::prelude::Buffer) {
         self.render_pages();
         self.render_links();
+        self.render_web_links();
         // pages
         // links
         // urls
