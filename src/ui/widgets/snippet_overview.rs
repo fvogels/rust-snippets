@@ -30,12 +30,15 @@ impl<'a> Widget<'a> {
     }
 
     fn render_links(&mut self) {
-        self.render_caption("Links");
+        if !self.snippet.links.is_empty() {
+            self.render_blank_line();
+            self.render_caption("Links");
 
-        for link in &self.snippet.links {
-            let description_of_linked_snippet = self.library.snippet(*link).description.as_str();
-            let line = Span::default().content(description_of_linked_snippet).into_left_aligned_line();
-            self.lines.push(line);
+            for link in &self.snippet.links {
+                let description_of_linked_snippet = self.library.snippet(*link).description.as_str();
+                let line = Span::default().content(description_of_linked_snippet).into_left_aligned_line();
+                self.lines.push(line);
+            }
         }
     }
 
@@ -48,7 +51,6 @@ impl<'a> Widget<'a> {
 impl<'a> ratatui::widgets::Widget for Widget<'a> {
     fn render(mut self, area: ratatui::prelude::Rect, buffer: &mut ratatui::prelude::Buffer) {
         self.render_pages();
-        self.render_blank_line();
         self.render_links();
         // pages
         // links
