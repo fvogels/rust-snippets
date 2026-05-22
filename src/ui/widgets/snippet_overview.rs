@@ -65,9 +65,6 @@ impl<'a> ratatui::widgets::Widget for Widget<'a> {
         self.render_pages();
         self.render_links();
         self.render_web_links();
-        // pages
-        // links
-        // urls
 
         let paragraph = Paragraph::new(self.lines);
         paragraph.render(area, buffer);
