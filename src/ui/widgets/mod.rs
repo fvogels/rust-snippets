@@ -9,3 +9,4 @@ pub mod links_overlay;
 pub mod snippet_overview;
 pub mod weblink_overlay;
 pub mod list_overlay;
+pub mod snippet_overlay;

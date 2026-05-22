@@ -109,10 +109,20 @@ mod mode {
     }
 
     pub enum ViewOverlay {
+        /// No overlay
         None,
-        CopySnippet,
+
+        /// Shows list of copyable code blocks
+        CopyCodeBlock,
+
+        /// Shows list of linked snippets
         Links,
+
+        /// Shows list of web links
         WebLinks,
+
+        /// Fullscreen view of snippet page
+        Snippet
     }
 
     pub enum ShownSnippet {
@@ -430,9 +440,10 @@ impl AppState<mode::View> {
 
         match self.mode.overlay {
             ViewOverlay::None => { },
-            ViewOverlay::CopySnippet => self.render_copy_snippet_overlay(area, buffer),
+            ViewOverlay::CopyCodeBlock => self.render_copy_snippet_overlay(area, buffer),
             ViewOverlay::Links => self.render_links_overlay(area, buffer),
             ViewOverlay::WebLinks => self.render_weblinks_overlay(area, buffer),
+            ViewOverlay::Snippet => self.render_snippet_overlay(area, buffer),
         }
 
         self.assert_invariant();
@@ -483,6 +494,13 @@ impl AppState<mode::View> {
         widget.render(area, buffer)
     }
 
+    fn render_snippet_overlay(&mut self, area: Rect, buffer: &mut Buffer) {
+        let shown_page = self.currently_shown_page();
+        let widget = widgets::snippet_overlay::Widget::new(shown_page);
+
+        widget.render(area, buffer)
+    }
+
     pub fn handle_event(self, event: Event) -> AppStateMode {
         self.assert_invariant();
 
@@ -504,6 +522,7 @@ impl AppState<mode::View> {
                         KeyCode::Char('l') => self.show_links_overlay(),
                         KeyCode::Char('W') => self.open_first_web_link(),
                         KeyCode::Char('w') => self.show_weblinks_overlay(),
+                        KeyCode::Char('v') => self.show_snippet_overlay(),
                         KeyCode::Char('C') => self.copy_first_to_clipboard(),
                         KeyCode::Char('[') => self.previous_page(),
                         KeyCode::Char(']') => self.next_page(),
@@ -518,7 +537,7 @@ impl AppState<mode::View> {
                         _ => self.remain_in_view_mode(),
                     }
                 },
-                ViewOverlay::CopySnippet => {
+                ViewOverlay::CopyCodeBlock => {
                     match event.code {
                         KeyCode::Esc => self.remove_overlay(),
                         KeyCode::Char(char) if char.is_ascii_digit() => self.copy_code_to_clipboard(char),
@@ -536,6 +555,12 @@ impl AppState<mode::View> {
                     match event.code {
                         KeyCode::Esc => self.remove_overlay(),
                         KeyCode::Char(char) if char.is_ascii_digit() => self.open_web_link(char),
+                        _ => self.remain_in_view_mode(),
+                    }
+                },
+                ViewOverlay::Snippet => {
+                    match event.code {
+                        KeyCode::Esc => self.remove_overlay(),
                         _ => self.remain_in_view_mode(),
                     }
                 }
@@ -624,7 +649,7 @@ impl AppState<mode::View> {
         let has_at_least_one_code_block = page.document().code_fragments().next().is_some();
 
         if has_at_least_one_code_block {
-            self.mode.overlay = ViewOverlay::CopySnippet;
+            self.mode.overlay = ViewOverlay::CopyCodeBlock;
         }
 
         self.remain_in_view_mode()
@@ -650,6 +675,12 @@ impl AppState<mode::View> {
         if !web_links.is_empty() {
             self.mode.overlay = ViewOverlay::WebLinks;
         }
+
+        self.remain_in_view_mode()
+    }
+
+    fn show_snippet_overlay(mut self) -> AppStateMode {
+        self.mode.overlay = ViewOverlay::Snippet;
 
         self.remain_in_view_mode()
     }
