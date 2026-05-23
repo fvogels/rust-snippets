@@ -14,6 +14,7 @@ pub struct Archive {
 #[derive(Debug, Deserialize)]
 struct Metadata {
     tags: Option<HashMap<String, Vec<String>>>,
+    links: Option<Vec<String>>,
     #[serde(rename(deserialize="web"))]
     web_links: Option<Vec<WebLink>>
 }
@@ -54,6 +55,18 @@ impl Metadata {
                 };
 
                 result.push(raw_web_link);
+            }
+        }
+
+        result
+    }
+
+    fn links(&self) -> Vec<String> {
+        let mut result = Vec::new();
+
+        if let Some(links) = &self.links {
+            for link in links {
+                result.push(link.clone());
             }
         }
 
@@ -165,6 +178,10 @@ impl Archive {
 
             for web_link in metadata.web_links() {
                 snippet.web_links.push(web_link);
+            }
+
+            for link in metadata.links() {
+                snippet.links.push(link);
             }
         };
 
