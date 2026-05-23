@@ -158,19 +158,23 @@ impl Archive {
         let metadata = fs::read_to_string(metadata_file_path)?;
         let metadata = serde_yaml::from_str::<Metadata>(&metadata).context("failed to parse yaml")?;
 
+        let extend_snippet = |snippet: &mut raw::Snippet| {
+            for tag in metadata.tags() {
+                snippet.tags.push(tag);
+            }
+
+            for web_link in metadata.web_links() {
+                snippet.web_links.push(web_link);
+            }
+        };
+
         for entry in directory.read_dir()? {
             let entry = entry?;
             let is_directory = entry.file_type()?.is_dir();
 
             if is_directory {
                 Archive::load_snippet_files_rec(&entry.path(), &mut |mut snippet| {
-                    for tag in metadata.tags() {
-                        snippet.tags.push(tag);
-                    }
-
-                    for web_link in metadata.web_links() {
-                        snippet.web_links.push(web_link);
-                    }
+                    extend_snippet(&mut snippet);
 
                     receiver(snippet);
                 })?;
@@ -178,13 +182,7 @@ impl Archive {
             else if entry.file_name().to_str().unwrap().ends_with(".snippet") {
                 let mut snippet = raw::Snippet::load(entry.path())?;
 
-                for tag in metadata.tags() {
-                    snippet.tags.push(tag);
-                }
-
-                for web_link in metadata.web_links() {
-                    snippet.web_links.push(web_link);
-                }
+                extend_snippet(&mut snippet);
 
                 receiver(snippet);
             }
