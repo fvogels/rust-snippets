@@ -12,7 +12,7 @@ pub struct Archive {
 }
 
 #[derive(Debug, Deserialize)]
-struct Metadata {
+struct FolderMetadata {
     tags: Option<HashMap<String, Vec<String>>>,
     links: Option<Vec<String>>,
     #[serde(rename(deserialize="web"))]
@@ -25,7 +25,7 @@ struct WebLink {
     url: String,
 }
 
-impl Metadata {
+impl FolderMetadata {
     fn tags(&self) -> Vec<raw::Tag> {
         let mut result = Vec::new();
 
@@ -169,7 +169,7 @@ impl Archive {
         }
 
         let metadata = fs::read_to_string(metadata_file_path)?;
-        let metadata = serde_yaml::from_str::<Metadata>(&metadata).context("failed to parse yaml")?;
+        let metadata = serde_yaml::from_str::<FolderMetadata>(&metadata).context("failed to parse yaml")?;
 
         let extend_snippet = |snippet: &mut raw::Snippet| {
             for tag in metadata.tags() {
