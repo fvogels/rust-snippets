@@ -532,6 +532,8 @@ impl AppState<mode::View> {
                         KeyCode::Char('[') => self.previous_page(),
                         KeyCode::Char(']') => self.next_page(),
                         KeyCode::Char('`') => self.show_snippet_overview(),
+                        KeyCode::Char('o') => self.show_snippet_overview(),
+                        KeyCode::Char('-') => self.drop_filtering_tag(),
                         KeyCode::Delete => self.drop_filtering_tag(),
                         KeyCode::Up => self.highlight_previous_snippet(),
                         KeyCode::Down => self.highlight_next_snippet(),
